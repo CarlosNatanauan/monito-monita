@@ -45,8 +45,9 @@ Keep this list updated as scripts are added.
 - `npm test`: run unit tests once (Vitest)
 - `npm run test:watch`: unit tests in watch mode
 - `npx vitest run tests/draw.test.ts`: run a single test file
+- `npm run test:db`: database constraint smoke tests against the dev DB in `.env.local` (rolled back; never run against production)
 - `npm run db:generate`: generate a SQL migration in `drizzle/` from `server/db/schema.ts` (commit it)
 - `npm run db:migrate`: apply pending migrations to the database in `DATABASE_URL` (`.env.local` = Neon dev branch)
 - `npm run db:studio`: browse the database in Drizzle Studio
 
-Database notes: use `db()` from `server/db` for normal queries (Neon HTTP) and `transaction()` when writes must succeed or fail together. Exclusion pairs must be stored sorted (`member_a_id < member_b_id`).
+Database notes: use `db()` from `server/db` for everything (node-postgres pool, attached with `attachDatabasePool` for Vercel); use `db().transaction(...)` when writes must succeed or fail together. Exclusion pairs must be stored sorted (`member_a_id < member_b_id`).

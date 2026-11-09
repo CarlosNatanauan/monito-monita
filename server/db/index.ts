@@ -1,48 +1,44 @@
 /**
- * Neon + Drizzle clients. Server-only: never import this from a client
- * component.
+ * Postgres client (Neon) via node-postgres + Drizzle. Server-only: never
+ * import this from a client component.
  *
- * - `db()`: Neon HTTP driver. Lowest cold-start latency; use for normal
- *   single queries. HTTP can't run interactive transactions.
- * - `transaction(fn)`: Neon WebSocket pool, opened per call and closed
- *   afterwards (safe on serverless). Use when writes must succeed or fail
- *   together, e.g. saving the draw and setting the group to DRAWN.
+ * Follows Neon's recommendation for Vercel Fluid compute: a regular TCP
+ * connection pool, registered with `attachDatabasePool` so idle
+ * connections are closed before the function instance is suspended.
  *
- * Node 24 has a global WebSocket, so the `ws` package isn't needed.
- * Clients are created lazily so builds don't need DATABASE_URL.
+ * One client for everything:
+ *   await db().select().from(groups)
+ *   await db().transaction(async (tx) => { ... })   // rolls back on throw
+ *
+ * The pool is created lazily so builds don't need DATABASE_URL.
  */
-import { neon, Pool } from "@neondatabase/serverless";
-import { drizzle as drizzleHttp } from "drizzle-orm/neon-http";
-import { drizzle as drizzleWs, type NeonDatabase } from "drizzle-orm/neon-serverless";
+import { attachDatabasePool } from "@vercel/functions";
+import { drizzle } from "drizzle-orm/node-postgres";
+import { Pool } from "pg";
 import * as schema from "./schema";
 
-function databaseUrl(): string {
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL is not set");
-  return url;
+function createDb() {
+  const connectionString = process.env.DATABASE_URL;
+  if (!connectionString) throw new Error("DATABASE_URL is not set");
+
+  const pool = new Pool({ connectionString });
+  attachDatabasePool(pool);
+  return drizzle({ client: pool, schema });
 }
 
-function createHttpDb() {
-  return drizzleHttp({ client: neon(databaseUrl()), schema });
-}
+export type Db = ReturnType<typeof createDb>;
+export type Tx = Parameters<Parameters<Db["transaction"]>[0]>[0];
 
-export type Db = ReturnType<typeof createHttpDb>;
-export type Tx = Parameters<Parameters<NeonDatabase<typeof schema>["transaction"]>[0]>[0];
+// Cached on globalThis so dev hot reloads reuse one pool.
+const cache = globalThis as typeof globalThis & { __monitoDb?: Db };
 
-let httpDb: Db | undefined;
-
-/** Shared HTTP client for everyday queries. */
 export function db(): Db {
-  httpDb ??= createHttpDb();
-  return httpDb;
+  cache.__monitoDb ??= createDb();
+  return cache.__monitoDb;
 }
 
-/** Runs `fn` in one interactive transaction; rolls back if it throws. */
-export async function transaction<T>(fn: (tx: Tx) => Promise<T>): Promise<T> {
-  const pool = new Pool({ connectionString: databaseUrl() });
-  try {
-    return await drizzleWs({ client: pool, schema }).transaction(fn);
-  } finally {
-    await pool.end();
-  }
+/** Closes the pool. Only for scripts and tests; never call in app code. */
+export async function closeDb(): Promise<void> {
+  await cache.__monitoDb?.$client.end();
+  cache.__monitoDb = undefined;
 }
