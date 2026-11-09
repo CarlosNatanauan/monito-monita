@@ -1,1 +1,118 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/*
+ * Monito Monita design tokens. Source of truth: docs/DESIGN.md.
+ * Light theme only (no dark mode in v1).
+ */
+
+@theme {
+  /* Brand palette (Simbang Gabi) */
+  --color-simbang-gabi: #1f1b4d; /* text, dark surfaces, reveal background */
+  --color-capiz: #f3f0f7; /* main background */
+  --color-slip: #ffffff; /* paper slips, cards */
+  --color-parol-red: #d6283b; /* the one main action per screen */
+  --color-parol-red-dark: #b91f31; /* pressed/hover state of red */
+  --color-parol-gold: #f2b630; /* light and glow only, never text on white */
+  --color-dahon: #2f7a4f; /* success, joined, done */
+
+  /* Type scale (mobile): 14 / 16 / 20 / 28 / 40 */
+  --text-caption: 0.875rem;
+  --text-caption--line-height: 1.25rem;
+  --text-body: 1rem;
+  --text-body--line-height: 1.5rem;
+  --text-title: 1.25rem;
+  --text-title--line-height: 1.75rem;
+  --text-heading: 1.75rem;
+  --text-heading--line-height: 2.25rem;
+  --text-display: 2.5rem;
+  --text-display--line-height: 2.75rem;
+}
+
+@theme inline {
+  /* Fonts come from next/font variables set in app/layout.tsx */
+  --font-sans: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  --font-heading: var(--font-jakarta), ui-sans-serif, system-ui, sans-serif;
+  /* Gochi Hand: names on slips and codenames only */
+  --font-hand: var(--font-gochi), cursive;
+
+  /* shadcn/ui semantic colors, mapped to the brand palette */
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-success: var(--success);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) * 0.5);
+  --radius-md: calc(var(--radius) * 0.75);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.5);
+  --radius-2xl: calc(var(--radius) * 2);
+}
+
+:root {
+  --background: var(--color-capiz);
+  --foreground: var(--color-simbang-gabi);
+  --card: var(--color-slip);
+  --card-foreground: var(--color-simbang-gabi);
+  --popover: var(--color-slip);
+  --popover-foreground: var(--color-simbang-gabi);
+  --primary: var(--color-parol-red);
+  --primary-foreground: #ffffff;
+  --secondary: #e7e3f1; /* soft indigo tint */
+  --secondary-foreground: var(--color-simbang-gabi);
+  --muted: #e7e3f1;
+  --muted-foreground: #5e5a86; /* AA on capiz and white */
+  --accent: #e7e3f1;
+  --accent-foreground: var(--color-simbang-gabi);
+  --destructive: var(--color-parol-red-dark);
+  --success: var(--color-dahon);
+  --border: #dcd7e8; /* decorative dividers */
+  --input: #8c87aa; /* form borders, 3:1 on white and capiz */
+  --ring: var(--color-simbang-gabi);
+  --radius: 0.5rem;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  html {
+    @apply font-sans;
+  }
+  body {
+    @apply bg-background text-body text-foreground;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-heading font-extrabold;
+  }
+}
+
+/* Respect reduced motion everywhere */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
