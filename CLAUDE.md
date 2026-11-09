@@ -42,5 +42,7 @@ Keep this list updated as scripts are added.
 - `npm run dev`: start dev server
 - `npm run build`: production build
 - `npm run lint`: lint
-- `npm test`: unit tests (Vitest), once added
+- `npm test`: run unit tests once (Vitest)
+- `npm run test:watch`: unit tests in watch mode
+- `npx vitest run tests/draw.test.ts`: run a single test file
 - `npm run db:generate` / `npm run db:migrate`: Drizzle migrations, once added
