@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { Button } from "@/components/ui/button";
 
 // Placeholder home page: shows the design foundation (colors, fonts, slip).
@@ -19,8 +20,8 @@ export default function Home() {
         <p className="font-hand text-heading text-simbang-gabi">~ Ate Joy ~</p>
       </div>
 
-      <Button type="button" size="lg" className="w-full">
-        Create your group
+      <Button asChild size="lg" className="w-full">
+        <Link href="/new">Create your group</Link>
       </Button>
     </main>
   );
