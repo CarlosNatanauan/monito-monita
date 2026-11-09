@@ -2,6 +2,8 @@
 
 Instructions for AI coding assistants working in this repo.
 
+@AGENTS.md
+
 ## Project
 
 Monito Monita: a web app for running Filipino exchange gift groups (draw names, wishlists, theme weeks, reveal). Read `docs/PRODUCT.md`, `docs/DESIGN.md`, `docs/TECH.md`, and `docs/ROADMAP.md` before starting work.
@@ -19,7 +21,7 @@ Monito Monita: a web app for running Filipino exchange gift groups (draw names, 
 - Business logic goes in `server/`, not in components.
 - The draw algorithm in `server/draw.ts` must be pure and covered by tests in `tests/draw.test.ts`.
 - Store only hashes of tokens, never raw tokens.
-- Don't add new libraries or services without a clear reason.
+- Don't add new libraries or services beyond the stack in `docs/TECH.md` without a clear reason.
 - Don't build features marked "Later" or "Future" in the docs unless asked.
 - Keep UI copy short, warm, and a little Taglish.
 
@@ -27,15 +29,18 @@ Monito Monita: a web app for running Filipino exchange gift groups (draw names, 
 
 - Follow `docs/DESIGN.md`: its colors, type, and the bunutan (paper slip) motif.
 - Heavy animation only in the 4 signature moments. Everywhere else, motion only responds to user actions.
-- Animate only `transform` and `opacity`. Lazy-load animation code.
+- Animate only `transform` and `opacity`. Lazy-load animation code (GSAP, Rive, confetti) only on the screens that use it.
+- Motion for everyday UI motion; GSAP for the signature timelines. Don't mix both on the same element.
 - Always respect `prefers-reduced-motion`.
 - Gochi Hand is only for names on slips and codenames.
 - Restyle shadcn/ui components; don't ship the default look.
 
 ## Commands
 
-(Fill in once the project is set up.)
+Keep this list updated as scripts are added.
 
 - `npm run dev`: start dev server
-- `npm test`: run tests
-- `npx prisma migrate dev`: run migrations
+- `npm run build`: production build
+- `npm run lint`: lint
+- `npm test`: unit tests (Vitest), once added
+- `npm run db:generate` / `npm run db:migrate`: Drizzle migrations, once added

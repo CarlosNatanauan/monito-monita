@@ -26,4 +26,4 @@ Draw names, share wishlists, run the weekly theme rounds ("something soft", "som
 
 ## Stack
 
-Next.js (App Router) · TypeScript · PostgreSQL · Prisma · Tailwind · Motion · Vercel
+Next.js 16 · TypeScript · Neon Postgres · Drizzle · Tailwind · Motion · GSAP · Vercel

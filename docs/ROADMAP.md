@@ -16,7 +16,8 @@ Goal: a group can be created, people can join, names can be drawn, and the desig
 
 - [ ] Create repo, Next.js + TypeScript + Tailwind + shadcn/ui setup
 - [ ] Design tokens from `docs/DESIGN.md`: colors, fonts (Plus Jakarta Sans, Gochi Hand), type scale
-- [ ] Postgres (Neon/Supabase) + Prisma schema + first migration
+- [ ] Repo hygiene: `.gitattributes` (LF endings), `.env.example`, pinned Node 24, remove starter page and assets
+- [ ] Neon Postgres + Drizzle schema + first migration
 - [ ] Deploy empty app to Vercel (deploy on day 1, not day 20)
 - [ ] Token + cookie helpers (`server/auth.ts`)
 - [ ] Create group page → returns share link + organizer link
@@ -25,7 +26,7 @@ Goal: a group can be created, people can join, names can be drawn, and the desig
 - [ ] Exclusions UI (pick two members)
 - [ ] **Draw algorithm + unit tests**
 - [ ] Draw button → saves assignments, locks joins
-- [ ] Weekend: quick mockups of the 4 signature screens (Figma or paper)
+- [ ] Weekend: quick mockups of the 4 signature screens (Figma or paper), and decide: SVG + GSAP only, or Rive for the bowl
 
 ✅ Done when: you can create a group, join from 3 phones, and draw, with the right colors and fonts.
 
@@ -56,7 +57,8 @@ Goal: the moments strangers see first, then launch.
 - [ ] Share previews (Open Graph image + title for Messenger/FB links)
 - [ ] Performance pass: Lighthouse mobile 90+, test on a budget Android
 - [ ] Basic rate limiting + input limits
-- [ ] Simple analytics (Vercel Analytics or Plausible)
+- [ ] PostHog analytics (create → join → draw → slip opened funnel)
+- [ ] Playwright test of the main flow on a mobile viewport
 - [ ] Fix everything from the test group's feedback
 - [ ] **Launch Nov 28:** post in your own GCs, Facebook, Reddit (r/Philippines), LinkedIn
 

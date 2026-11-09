@@ -127,13 +127,17 @@ For the projector. All slips sit in a **ring** on the dark indigo background. Th
 
 ## Tools
 
-| Need | Tool |
-|---|---|
-| UI animations, layout changes, gestures | **Motion** (motion.dev, formerly Framer Motion) |
-| Slip unfold (3D fold) | CSS 3D transforms driven by Motion |
-| Gold sparkles at big moments | **canvas-confetti** with custom star/parol shapes and gold colors (not rainbow confetti) |
-| Haptics | `navigator.vibrate()`. Android only, iPhone simply ignores it |
-| Sound | Optional, **off by default**, for the reveal screen only |
+See the "Animation and graphics" table in `docs/TECH.md`. In short:
+
+- **Motion** for everyday UI responses and gestures
+- **GSAP** (DrawSVG, MotionPath, MorphSVG) for the signature timelines: unfold, handwriting, light along the loop
+- **Rive** (optional) for an illustrated, interactive bowl
+- **canvas-confetti** with custom gold star/parol shapes (never rainbow confetti)
+- **Haptics:** `navigator.vibrate()`, Android only (iPhone ignores it)
+- **Sound:** optional, off by default, reveal screen only
+
+### The handwritten name
+Convert the name to SVG paths in Gochi Hand (opentype.js), draw the outline with GSAP DrawSVG like a pen stroke, then fade in the ink fill. Reduced-motion: show the finished name.
 
 ## Performance rules (premium means fast too)
 

@@ -4,20 +4,50 @@ Goal: ship fast, keep it simple, but get the tricky parts (draw, anonymity, iden
 
 ## Stack
 
+Chosen for what this project needs (premium animation, fast on budget Android phones, solo dev, 3 weeks), not for what's already familiar.
+
+### Core
+
 | Layer | Choice | Why |
 |---|---|---|
-| App | Next.js (App Router) + TypeScript | One app for frontend + backend, fastest to ship |
-| Database | PostgreSQL (Neon or Supabase, free tier) | Relational data, known tool |
-| ORM | Prisma | Already familiar |
-| Styling | Tailwind + shadcn/ui | Fast base components, restyled to match `docs/DESIGN.md` |
-| Animation | Motion (motion.dev) + canvas-confetti | Signature moments (see `docs/DESIGN.md`), lazy-loaded |
-| Validation | Zod | Validate every input on the server |
-| Hosting | Vercel | Free tier, easy deploys |
-| Scheduled jobs | Vercel Cron | Daily job for theme changes / reminders (later) |
-| Email (later) | Resend | Only if we add optional email reminders |
-| Tests | Vitest | At least for the draw algorithm |
+| App | **Next.js 16** (App Router) + TypeScript | React has the strongest animation ecosystem (Motion, GSAP, Rive all have first-class React support). Frontend + backend in one app |
+| Database | **PostgreSQL on Neon** | Serverless Postgres, free tier, database branches for preview deploys |
+| ORM | **Drizzle ORM** | Lightweight, SQL-first, fast cold starts on serverless, fully typed. A transferable skill: you write and understand real SQL |
+| Validation | **Zod** | Validate every input on the server |
+| Styling | **Tailwind v4 + shadcn/ui** | Fast base components, restyled to match `docs/DESIGN.md` |
+| Rate limiting | **Upstash Redis** + `@upstash/ratelimit` | Serverless-friendly, free tier, protects create/join endpoints |
+| Hosting | **Vercel** | Free tier, preview deploy per branch, built-in OG images and cron |
+| Node | **24 LTS** (pinned in `package.json` engines and `.nvmrc`) | Same version locally and on Vercel |
 
-Backend logic lives in **Server Actions** and **Route Handlers**, organized in a `lib/` or `server/` folder so it stays clean (and could move to a separate API later if needed).
+### Animation and graphics
+
+Each tool has one clear job. Animation code is **lazy-loaded** only on the screens that use it.
+
+| Tool | Job | Used for |
+|---|---|---|
+| **Motion** (motion.dev) | Everyday UI motion in React: state changes, layout animations, gestures | Buttons, wishlist add/remove, press-and-hold on the slip, page elements responding to taps |
+| **GSAP** + plugins (100% free, including formerly paid plugins) | Cinematic, choreographed timelines | Slip unfold sequence, **DrawSVG** for the handwritten name being "written", **MotionPath** for gold light traveling along the reveal loop, **MorphSVG** for the slip folding/unfolding shapes |
+| **Rive** (optional, decide after mockups) | Illustrated, interactive animations with state machines, tiny runtime | The bowl with slips tumbling, if SVG + GSAP isn't rich enough. Needs design time in the Rive editor |
+| **canvas-confetti** | Particle bursts | Gold star/parol sparkles at big moments only |
+| **View Transitions** (React / Next 16) | Smooth page-to-page transitions | Join → member home, member home → slip. Check Next 16 docs for current support |
+| **opentype.js** | Turn text into SVG paths | Converts names into Gochi Hand paths so GSAP DrawSVG can "write" them |
+
+**Not using three.js / 3D WebGL for v1.** It's heavy on budget phones and a big time sink. CSS 3D transforms + SVG + GSAP gets the paper-slip look. Revisit for the 2027 reveal screen.
+
+### Quality and product
+
+| Need | Choice |
+|---|---|
+| Unit tests | **Vitest** (draw algorithm, token helpers) |
+| End-to-end tests | **Playwright** on a mobile viewport (create → join → draw → open slip) |
+| Product analytics | **PostHog** (free tier): funnel of group created → members joined → drawn → slip opened |
+| Share previews | `next/og` (built into Next.js) |
+| Email (later) | Resend |
+| Realtime (later) | Not needed for launch: the bowl refreshes by polling every few seconds while open. Pick a realtime service in December when building anonymous chat |
+
+Backend logic lives in **Server Actions** and **Route Handlers**, with all business rules in `server/`.
+
+**Next 16 note:** `cacheComponents` is on. Pages that read cookies (member and organizer pages) need dynamic rendering / Suspense boundaries. Read `node_modules/next/dist/docs/` before writing `server/auth.ts` and those pages.
 
 ## Data model (v1)
 
@@ -129,14 +159,21 @@ app/
   g/[slug]/me/page.tsx          member home (my monito, wishlist, theme)
   g/[slug]/admin/page.tsx       organizer page
   g/[slug]/reveal/page.tsx      reveal screen
+components/
+  slip/, bowl/, reveal/         signature-moment components (lazy-loaded)
+  ui/                           restyled shadcn components
 server/
   draw.ts                       draw algorithm (pure functions, tested)
   auth.ts                       token create/verify, cookies
   groups.ts, members.ts, ...    data access + business rules
-prisma/
-  schema.prisma
+server/db/
+  schema.ts                     Drizzle schema
+  index.ts                      Neon + Drizzle client
+drizzle/                        generated migrations
 tests/
   draw.test.ts
+e2e/
+  main-flow.spec.ts             Playwright
 ```
 
 ## Environments
