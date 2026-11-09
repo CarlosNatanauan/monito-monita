@@ -1,8 +1,14 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
+  // Pages that can carry or show secret links never send a Referer.
+  async headers() {
+    return [
+      { source: "/g/:path*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
+      { source: "/new", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
+    ];
+  },
   partialPrefetching: true,
   turbopack: {
     rules: {
