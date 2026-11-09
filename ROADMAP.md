@@ -1,0 +1,108 @@
+# Roadmap
+
+**Launch target: Friday, November 28, 2026.**
+
+Why this date: most groups draw names in late November so theme weeks can run before mid-December parties. Launching later means missing this season.
+
+Part-time reality: plan for about 2 hours on weekdays and longer sessions on weekends. If behind, cut from the cut list, never move the launch.
+
+**Key insight for design time:** the party reveal isn't needed on launch day. Groups only use it at their party (mid to late December). So it ships in the first week of December, which frees launch weeks for polishing the moments people see first.
+
+---
+
+## Week 1: Foundation + look (Nov 9–15)
+
+Goal: a group can be created, people can join, names can be drawn, and the design system exists.
+
+- [ ] Create repo, Next.js + TypeScript + Tailwind + shadcn/ui setup
+- [ ] Design tokens from `docs/DESIGN.md`: colors, fonts (Plus Jakarta Sans, Gochi Hand), type scale
+- [ ] Postgres (Neon/Supabase) + Prisma schema + first migration
+- [ ] Deploy empty app to Vercel (deploy on day 1, not day 20)
+- [ ] Token + cookie helpers (`server/auth.ts`)
+- [ ] Create group page → returns share link + organizer link
+- [ ] Join page → name only → creates member, sets cookie, shows personal link
+- [ ] Organizer page: member list, remove member
+- [ ] Exclusions UI (pick two members)
+- [ ] **Draw algorithm + unit tests**
+- [ ] Draw button → saves assignments, locks joins
+- [ ] Weekend: quick mockups of the 4 signature screens (Figma or paper)
+
+✅ Done when: you can create a group, join from 3 phones, and draw, with the right colors and fonts.
+
+## Week 2: The member experience + the slip (Nov 16–22)
+
+Goal: everything a member needs between the draw and the party, plus the most important moment.
+
+- [ ] **Paper slip component** (folded / unfolded states)
+- [ ] **Signature moment: unfolding your slip** (3D unfold, handwritten name, gold glow, haptic, plays once, reduced-motion version)
+- [ ] Member home: open slip + their wishlist + this week's theme
+- [ ] Wishlist add / edit / delete
+- [ ] Theme weeks: set up on group creation, current theme shown
+- [ ] "Copy reminder for GC" button
+- [ ] Codenames (random generated list, Filipino-flavored)
+- [ ] Remove member after draw → patch the loop
+- [ ] Anonymity check: inspect network responses, confirm no leaks
+- [ ] **Weekend: test with a real group** (family, friends, or office), on real Android phones
+
+✅ Done when: a real group can use it start to finish (except the reveal), and people react to the slip unfold.
+
+## Week 3: First impression + launch (Nov 23–28)
+
+Goal: the moments strangers see first, then launch.
+
+- [ ] **Signature moment: the bowl** on the group page (fills with slips as people join, your slip drops in)
+- [ ] **Signature moment: landing page "Try a bunutan"** (draw a demo slip from the bowl)
+- [ ] Landing page copy: how it works in 3 steps, "Create your group"
+- [ ] Share previews (Open Graph image + title for Messenger/FB links)
+- [ ] Performance pass: Lighthouse mobile 90+, test on a budget Android
+- [ ] Basic rate limiting + input limits
+- [ ] Simple analytics (Vercel Analytics or Plausible)
+- [ ] Fix everything from the test group's feedback
+- [ ] **Launch Nov 28:** post in your own GCs, Facebook, Reddit (r/Philippines), LinkedIn
+
+✅ Done when: strangers can create a group without asking you anything, and the landing page makes them want to.
+
+### Cut list (if behind, drop in this order)
+1. Share preview images
+2. Landing page demo bowl (use a short screen recording of the slip unfold instead)
+3. Bowl animation on the group page (show a simple slip count)
+4. Codenames
+
+**Never cut:** the draw, wishlists, theme weeks, and the slip unfold.
+
+## Dec 1–7: The party reveal
+
+Ship before the first parties.
+
+- [ ] Reveal screen: ring of slips on indigo, gold light travels along the loop, slips flip one by one
+- [ ] Final "parol lights up" moment when everyone is revealed
+- [ ] Projector check: readable from the back of a room
+- [ ] Reduced-motion and plain-list fallback
+- [ ] Optional sound (off by default)
+
+## December: Live season
+
+The real usage happens now. Priority is **keeping it working**, then adding the fun stuff.
+
+- [ ] Watch errors and fix fast
+- [ ] Anonymous chat (giver ↔ receiver)
+- [ ] Guessing game + leaderboard at reveal
+- [ ] Organizer can reissue a lost personal link
+- [ ] Collect feedback (short form after reveal)
+
+## January–February: Look back and level up
+
+- [ ] Write a short retro: numbers, what worked, what didn't
+- [ ] Write a launch post / case study for portfolio and LinkedIn
+- [ ] AI gift ideas (wishlist + budget + theme → suggestions), with per-group limits
+- [ ] AI theme generator and hints for the guessing game
+- [ ] Optional email reminders (Vercel Cron + Resend)
+
+## Future (2027 season and beyond)
+
+- **Office plans:** big groups, CSV import, custom branding, multiple groups per company
+- **Other occasions:** Valentine's exchange, birthday gift pools, kris kringle anytime
+- **Gift links:** Shopee/Lazada affiliate links on gift ideas
+- **PWA:** installable, push notifications
+- **Tagalog** language option
+- Buy the domain (monitomonita.app was available as of Nov 9, 2026)
