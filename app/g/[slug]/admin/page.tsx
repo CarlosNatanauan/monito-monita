@@ -9,8 +9,11 @@ import { formatJoinedAt, joinedCount } from "@/lib/format";
 import { formatShortDate } from "@/lib/theme-weeks";
 import { getCurrentMember, getCurrentOrganizer, isValidSlug } from "@/server/auth";
 import type { GroupStatus } from "@/server/db/schema";
+import { checkDrawFeasibility } from "@/server/draw-check";
+import { getDrawSetup, toExclusions } from "@/server/exclusions";
 import { getOrganizerView } from "@/server/members";
 import { GroupFacts, PageFallback } from "../group-facts";
+import { ExclusionsSection } from "./exclusions-section";
 import { MemberList } from "./member-list";
 
 export const metadata: Metadata = {
@@ -52,10 +55,16 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     );
   }
 
-  const [view, member] = await Promise.all([getOrganizerView(organizer.groupId), getCurrentMember(slug)]);
+  const [view, member, setup] = await Promise.all([
+    getOrganizerView(organizer.groupId),
+    getCurrentMember(slug),
+    getDrawSetup(organizer.groupId),
+  ]);
   if (!view) notFound();
   const { group, themes } = view;
   const isOpen = group.status === "OPEN";
+  // Same algorithm as the real draw, so the warning always matches.
+  const feasibility = checkDrawFeasibility(setup.members, toExclusions(setup.pairs));
 
   return (
     <>
@@ -104,6 +113,24 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
               displayName: m.displayName,
               joinedLabel: formatJoinedAt(m.joinedAt, group.timezone),
             }))}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Bawal magkabunot</CardTitle>
+          <p className="text-caption text-muted-foreground">
+            Can&apos;t draw each other, halimbawa mag-asawa o magkapatid.
+          </p>
+        </CardHeader>
+        <CardContent>
+          <ExclusionsSection
+            slug={slug}
+            members={setup.members}
+            pairs={setup.pairs.map((p) => ({ id: p.id, memberAName: p.memberAName, memberBName: p.memberBName }))}
+            editable={isOpen}
+            warning={isOpen && feasibility.status === "impossible" ? feasibility.message : null}
           />
         </CardContent>
       </Card>

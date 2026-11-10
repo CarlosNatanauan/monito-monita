@@ -3,32 +3,73 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentOrganizer, isValidSlug } from "@/server/auth";
+import { addExclusion, removeExclusion } from "@/server/exclusions";
 import { removeMember } from "@/server/members";
 
-const removeSchema = z.object({
-  slug: z.string().refine(isValidSlug),
-  memberId: z.uuid(),
-});
+export type ActionResult = { ok: true } | { ok: false; message: string };
 
-export type RemoveMemberResult = { ok: true } | { ok: false; message: string };
+const NOT_ORGANIZER = "Para sa organizer lang ito. Buksan ulit ang organizer link mo.";
+const slugField = z.string().refine(isValidSlug);
 
-/** Organizer-only: removes a member before the draw. */
-export async function removeMemberAction(input: { slug: string; memberId: string }): Promise<RemoveMemberResult> {
-  const parsed = removeSchema.safeParse(input);
+/**
+ * Validates input, re-checks the organizer cookie (never trust the page
+ * that called us), runs `fn`, and refreshes the page on success.
+ */
+async function asOrganizer<T extends { slug: string }>(
+  schema: z.ZodType<T>,
+  input: unknown,
+  failureMessage: string,
+  fn: (groupId: string, data: T) => Promise<ActionResult>,
+): Promise<ActionResult> {
+  const parsed = schema.safeParse(input);
   if (!parsed.success) return { ok: false, message: "Hindi ma-process ang request." };
 
-  // Re-check the organizer cookie here; never trust the page that called us.
   const organizer = await getCurrentOrganizer(parsed.data.slug);
-  if (!organizer) return { ok: false, message: "Para sa organizer lang ito. Buksan ulit ang organizer link mo." };
+  if (!organizer) return { ok: false, message: NOT_ORGANIZER };
 
+  let result: ActionResult;
   try {
-    const result = await removeMember(organizer.groupId, parsed.data.memberId);
-    if (!result.ok) return { ok: false, message: result.message };
+    result = await fn(organizer.groupId, parsed.data);
   } catch (error) {
-    console.error("removeMemberAction failed", error);
-    return { ok: false, message: "Hindi natanggal. Subukan ulit in a bit." };
+    console.error("organizer action failed", error);
+    return { ok: false, message: failureMessage };
   }
-
   refresh();
-  return { ok: true };
+  return result;
+}
+
+/** Removes a member before the draw. */
+export async function removeMemberAction(input: { slug: string; memberId: string }): Promise<ActionResult> {
+  return asOrganizer(
+    z.object({ slug: slugField, memberId: z.uuid() }),
+    input,
+    "Hindi natanggal. Subukan ulit in a bit.",
+    async (groupId, { memberId }) => {
+      const result = await removeMember(groupId, memberId);
+      return result.ok ? { ok: true } : { ok: false, message: result.message };
+    },
+  );
+}
+
+/** "These two can't draw each other." */
+export async function addExclusionAction(input: {
+  slug: string;
+  memberAId: string;
+  memberBId: string;
+}): Promise<ActionResult> {
+  return asOrganizer(
+    z.object({ slug: slugField, memberAId: z.uuid(), memberBId: z.uuid() }),
+    input,
+    "Hindi na-save ang pair. Subukan ulit in a bit.",
+    (groupId, { memberAId, memberBId }) => addExclusion(groupId, memberAId, memberBId),
+  );
+}
+
+export async function removeExclusionAction(input: { slug: string; exclusionId: string }): Promise<ActionResult> {
+  return asOrganizer(
+    z.object({ slug: slugField, exclusionId: z.uuid() }),
+    input,
+    "Hindi natanggal ang pair. Subukan ulit in a bit.",
+    (groupId, { exclusionId }) => removeExclusion(groupId, exclusionId),
+  );
 }
