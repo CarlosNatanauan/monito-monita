@@ -46,6 +46,7 @@ Keep this list updated as scripts are added.
 - `npm run test:watch`: unit tests in watch mode
 - `npx vitest run tests/draw.test.ts`: run a single test file
 - `npm run test:db`: database constraint smoke tests against the dev DB in `.env.local` (rolled back; never run against production)
+- `npm run test:e2e`: Playwright main flow on Pixel 7 (Chromium) and iPhone 14 (WebKit) against `npm run dev` (reuses a running dev server on :3000) and the dev DB; deletes its test groups; screenshots in `e2e/screenshots/`
 - `npm run db:generate`: generate a SQL migration in `drizzle/` from `server/db/schema.ts` (commit it)
 - `npm run db:migrate`: apply pending migrations to the database in `DATABASE_URL` (`.env.local` = Neon dev branch)
 - `npm run db:migrate:prod`: apply migrations to PRODUCTION, using only `.env.production.local`; shows host and pending migrations and asks for confirmation. The human runs this, never the AI assistant.

@@ -16,7 +16,8 @@
     "db:migrate": "drizzle-kit migrate",
     "db:studio": "drizzle-kit studio",
     "test:db": "vitest run --config vitest.db.config.mts",
-    "db:migrate:prod": "node scripts/migrate-prod.mts"
+    "db:migrate:prod": "node scripts/migrate-prod.mts",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "@vercel/functions": "^3.11.0",
@@ -32,6 +33,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@playwright/test": "^1.65.0",
     "@tailwindcss/turbopack": "^4",
     "@types/node": "^24.19.2",
     "@types/pg": "^8.23.1",
