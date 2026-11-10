@@ -54,6 +54,10 @@ async function newPerson(browser: Browser, testInfo: TestInfo, label: string): P
     locale: "en-PH",
     timezoneId: "Asia/Manila",
   });
+  // Chromium needs permission to read the clipboard back in tests.
+  if (browser.browserType().name() === "chromium") {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+  }
   const page = await context.newPage();
   watch(page, label);
   return { label, context, page };
@@ -332,6 +336,35 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await addWish(ben.page, "Socks");
   });
 
+  /** Checks the GC reminder preview and that Copy copies exactly that text. */
+  async function checkReminder(expected: (string | RegExp)[], absent: string[] = []) {
+    const { page } = organizer;
+    const preview = page.getByLabel("Reminder preview");
+    // Copy is enabled once the browser has filled in the full share link.
+    await expect(page.getByRole("button", { name: "Copy reminder" })).toBeEnabled();
+    for (const text of expected) await expect(preview).toContainText(text);
+    for (const text of absent) await expect(preview).not.toContainText(text);
+    await page.getByRole("button", { name: "Copy reminder" }).click();
+    await expect(page.getByRole("button", { name: "Copied!" })).toBeVisible();
+    if (browser.browserType().name() === "chromium") {
+      // The Windows clipboard turns \n into \r\n; compare the text itself.
+      const copied = (await page.evaluate(() => navigator.clipboard.readText())).replace(/\r\n/g, "\n");
+      expect(copied).toBe(await preview.textContent());
+    }
+  }
+
+  await test.step("GC reminder before the draw: invite, link, count, party date", async () => {
+    await organizer.page.goto(`/g/${slug}/admin`);
+    await checkReminder([
+      "Sali na sa exchange gift natin! 🎄",
+      `👉 ${shareUrl}`,
+      "4 na ang sumali.",
+      `Party: ${formatPartyDate(partyDate)} 🎉`,
+      "Budget: ₱500",
+    ]);
+    await shot(organizer.page, "reminder-before-draw");
+  });
+
   await test.step("theme weeks on /me (before the first theme)", async () => {
     // Party in 40 days with 4 weekly themes → the first starts in 12 days.
     const firstStart = addDays(partyDate, -28);
@@ -388,6 +421,15 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await expect(page.getByText("Names drawn")).toBeVisible();
     await expect(page.getByText("4 na ang may monito.", { exact: false })).toBeVisible();
     await expect(page.getByText("Na-draw na ang names")).toBeVisible();
+    await checkReminder(
+      [
+        "reminder!",
+        `✨ Unang theme: Something soft, simula ${formatPartyDate(addDays(partyDate, -28))}`,
+        "💸 Budget: ₱500",
+        "Na-update n'yo na ba ang wishlist n'yo?",
+      ],
+      [shareUrl],
+    );
     // Exclusions and removal are locked now.
     await expect(page.getByRole("button", { name: "Add pair" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(0);

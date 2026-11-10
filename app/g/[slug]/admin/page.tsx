@@ -6,7 +6,8 @@ import { CopyLink } from "@/components/copy-link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatJoinedAt, joinedCount } from "@/lib/format";
-import { formatShortDate } from "@/lib/theme-weeks";
+import { getThemeStatus } from "@/lib/theme-status";
+import { formatShortDate, todayIn } from "@/lib/theme-weeks";
 import { getCurrentMember, getCurrentOrganizer, isValidSlug } from "@/server/auth";
 import type { GroupStatus } from "@/server/db/schema";
 import { checkDrawFeasibility } from "@/server/draw-check";
@@ -17,6 +18,7 @@ import { GroupFacts, PageFallback } from "../group-facts";
 import { DrawSection } from "./draw-section";
 import { ExclusionsSection } from "./exclusions-section";
 import { MemberList } from "./member-list";
+import { ReminderCard } from "./reminder-card";
 
 export const metadata: Metadata = {
   title: "Organizer · Monito Monita",
@@ -68,6 +70,8 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
   const isOpen = group.status === "OPEN";
   // Same algorithm as the real draw, so the warning always matches.
   const feasibility = checkDrawFeasibility(setup.members, toExclusions(setup.pairs));
+  // "Today" in the group's timezone, not the server's (UTC on Vercel).
+  const themeStatus = getThemeStatus(themes, group.partyDate, todayIn(group.timezone));
 
   return (
     <>
@@ -99,6 +103,24 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
         </CardHeader>
         <CardContent>
           <CopyLink path={`/g/${slug}`} label="Copy link" />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Reminder para sa GC</CardTitle>
+          <p className="text-caption text-muted-foreground">I-copy at i-paste sa group chat.</p>
+        </CardHeader>
+        <CardContent>
+          <ReminderCard
+            slug={slug}
+            groupName={group.name}
+            status={group.status}
+            memberCount={view.members.length}
+            partyDate={group.partyDate}
+            budget={group.budget}
+            theme={themeStatus}
+          />
         </CardContent>
       </Card>
 
