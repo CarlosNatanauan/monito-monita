@@ -10,9 +10,11 @@ import { formatShortDate } from "@/lib/theme-weeks";
 import { getCurrentMember, getCurrentOrganizer, isValidSlug } from "@/server/auth";
 import type { GroupStatus } from "@/server/db/schema";
 import { checkDrawFeasibility } from "@/server/draw-check";
+import { countAssignments } from "@/server/draw-service";
 import { getDrawSetup, toExclusions } from "@/server/exclusions";
 import { getOrganizerView } from "@/server/members";
 import { GroupFacts, PageFallback } from "../group-facts";
+import { DrawSection } from "./draw-section";
 import { ExclusionsSection } from "./exclusions-section";
 import { MemberList } from "./member-list";
 
@@ -55,10 +57,11 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     );
   }
 
-  const [view, member, setup] = await Promise.all([
+  const [view, member, setup, drawnCount] = await Promise.all([
     getOrganizerView(organizer.groupId),
     getCurrentMember(slug),
     getDrawSetup(organizer.groupId),
+    countAssignments(organizer.groupId),
   ]);
   if (!view) notFound();
   const { group, themes } = view;
@@ -131,6 +134,26 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
             pairs={setup.pairs.map((p) => ({ id: p.id, memberAName: p.memberAName, memberBName: p.memberBName }))}
             editable={isOpen}
             warning={isOpen && feasibility.status === "impossible" ? feasibility.message : null}
+          />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Bunutan</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <DrawSection
+            slug={slug}
+            status={group.status}
+            drawnCount={drawnCount}
+            blockedReason={
+              feasibility.status === "ok"
+                ? null
+                : feasibility.status === "too_few"
+                  ? feasibility.message
+                  : "Ayusin muna ang mga bawal sa itaas."
+            }
           />
         </CardContent>
       </Card>

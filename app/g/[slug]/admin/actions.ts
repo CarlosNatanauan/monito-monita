@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { getCurrentOrganizer, isValidSlug } from "@/server/auth";
+import { drawNames, type DrawMode } from "@/server/draw-service";
 import { addExclusion, removeExclusion } from "@/server/exclusions";
 import { removeMember } from "@/server/members";
 
@@ -62,6 +63,23 @@ export async function addExclusionAction(input: {
     input,
     "Hindi na-save ang pair. Subukan ulit in a bit.",
     (groupId, { memberAId, memberBId }) => addExclusion(groupId, memberAId, memberBId),
+  );
+}
+
+/**
+ * Draw names, or redraw before the reveal. A second click (or tab) that
+ * arrives after the first draw sees "already drawn" and is treated as done.
+ */
+export async function drawNamesAction(input: { slug: string; mode: DrawMode }): Promise<ActionResult> {
+  return asOrganizer(
+    z.object({ slug: slugField, mode: z.enum(["draw", "redraw"]) }),
+    input,
+    "Hindi natuloy ang draw. Subukan ulit in a bit.",
+    async (groupId, { mode }) => {
+      const result = await drawNames(groupId, mode);
+      if (result.ok || result.reason === "ALREADY_DRAWN") return { ok: true };
+      return { ok: false, message: result.message };
+    },
   );
 }
 
