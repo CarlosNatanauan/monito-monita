@@ -9,17 +9,18 @@
 import { expect, type Page, type Response } from "@playwright/test";
 import { eq } from "drizzle-orm";
 import { db } from "../server/db";
-import { assignments, groups, members } from "../server/db/schema";
+import { assignments, groups, members, wishlistItems } from "../server/db/schema";
 
 export interface Truth {
   members: { id: string; name: string; removed: boolean }[];
   pairs: { id: string; giverId: string; receiverId: string }[];
+  wishes: { memberId: string; title: string; note: string | null }[];
 }
 
 /** Ground truth for a group, straight from the database. */
 export async function getTruth(slug: string): Promise<Truth> {
   const [group] = await db().select({ id: groups.id }).from(groups).where(eq(groups.slug, slug));
-  const [memberRows, pairRows] = await Promise.all([
+  const [memberRows, pairRows, wishRows] = await Promise.all([
     db()
       .select({ id: members.id, name: members.displayName, removedAt: members.removedAt })
       .from(members)
@@ -28,10 +29,16 @@ export async function getTruth(slug: string): Promise<Truth> {
       .select({ id: assignments.id, giverId: assignments.giverId, receiverId: assignments.receiverId })
       .from(assignments)
       .where(eq(assignments.groupId, group.id)),
+    db()
+      .select({ memberId: wishlistItems.memberId, title: wishlistItems.title, note: wishlistItems.note })
+      .from(wishlistItems)
+      .innerJoin(members, eq(members.id, wishlistItems.memberId))
+      .where(eq(members.groupId, group.id)),
   ]);
   return {
     members: memberRows.map((m) => ({ id: m.id, name: m.name, removed: m.removedAt !== null })),
     pairs: pairRows,
+    wishes: wishRows,
   };
 }
 
@@ -74,6 +81,15 @@ function containsName(text: string, name: string, allowedNames: string[]): boole
 
 const PAIR_FIELDS = ["giverId", "receiverId", "giver_id", "receiver_id", "assignments"];
 
+/** Wishlist titles and notes of the given members must not appear. */
+function expectNoWishesOf(text: string, truth: Truth, memberIds: Set<string>, label: string) {
+  for (const w of truth.wishes) {
+    if (!memberIds.has(w.memberId)) continue;
+    expect(text, `${label} shows someone else's wish "${w.title}"`).not.toContain(w.title);
+    if (w.note) expect(text, `${label} shows someone else's wish note`).not.toContain(w.note);
+  }
+}
+
 function commonChecks(text: string, truth: Truth, label: string) {
   for (const field of PAIR_FIELDS) expect(text, `${label}: contains "${field}"`).not.toContain(field);
   for (const pair of truth.pairs) expect(text, `${label}: contains an assignment id`).not.toContain(pair.id);
@@ -83,6 +99,7 @@ function commonChecks(text: string, truth: Truth, label: string) {
 export function expectOrganizerPageClean(text: string, truth: Truth) {
   commonChecks(text, truth, "organizer page");
   expect(text, "organizer page shows a monito").not.toContain("Ang monito mo");
+  expectNoWishesOf(text, truth, new Set(truth.members.map((m) => m.id)), "organizer page");
 }
 
 /** Join page (no cookies): no member names or ids at all. */
@@ -92,6 +109,7 @@ export function expectJoinPageClean(text: string, truth: Truth) {
     expect(containsName(text, m.name, []), `join page shows the name "${m.name}"`).toBe(false);
     expect(text, `join page contains the member id of ${m.name}`).not.toContain(m.id);
   }
+  expectNoWishesOf(text, truth, new Set(truth.members.map((m) => m.id)), "join page");
 }
 
 /** A member's /me: only their own name and their own receiver. */
@@ -110,6 +128,9 @@ export function expectMemberPageClean(text: string, truth: Truth, memberName: st
     expect(containsName(text, other.name, allowed), `${label} shows "${other.name}"`).toBe(false);
     expect(text, `${label} contains the member id of ${other.name}`).not.toContain(other.id);
   }
+  // Wishlists: only their own and their receiver's.
+  const others = new Set(truth.members.filter((m) => m.id !== me.id && m.id !== receiver.id).map((m) => m.id));
+  expectNoWishesOf(text, truth, others, label);
   // Their receiver's id isn't needed on the page either.
   expect(text, `${label} contains the receiver's member id`).not.toContain(receiver.id);
 }

@@ -277,6 +277,60 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await expect(ben.page.getByRole("heading", { name: "Hi, Ben!" })).toBeVisible();
   });
 
+  // Wishlists. Titles are unique and contain no member names (leak checks).
+  const wishesByName: Record<string, string[]> = {
+    Joy: ["Mug na cute (blue)", "Plant (small lang)"],
+    "Joy M": ["Notebook"],
+    Ben: ["Socks"],
+    "Tita Org": [],
+  };
+
+  async function addWish(page: Page, title: string, url = "", note = "") {
+    await page.getByRole("button", { name: "Add an item" }).click();
+    await page.getByLabel("Ano ang gusto mo?").fill(title);
+    if (url) await page.getByLabel("Link (optional)").fill(url);
+    if (note) await page.getByLabel("Note (optional)").fill(note);
+    await page.getByRole("button", { name: "Add to wishlist" }).click();
+    await expect(page.getByRole("list", { name: "Wishlist mo" }).getByText(title, { exact: true })).toBeVisible();
+  }
+
+  await test.step("wishlists: empty state, add, edit (before the draw)", async () => {
+    await organizer.page.goto(`/g/${slug}/me`);
+    await expect(
+      organizer.page.getByText("Wala pang wishlist. Add something para hindi mahirapan ang monito mo."),
+    ).toBeVisible();
+
+    const { page } = joy;
+    await page.goto(`/g/${slug}/me`);
+    await addWish(page, "Mug na cute", "www.example.com/mug", "Kahit anong kulay");
+    const myList = page.getByRole("list", { name: "Wishlist mo" });
+    const link = myList.getByRole("link", { name: /example\.com/ });
+    await expect(link).toHaveAttribute("href", "https://www.example.com/mug");
+    await expect(link).toHaveAttribute("target", "_blank");
+    await expect(link).toHaveAttribute("rel", "noopener noreferrer nofollow");
+    await expect(myList.getByText("Kahit anong kulay")).toBeVisible();
+
+    await page.getByRole("button", { name: "Edit Mug na cute" }).click();
+    await page.getByLabel("Ano ang gusto mo?").fill("Mug na cute (blue)");
+    await page.getByRole("button", { name: "Save" }).click();
+    await expect(myList.getByText("Mug na cute (blue)", { exact: true })).toBeVisible();
+    await addWish(page, "Plant (small lang)");
+    await shot(page, "joy-wishlist");
+
+    // A bad link is rejected with a clear message.
+    await page.getByRole("button", { name: "Add an item" }).click();
+    await page.getByLabel("Ano ang gusto mo?").fill("Sketchy");
+    await page.getByLabel("Link (optional)").fill("javascript:alert(1)");
+    await page.getByRole("button", { name: "Add to wishlist" }).click();
+    await expect(page.getByText("Hindi valid ang link. Dapat http o https.")).toBeVisible();
+    await page.getByRole("button", { name: "Cancel" }).click();
+
+    await joyM.page.goto(`/g/${slug}/me`);
+    await addWish(joyM.page, "Notebook");
+    await ben.page.goto(`/g/${slug}/me`);
+    await addWish(ben.page, "Socks");
+  });
+
   const pairList = () => organizer.page.getByRole("list", { name: "Exclusion pairs" });
   const warning = () => organizer.page.locator("main").getByRole("alert");
 
@@ -349,7 +403,19 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
       await expect(page.getByText("Ang monito mo ay…")).toBeVisible();
       const slips = page.locator('section[aria-label="Your monito"] p.font-hand');
       await expect(slips).toHaveCount(1);
-      seen.set(label, (await slips.textContent())!.trim());
+      const receiverName = (await slips.textContent())!.trim();
+      seen.set(label, receiverName);
+
+      // The receiver's wishlist (latest version) shows under the slip.
+      const theirWishes = wishesByName[receiverName];
+      await expect(page.getByText(`Wishlist ni ${receiverName}`)).toBeVisible();
+      if (theirWishes.length === 0) {
+        await expect(page.getByText(`Wala pang wishlist si ${receiverName}.`, { exact: false })).toBeVisible();
+      } else {
+        const list = page.getByRole("list", { name: "Wishlist ng monito mo" });
+        await expect(list.getByRole("listitem")).toHaveCount(theirWishes.length);
+        for (const title of theirWishes) await expect(list.getByText(title, { exact: true })).toBeVisible();
+      }
       if (label === "Joy") await shot(page, shotName);
     }
 

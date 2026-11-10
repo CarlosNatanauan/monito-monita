@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils";
 import { getMemberSession, getOwnToken, isValidSlug, personalLinkPath } from "@/server/auth";
 import { getOwnReceiver } from "@/server/draw-service";
 import { getGroupSummary } from "@/server/members";
+import { getReceiverWishlist, listWishlist } from "@/server/wishlists";
+import { WishlistView } from "@/components/wish-item";
+import { WishlistEditor } from "./wishlist-editor";
 import { GroupFacts, PageFallback, RemovedNotice } from "../group-facts";
 
 export const metadata: Metadata = {
@@ -73,7 +76,11 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   const welcome = query.welcome === "1";
   const drawn = group.status !== "OPEN";
   // Only this member's own receiver, looked up by the id from their cookie.
-  const receiver = drawn ? await getOwnReceiver(member.id) : null;
+  const [receiver, receiverWishlist, myWishlist] = await Promise.all([
+    drawn ? getOwnReceiver(member.id) : null,
+    drawn ? getReceiverWishlist(member.id) : [],
+    listWishlist(member.id),
+  ]);
 
   return (
     <>
@@ -87,7 +94,20 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         <section className="flex flex-col items-center gap-3" aria-label="Your monito">
           <p className="text-title font-extrabold">Ang monito mo ay…</p>
           {receiver ? (
-            <Slip>{receiver.displayName}</Slip>
+            <>
+              <Slip>{receiver.displayName}</Slip>
+              <Card className="mt-3 w-full">
+                <CardHeader>
+                  <CardTitle>Wishlist ni {receiver.displayName}</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <WishlistView
+                    items={receiverWishlist}
+                    emptyText={`Wala pang wishlist si ${receiver.displayName}. Balikan mo mamaya!`}
+                  />
+                </CardContent>
+              </Card>
+            </>
           ) : (
             <p className="text-muted-foreground">Inaayos pa ng organizer ang bunutan. Balik ka in a bit.</p>
           )}
@@ -115,6 +135,16 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         </CardHeader>
         <CardContent>
           <GroupFacts partyDate={group.partyDate} budget={group.budget} />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Wishlist mo</CardTitle>
+          <p className="text-caption text-muted-foreground">Makikita ito ng nakabunot sa&apos;yo, at wala nang iba.</p>
+        </CardHeader>
+        <CardContent>
+          <WishlistEditor slug={slug} items={myWishlist} />
         </CardContent>
       </Card>
 
