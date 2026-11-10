@@ -35,7 +35,7 @@ export function MemberList({ slug, members, canRemove }: { slug: string; members
           {error}
         </p>
       )}
-      <ul className="flex flex-col divide-y divide-border">
+      <ul className="flex flex-col divide-y divide-border" aria-label="Members">
         {members.map((member) => (
           <li key={member.id} className="flex flex-col gap-2 py-3 first:pt-0 last:pb-0">
             <div className="flex items-center justify-between gap-3">

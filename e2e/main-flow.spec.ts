@@ -205,7 +205,7 @@ test("main flow: create, join, personal links, organizer, remove", async ({ brow
     await expect(page).toHaveURL(new RegExp(`/g/${slug}/admin$`));
     await expect(page.getByRole("heading", { name: groupName })).toBeVisible();
     for (const name of ["Joy", "Joy M", "Marco"]) {
-      await expect(page.getByText(name, { exact: true })).toBeVisible();
+      await expect(page.getByRole("list", { name: "Members" }).getByText(name, { exact: true })).toBeVisible();
     }
     await expect(page.getByText("3 na ang sumali").first()).toBeVisible();
     await expect(page.getByText(/^Joined [A-Z][a-z]{2} \d{1,2}, \d{1,2}:\d{2} [AP]M$/)).toHaveCount(3);
@@ -230,7 +230,7 @@ test("main flow: create, join, personal links, organizer, remove", async ({ brow
     await expect(page.getByText("Tanggalin si Marco sa group?")).toBeVisible();
     await shot(page, "remove-confirm");
     await page.getByRole("button", { name: "Oo, tanggalin" }).click();
-    await expect(page.getByText("Marco", { exact: true })).toHaveCount(0);
+    await expect(page.getByRole("list", { name: "Members" }).getByText("Marco", { exact: true })).toHaveCount(0);
     await expect(page.getByText("3 na ang sumali").first()).toBeVisible();
     await shot(page, "admin-after-remove");
 
