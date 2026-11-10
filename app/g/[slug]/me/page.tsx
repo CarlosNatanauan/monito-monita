@@ -11,6 +11,9 @@ import { cn } from "@/lib/utils";
 import { getMemberSession, getOwnToken, isValidSlug, personalLinkPath } from "@/server/auth";
 import { getOwnReceiver } from "@/server/draw-service";
 import { getGroupSummary } from "@/server/members";
+import { getThemeWeeks } from "@/server/groups";
+import { describeThemeStatus, getThemeStatus } from "@/lib/theme-status";
+import { todayIn } from "@/lib/theme-weeks";
 import { getReceiverWishlist, listWishlist } from "@/server/wishlists";
 import { WishlistView } from "@/components/wish-item";
 import { WishlistEditor } from "./wishlist-editor";
@@ -76,11 +79,17 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   const welcome = query.welcome === "1";
   const drawn = group.status !== "OPEN";
   // Only this member's own receiver, looked up by the id from their cookie.
-  const [receiver, receiverWishlist, myWishlist] = await Promise.all([
+  const [receiver, receiverWishlist, myWishlist, themeWeeks] = await Promise.all([
     drawn ? getOwnReceiver(member.id) : null,
     drawn ? getReceiverWishlist(member.id) : [],
     listWishlist(member.id),
+    getThemeWeeks(group.id),
   ]);
+  // "Today" in the group's timezone (Asia/Manila), never the server's (UTC on Vercel).
+  const theme = describeThemeStatus(
+    getThemeStatus(themeWeeks, group.partyDate, todayIn(group.timezone)),
+    group.budget,
+  );
 
   return (
     <>
@@ -137,6 +146,18 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
           <GroupFacts partyDate={group.partyDate} budget={group.budget} />
         </CardContent>
       </Card>
+
+      <section aria-label="Theme this week">
+        <Card>
+          <CardHeader>
+            <CardTitle>{theme.headline}</CardTitle>
+            <p className="text-caption text-muted-foreground">{theme.english}</p>
+          </CardHeader>
+          <CardContent>
+            <p>{theme.detail}</p>
+          </CardContent>
+        </Card>
+      </section>
 
       <Card>
         <CardHeader>

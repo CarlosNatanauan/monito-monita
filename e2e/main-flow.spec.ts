@@ -8,6 +8,7 @@
  */
 import { mkdirSync, rmSync } from "node:fs";
 import { expect, test, type Browser, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
+import { formatPartyDate } from "../lib/format";
 import { addDays, todayIn } from "../lib/theme-weeks";
 import { closeDb } from "../server/db";
 import { deleteGroups, E2E_PREFIX } from "./db-cleanup";
@@ -329,6 +330,15 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await addWish(joyM.page, "Notebook");
     await ben.page.goto(`/g/${slug}/me`);
     await addWish(ben.page, "Socks");
+  });
+
+  await test.step("theme weeks on /me (before the first theme)", async () => {
+    // Party in 40 days with 4 weekly themes → the first starts in 12 days.
+    const firstStart = addDays(partyDate, -28);
+    const card = joy.page.getByRole("region", { name: "Theme this week" });
+    await expect(card.getByText("Unang theme: Something soft")).toBeVisible();
+    await expect(card.getByText(`Magsisimula sa 12 araw, ${formatPartyDate(firstStart)}`)).toBeVisible();
+    await expect(card.getByText("First theme: Something soft · Budget ₱500")).toBeVisible();
   });
 
   const pairList = () => organizer.page.getByRole("list", { name: "Exclusion pairs" });

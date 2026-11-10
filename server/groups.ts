@@ -3,6 +3,7 @@
  */
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
+import { asc, eq } from "drizzle-orm";
 import { addDays, DEFAULT_TIMEZONE, isIsoDate, MAX_THEMES, themeStartDates, todayIn } from "@/lib/theme-weeks";
 import { createToken, hashToken } from "./auth";
 import { db } from "./db";
@@ -149,4 +150,13 @@ export async function createGroup(input: CreateGroupInput): Promise<CreatedGroup
       throw error;
     }
   }
+}
+
+/** A group's theme weeks, in order. */
+export async function getThemeWeeks(groupId: string): Promise<{ title: string; startDate: string }[]> {
+  return db()
+    .select({ title: themeWeeks.title, startDate: themeWeeks.startDate })
+    .from(themeWeeks)
+    .where(eq(themeWeeks.groupId, groupId))
+    .orderBy(asc(themeWeeks.position));
 }
