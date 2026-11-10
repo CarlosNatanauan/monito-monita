@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX "members_group_active_name_unique" ON "members" USING btree ("group_id",lower("display_name")) WHERE "members"."removed_at" is null;

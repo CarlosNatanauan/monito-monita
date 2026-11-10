@@ -170,6 +170,17 @@ export async function getCurrentOrganizer(slug: string): Promise<CurrentOrganize
   return token ? findOrganizerByToken(slug, token) : null;
 }
 
+/**
+ * The raw token in the viewer's own cookie, used to show them their
+ * personal link again (the database only has the hash). Verify the
+ * viewer first with getCurrentMember / getCurrentOrganizer.
+ */
+export async function getOwnToken(role: Role, slug: string): Promise<string | null> {
+  if (!isValidSlug(slug)) return null;
+  const token = (await cookies()).get(authCookieName(role, slug))?.value;
+  return isWellFormedToken(token) ? token : null;
+}
+
 /** Stores a member or organizer token in its group cookie. */
 export async function setAuthCookie(role: Role, slug: string, token: string): Promise<void> {
   if (!isWellFormedToken(token)) throw new Error("Invalid token");

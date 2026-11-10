@@ -23,6 +23,7 @@ import {
   text,
   timestamp,
   unique,
+  uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
 
@@ -69,6 +70,11 @@ export const members = pgTable(
     // Target for composite FKs that keep pairs inside one group.
     unique("members_group_id_id_unique").on(t.groupId, t.id),
     unique("members_group_codename_unique").on(t.groupId, t.codename),
+    // No two active members with the same name (case-insensitive).
+    // Removed members free up their name.
+    uniqueIndex("members_group_active_name_unique")
+      .on(t.groupId, sql`lower(${t.displayName})`)
+      .where(sql`${t.removedAt} is null`),
   ],
 );
 
