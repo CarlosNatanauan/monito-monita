@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { joinedCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { getMemberSession, getOwnToken, isValidSlug, personalLinkPath } from "@/server/auth";
+import { getOwnReceiver } from "@/server/draw-service";
 import { getGroupSummary } from "@/server/members";
 import { GroupFacts, PageFallback, RemovedNotice } from "../group-facts";
 
@@ -70,6 +71,9 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
 
   const { member } = session;
   const welcome = query.welcome === "1";
+  const drawn = group.status !== "OPEN";
+  // Only this member's own receiver, looked up by the id from their cookie.
+  const receiver = drawn ? await getOwnReceiver(member.id) : null;
 
   return (
     <>
@@ -78,10 +82,25 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         <h1 className="text-heading">Hi, {member.displayName}!</h1>
       </header>
 
-      <section className="flex flex-col items-center gap-3" aria-label="Your codename">
-        <p className="text-caption text-muted-foreground">Ang codename mo:</p>
-        <Slip>{member.codename}</Slip>
-      </section>
+      {drawn ? (
+        // Temporary, plain result. The slip unfold replaces this in Week 2.
+        <section className="flex flex-col items-center gap-3" aria-label="Your monito">
+          <p className="text-title font-extrabold">Ang monito mo ay…</p>
+          {receiver ? (
+            <Slip>{receiver.displayName}</Slip>
+          ) : (
+            <p className="text-muted-foreground">Inaayos pa ng organizer ang bunutan. Balik ka in a bit.</p>
+          )}
+          <p className="text-caption text-muted-foreground">
+            Codename mo: <span className="font-hand text-body text-foreground">{member.codename}</span>
+          </p>
+        </section>
+      ) : (
+        <section className="flex flex-col items-center gap-3" aria-label="Your codename">
+          <p className="text-caption text-muted-foreground">Ang codename mo:</p>
+          <Slip>{member.codename}</Slip>
+        </section>
+      )}
 
       <Card>
         <CardHeader>
@@ -91,7 +110,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
           <p className="text-caption text-muted-foreground">
             {group.status === "OPEN"
               ? `Hintayin si organizer na mag-draw ng names. ${joinedCount(group.memberCount)}.`
-              : "Malapit mo nang ma-open ang slip mo. Balik ka lang dito."}
+              : "Sikreto lang 'to. Simulan mo nang mag-isip ng regalo!"}
           </p>
         </CardHeader>
         <CardContent>
