@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { joinAction, type JoinState } from "./actions";
@@ -15,7 +15,10 @@ const initialState: JoinState = { status: "idle" };
  */
 export function JoinForm({ slug }: { slug: string }) {
   const [state, formAction, pending] = useActionState(joinAction, initialState);
-  const error = state.status === "error" ? state : null;
+  // The error hides as soon as the name is edited, until the next submit.
+  const [editedAfter, setEditedAfter] = useState<JoinState | null>(null);
+  const error = state.status === "error" && editedAfter !== state ? state : null;
+  const submittedName = state.status === "error" ? state.displayName : "";
 
   return (
     <form action={formAction} className="flex flex-col gap-4" noValidate>
@@ -27,7 +30,10 @@ export function JoinForm({ slug }: { slug: string }) {
         <Input
           id="displayName"
           name="displayName"
-          defaultValue={error?.displayName ?? ""}
+          defaultValue={submittedName}
+          onChange={() => {
+            if (editedAfter !== state) setEditedAfter(state);
+          }}
           placeholder="Joy"
           maxLength={40}
           autoComplete="given-name"

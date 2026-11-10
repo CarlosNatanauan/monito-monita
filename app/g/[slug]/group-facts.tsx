@@ -31,6 +31,18 @@ export function GroupFacts({
   );
 }
 
+/** Shown on the device of a member the organizer removed. No join button. */
+export function RemovedNotice() {
+  return (
+    <div className="rounded-2xl bg-card p-5 shadow-[0_1px_2px_rgb(31_27_77/0.06),0_4px_16px_rgb(31_27_77/0.06)]">
+      <p className="font-heading text-title font-extrabold">
+        Tinanggal ka ng organizer sa group na &apos;to.
+      </p>
+      <p className="mt-2 text-muted-foreground">Kung mali ito, kausapin ang organizer.</p>
+    </div>
+  );
+}
+
 export function PageFallback() {
   return <p className="text-muted-foreground">Sandali lang…</p>;
 }

@@ -13,7 +13,7 @@
  * cookies or the database are at the bottom.
  */
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { and, eq, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { db } from "./db";
 import { groups, members } from "./db/schema";
@@ -168,6 +168,33 @@ export async function getCurrentOrganizer(slug: string): Promise<CurrentOrganize
   if (!isValidSlug(slug)) return null;
   const token = (await cookies()).get(authCookieName("organizer", slug))?.value;
   return token ? findOrganizerByToken(slug, token) : null;
+}
+
+/** True if `token` belonged to a member of group `slug` who was removed. */
+export async function isRemovedMemberToken(slug: string, token: string): Promise<boolean> {
+  if (!isValidSlug(slug) || !isWellFormedToken(token)) return false;
+  const [row] = await db()
+    .select({ tokenHash: members.tokenHash })
+    .from(members)
+    .innerJoin(groups, eq(groups.id, members.groupId))
+    .where(and(eq(groups.slug, slug), eq(members.tokenHash, hashToken(token)), isNotNull(members.removedAt)))
+    .limit(1);
+  return row !== undefined && tokenMatchesHash(token, row.tokenHash);
+}
+
+export type MemberSession =
+  | { kind: "member"; member: CurrentMember }
+  | { kind: "removed" } // this device's member was removed by the organizer
+  | { kind: "none" };
+
+/** Who this device is in group `slug`: an active member, a removed one, or nobody. */
+export async function getMemberSession(slug: string): Promise<MemberSession> {
+  if (!isValidSlug(slug)) return { kind: "none" };
+  const token = (await cookies()).get(authCookieName("member", slug))?.value;
+  if (!token) return { kind: "none" };
+  const member = await findMemberByToken(slug, token);
+  if (member) return { kind: "member", member };
+  return (await isRemovedMemberToken(slug, token)) ? { kind: "removed" } : { kind: "none" };
 }
 
 /**

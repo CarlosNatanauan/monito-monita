@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getCurrentMember, isValidSlug } from "@/server/auth";
+import { getMemberSession, isValidSlug } from "@/server/auth";
 import { getGroupSummary, MAX_MEMBERS } from "@/server/members";
-import { GroupFacts, PageFallback } from "./group-facts";
+import { GroupFacts, PageFallback, RemovedNotice } from "./group-facts";
 import { JoinForm } from "./join-form";
 
 export const metadata: Metadata = {
@@ -25,10 +25,10 @@ async function JoinContent({ params }: Pick<PageProps<"/g/[slug]">, "params">) {
   const { slug } = await params;
   if (!isValidSlug(slug)) notFound();
 
-  const [group, member] = await Promise.all([getGroupSummary(slug), getCurrentMember(slug)]);
+  const [group, session] = await Promise.all([getGroupSummary(slug), getMemberSession(slug)]);
   if (!group) notFound();
   // Already joined on this device: go straight to their page.
-  if (member) redirect(`/g/${slug}/me`);
+  if (session.kind === "member") redirect(`/g/${slug}/me`);
 
   const isOpen = group.status === "OPEN";
   const isFull = group.memberCount >= MAX_MEMBERS;
@@ -41,7 +41,9 @@ async function JoinContent({ params }: Pick<PageProps<"/g/[slug]">, "params">) {
         <GroupFacts partyDate={group.partyDate} budget={group.budget} memberCount={group.memberCount} />
       </header>
 
-      {!isOpen ? (
+      {session.kind === "removed" ? (
+        <RemovedNotice />
+      ) : !isOpen ? (
         <Card>
           <CardHeader>
             <CardTitle>Sarado na ang sali.</CardTitle>

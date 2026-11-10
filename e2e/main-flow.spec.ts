@@ -111,8 +111,12 @@ test("main flow: create, join, personal links, organizer, remove", async ({ brow
     await expect(page.getByText("Pakipili ang party date.")).toBeVisible();
     await shot(page, "new-empty-errors");
 
-    // What you typed survives a failed submit (regression: WebKit cleared it).
+    // Editing a field clears its error right away; others stay.
     await page.getByLabel("Group name").fill(groupName);
+    await expect(page.getByText("Pakilagay ang pangalan ng group.")).toHaveCount(0);
+    await expect(page.getByText("Pakilagay ang budget (₱1 pataas).")).toBeVisible();
+
+    // What you typed survives a failed submit (regression: WebKit cleared it).
     await page.getByRole("button", { name: "Create group" }).click();
     await expect(page.getByText("Pakilagay ang pangalan ng group.")).toHaveCount(0);
     await expect(page.getByText("Pakilagay ang budget (₱1 pataas).")).toBeVisible();
@@ -172,6 +176,8 @@ test("main flow: create, join, personal links, organizer, remove", async ({ brow
     await shot(page, "duplicate-name");
 
     await page.getByLabel("Pangalan mo").fill("Joy M");
+    // The warning clears as soon as the name is edited.
+    await expect(page.locator("main").getByRole("alert")).toHaveCount(0);
     await page.getByRole("button", { name: "Join the group" }).click();
     await expect(page.getByRole("heading", { name: "Hi, Joy M!" })).toBeVisible();
   });
@@ -228,9 +234,15 @@ test("main flow: create, join, personal links, organizer, remove", async ({ brow
     await expect(page.getByText("3 na ang sumali").first()).toBeVisible();
     await shot(page, "admin-after-remove");
 
-    // Marco's existing cookie no longer works…
+    // On Marco's phone: told he was removed, with no way to rejoin from there…
     await marco.page.reload();
-    await expect(marco.page.getByText("Hindi ka pa namin kilala sa device na 'to.")).toBeVisible();
+    await expect(marco.page.getByText("Tinanggal ka ng organizer sa group na 'to.")).toBeVisible();
+    await expect(marco.page.getByText("Kung mali ito, kausapin ang organizer.")).toBeVisible();
+    await expect(marco.page.getByRole("link", { name: "Join the group" })).toHaveCount(0);
+    await shot(marco.page, "marco-removed-notice");
+    await marco.page.goto(shareUrl);
+    await expect(marco.page.getByText("Tinanggal ka ng organizer sa group na 'to.")).toBeVisible();
+    await expect(marco.page.getByLabel("Pangalan mo")).toHaveCount(0);
     // …and neither does his personal link on yet another phone.
     const marco3 = await newPerson(browser, testInfo, "Marco (third phone)");
     await marco3.page.goto(marcoLink);

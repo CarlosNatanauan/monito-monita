@@ -25,6 +25,7 @@ interface ThemeDraft {
 }
 
 const noopSubscribe = () => () => {};
+const NO_KEYS: ReadonlySet<string> = new Set();
 
 /** Today in Manila, computed in the browser (the page shell is static). */
 function useToday(): string | undefined {
@@ -68,15 +69,39 @@ function CreateGroupForm({
   // React (and its validation display), so wait until it's ready.
   const hydrated = useHydrated();
 
-  const errors = state.status === "error" ? state.fieldErrors : {};
+  // A field error hides as soon as that field is edited, until the next
+  // submit. Cleared keys are tied to the result that produced them.
+  const [cleared, setCleared] = useState<{ result: CreateGroupState; keys: ReadonlySet<string> }>({
+    result: state,
+    keys: new Set(),
+  });
+  const clearedKeys = cleared.result === state ? cleared.keys : NO_KEYS;
+  const allErrors = state.status === "error" ? state.fieldErrors : {};
+  const errors = Object.fromEntries(Object.entries(allErrors).filter(([key]) => !clearedKeys.has(key)));
+  const clearErrors = (match: (key: string) => boolean) => {
+    const toClear = Object.keys(allErrors).filter((key) => match(key) && !clearedKeys.has(key));
+    if (toClear.length > 0) setCleared({ result: state, keys: new Set([...clearedKeys, ...toClear]) });
+  };
+  // Keep the summary banner while field errors remain (or for non-field errors).
+  const showBanner =
+    state.status === "error" &&
+    Boolean(state.message) &&
+    (Object.keys(allErrors).length === 0 || Object.keys(errors).length > 0);
   const startDates = isIsoDate(partyDate) ? themeStartDates(partyDate, themes.length) : [];
 
-  const updateTheme = (key: number, title: string) =>
+  const updateTheme = (key: number, index: number, title: string) => {
     setThemes((list) => list.map((t) => (t.key === key ? { ...t, title } : t)));
-  const removeTheme = (key: number) => setThemes((list) => list.filter((t) => t.key !== key));
+    clearErrors((k) => k === `themes.${index}` || k === "themes");
+  };
+  const removeTheme = (key: number) => {
+    setThemes((list) => list.filter((t) => t.key !== key));
+    // Positions shift, so per-theme errors no longer line up.
+    clearErrors((k) => k.startsWith("themes"));
+  };
   const addTheme = () => {
     setThemes((list) => [...list, { key: nextKey, title: "" }]);
     setNextKey((k) => k + 1);
+    clearErrors((k) => k === "themes");
   };
 
   return (
@@ -87,7 +112,7 @@ function CreateGroupForm({
       </header>
 
       <form onSubmit={submitWithoutReset(formAction)} className="flex flex-col gap-6" noValidate>
-        {state.status === "error" && state.message && (
+        {showBanner && state.status === "error" && (
           <p role="alert" className="rounded-xl bg-destructive/8 px-4 py-3 text-caption font-semibold text-destructive">
             {state.message}
           </p>
@@ -99,7 +124,10 @@ function CreateGroupForm({
               {...props}
               name="name"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                clearErrors((k) => k === "name");
+              }}
               placeholder="Barkada Christmas Party"
               maxLength={60}
               autoComplete="off"
@@ -118,7 +146,10 @@ function CreateGroupForm({
                 {...props}
                 name="budget"
                 value={budget}
-                onChange={(e) => setBudget(e.target.value.replace(/[^\d]/g, ""))}
+                onChange={(e) => {
+                  setBudget(e.target.value.replace(/[^\d]/g, ""));
+                  clearErrors((k) => k === "budget");
+                }}
                 inputMode="numeric"
                 placeholder="500"
                 className="pl-9"
@@ -136,7 +167,10 @@ function CreateGroupForm({
               name="partyDate"
               value={partyDate}
               min={today}
-              onChange={(e) => setPartyDate(e.target.value)}
+              onChange={(e) => {
+                setPartyDate(e.target.value);
+                clearErrors((k) => k === "partyDate");
+              }}
               required
             />
           )}
@@ -158,7 +192,7 @@ function CreateGroupForm({
                     <Input
                       name="theme"
                       value={theme.title}
-                      onChange={(e) => updateTheme(theme.key, e.target.value)}
+                      onChange={(e) => updateTheme(theme.key, index, e.target.value)}
                       aria-label={`Theme ${index + 1}`}
                       aria-invalid={error ? true : undefined}
                       aria-describedby={error ? errorId : undefined}

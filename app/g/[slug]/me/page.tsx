@@ -8,9 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { joinedCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { getCurrentMember, getOwnToken, isValidSlug, personalLinkPath } from "@/server/auth";
+import { getMemberSession, getOwnToken, isValidSlug, personalLinkPath } from "@/server/auth";
 import { getGroupSummary } from "@/server/members";
-import { GroupFacts, PageFallback } from "../group-facts";
+import { GroupFacts, PageFallback, RemovedNotice } from "../group-facts";
 
 export const metadata: Metadata = {
   title: "My monito · Monito Monita",
@@ -30,15 +30,24 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   const { slug } = await params;
   if (!isValidSlug(slug)) notFound();
 
-  const [group, member, token, query] = await Promise.all([
+  const [group, session, token, query] = await Promise.all([
     getGroupSummary(slug),
-    getCurrentMember(slug),
+    getMemberSession(slug),
     getOwnToken("member", slug),
     searchParams,
   ]);
   if (!group) notFound();
 
-  if (!member) {
+  if (session.kind === "removed") {
+    return (
+      <>
+        <h1 className="text-heading">{group.name}</h1>
+        <RemovedNotice />
+      </>
+    );
+  }
+
+  if (session.kind === "none") {
     return (
       <>
         <h1 className="text-heading">{group.name}</h1>
@@ -59,6 +68,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
     );
   }
 
+  const { member } = session;
   const welcome = query.welcome === "1";
 
   return (
