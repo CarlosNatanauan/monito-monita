@@ -4,6 +4,7 @@ import { Plus, X } from "lucide-react";
 import { useActionState, useId, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { submitWithoutReset } from "@/lib/forms";
 import {
   formatShortDate,
   isIsoDate,
@@ -28,6 +29,11 @@ const noopSubscribe = () => () => {};
 /** Today in Manila, computed in the browser (the page shell is static). */
 function useToday(): string | undefined {
   return useSyncExternalStore(noopSubscribe, () => todayIn(), () => undefined);
+}
+
+/** False in the server-rendered HTML, true once React has hydrated. */
+function useHydrated(): boolean {
+  return useSyncExternalStore(noopSubscribe, () => true, () => false);
 }
 
 export function CreateGroupFlow() {
@@ -58,6 +64,9 @@ function CreateGroupForm({
   );
   const [nextKey, setNextKey] = useState<number>(SAMPLE_THEMES.length);
   const today = useToday();
+  // These fields are controlled; submitting before hydration would bypass
+  // React (and its validation display), so wait until it's ready.
+  const hydrated = useHydrated();
 
   const errors = state.status === "error" ? state.fieldErrors : {};
   const startDates = isIsoDate(partyDate) ? themeStartDates(partyDate, themes.length) : [];
@@ -77,7 +86,7 @@ function CreateGroupForm({
         <p className="text-muted-foreground">Ilang details lang, tapos share mo na sa GC.</p>
       </header>
 
-      <form action={formAction} className="flex flex-col gap-6" noValidate>
+      <form onSubmit={submitWithoutReset(formAction)} className="flex flex-col gap-6" noValidate>
         {state.status === "error" && state.message && (
           <p role="alert" className="rounded-xl bg-destructive/8 px-4 py-3 text-caption font-semibold text-destructive">
             {state.message}
@@ -191,7 +200,7 @@ function CreateGroupForm({
           )}
         </fieldset>
 
-        <Button type="submit" size="lg" className="w-full" disabled={pending}>
+        <Button type="submit" size="lg" className="w-full" disabled={pending || !hydrated}>
           {pending ? "Ginagawa na…" : "Create group"}
         </Button>
       </form>

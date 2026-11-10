@@ -1,15 +1,20 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { joinAction, type JoinState } from "./actions";
 
 const initialState: JoinState = { status: "idle" };
 
+/**
+ * Uncontrolled on purpose: `<form action>` works even before hydration
+ * (slow phones opening links from Messenger), and the action returns the
+ * submitted name, which becomes the default value so React's automatic
+ * form reset restores it instead of clearing it.
+ */
 export function JoinForm({ slug }: { slug: string }) {
   const [state, formAction, pending] = useActionState(joinAction, initialState);
-  const [name, setName] = useState("");
   const error = state.status === "error" ? state : null;
 
   return (
@@ -22,8 +27,7 @@ export function JoinForm({ slug }: { slug: string }) {
         <Input
           id="displayName"
           name="displayName"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
+          defaultValue={error?.displayName ?? ""}
           placeholder="Joy"
           maxLength={40}
           autoComplete="given-name"
