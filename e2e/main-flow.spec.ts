@@ -6,11 +6,12 @@
  * phones. Runs against `next dev` and the DEV database; test groups are
  * deleted afterwards.
  */
-import { mkdirSync } from "node:fs";
+import { mkdirSync, rmSync } from "node:fs";
 import { expect, test, type Browser, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
 import { addDays, todayIn } from "../lib/theme-weeks";
 import { closeDb } from "../server/db";
 import { deleteGroups, E2E_PREFIX } from "./db-cleanup";
+import { capturePage, expectJoinPageClean, expectMemberPageClean, expectOrganizerPageClean, getTruth } from "./leak";
 
 const createdSlugs: string[] = [];
 
@@ -59,6 +60,8 @@ async function newPerson(browser: Browser, testInfo: TestInfo, label: string): P
 
 function screenshotter(testInfo: TestInfo) {
   const dir = `e2e/screenshots/${testInfo.project.name}`;
+  // Start fresh so old runs with different step numbers do not linger.
+  rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   let n = 0;
   return async (page: Page, name: string) => {
@@ -82,7 +85,7 @@ async function join(page: Page, shareUrl: string, name: string) {
 
 // --- The flow ----------------------------------------------------------------
 
-test("main flow: create, join, personal links, organizer, remove", async ({ browser }, testInfo) => {
+test("main flow: create, join, organizer, exclusions, draw, results, leaks", async ({ browser }, testInfo) => {
   const shot = screenshotter(testInfo);
   const groupName = `${E2E_PREFIX}Barkada (${testInfo.project.name})`;
   const partyDate = addDays(todayIn("Asia/Manila"), 40);
@@ -264,6 +267,157 @@ test("main flow: create, join, personal links, organizer, remove", async ({ brow
     await page.goto("/g/zzzzzzzzzzzz");
     await expect(page.getByText("This page could not be found.")).toBeVisible();
     await shot(page, "unknown-group");
+  });
+
+  // --- Exclusions, draw, results, leaks, redraw ------------------------------
+
+  const ben = await newPerson(browser, testInfo, "Ben");
+  await test.step("Ben joins (4 active members: Joy, Joy M, Tita Org, Ben)", async () => {
+    await join(ben.page, shareUrl, "Ben");
+    await expect(ben.page.getByRole("heading", { name: "Hi, Ben!" })).toBeVisible();
+  });
+
+  const pairList = () => organizer.page.getByRole("list", { name: "Exclusion pairs" });
+  const warning = () => organizer.page.locator("main").getByRole("alert");
+
+  async function addPair(first: string, second: string) {
+    const { page } = organizer;
+    await page.getByLabel("Unang tao").selectOption({ label: first });
+    await page.getByLabel("Pangalawang tao").selectOption({ label: second });
+    await page.getByRole("button", { name: "Add pair" }).click();
+  }
+
+  await test.step("add an exclusion pair (Joy & Joy M)", async () => {
+    const { page } = organizer;
+    await page.goto(`/g/${slug}/admin`);
+    await expect(page.getByText("Bawal magkabunot")).toBeVisible();
+    await expect(page.getByText("Wala pang bawal.")).toBeVisible();
+    await addPair("Joy", "Joy M");
+    await expect(pairList().getByRole("listitem")).toHaveCount(1);
+    await expect(pairList()).toContainText(/Joy & Joy M|Joy M & Joy/);
+    await expect(warning()).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Draw names" })).toBeEnabled();
+    await shot(page, "exclusion-added");
+  });
+
+  await test.step("an impossible setup is flagged right away", async () => {
+    const { page } = organizer;
+    await addPair("Joy", "Tita Org");
+    await expect(pairList().getByRole("listitem")).toHaveCount(2);
+    await expect(warning()).toHaveText("Masyadong maraming bawal kay Joy. Tanggalin ang isa sa mga pair niya.");
+    await expect(page.getByRole("button", { name: "Draw names" })).toBeDisabled();
+    await expect(page.getByText("Ayusin muna ang mga bawal sa itaas.")).toBeVisible();
+    await shot(page, "exclusion-impossible");
+
+    await page.getByRole("button", { name: /Remove pair (Joy and Tita Org|Tita Org and Joy)/ }).click();
+    await expect(pairList().getByRole("listitem")).toHaveCount(1);
+    await expect(warning()).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Draw names" })).toBeEnabled();
+  });
+
+  await test.step("draw names (confirm; a double click still draws once)", async () => {
+    const { page } = organizer;
+    await page.getByRole("button", { name: "Draw names" }).click();
+    await expect(page.getByText("Pag na-draw na, sarado na ang sali. Sure na?")).toBeVisible();
+    await shot(page, "draw-confirm");
+    await page.getByRole("button", { name: "Oo, i-draw na" }).dblclick();
+    await expect(page.getByText("Names drawn")).toBeVisible();
+    await expect(page.getByText("4 na ang may monito.", { exact: false })).toBeVisible();
+    await expect(page.getByText("Na-draw na ang names")).toBeVisible();
+    // Exclusions and removal are locked now.
+    await expect(page.getByRole("button", { name: "Add pair" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(0);
+    await shot(page, "names-drawn");
+
+    const truth = await getTruth(slug);
+    expect(truth.pairs).toHaveLength(4);
+  });
+
+  const everyone = [
+    { label: "Joy", person: joy },
+    { label: "Joy M", person: joyM },
+    { label: "Tita Org", person: organizer },
+    { label: "Ben", person: ben },
+  ];
+
+  /** Opens each member's /me and checks one receiver, a valid loop, and exclusions. */
+  async function checkResults(shotName: string) {
+    const seen = new Map<string, string>();
+    for (const { label, person } of everyone) {
+      const { page } = person;
+      await page.goto(`/g/${slug}/me`);
+      await expect(page.getByText("Ang monito mo ay…")).toBeVisible();
+      const slips = page.locator('section[aria-label="Your monito"] p.font-hand');
+      await expect(slips).toHaveCount(1);
+      seen.set(label, (await slips.textContent())!.trim());
+      if (label === "Joy") await shot(page, shotName);
+    }
+
+    // Matches the database, and forms one valid loop.
+    const truth = await getTruth(slug);
+    const nameOf = new Map(truth.members.map((m) => [m.id, m.name]));
+    const expected = new Map(truth.pairs.map((p) => [nameOf.get(p.giverId)!, nameOf.get(p.receiverId)!]));
+    expect(seen).toEqual(expected);
+    expect(new Set(seen.values()).size).toBe(4);
+    for (const [giver, receiver] of seen) expect(receiver).not.toBe(giver);
+    let current = "Joy";
+    for (let i = 0; i < 4; i++) current = seen.get(current)!;
+    expect(current, "one loop through all 4").toBe("Joy");
+    // The excluded pair didn't draw each other.
+    expect(seen.get("Joy")).not.toBe("Joy M");
+    expect(seen.get("Joy M")).not.toBe("Joy");
+    return seen;
+  }
+
+  let firstDraw = new Map<string, string>();
+  await test.step("each member sees exactly one receiver; exclusions held", async () => {
+    firstDraw = await checkResults("joy-sees-monito");
+  });
+
+  await test.step("joining is closed after the draw", async () => {
+    const late = await newPerson(browser, testInfo, "Late Larry");
+    await late.page.goto(shareUrl);
+    await expect(late.page.getByText("Sarado na ang sali.")).toBeVisible();
+    await expect(late.page.getByLabel("Pangalan mo")).toHaveCount(0);
+    await shot(late.page, "join-closed");
+    await late.context.close();
+  });
+
+  async function leakCheck() {
+    const truth = await getTruth(slug);
+    expectOrganizerPageClean(await capturePage(organizer.page, `/g/${slug}/admin`), truth);
+    const stranger = await newPerson(browser, testInfo, "Stranger");
+    expectJoinPageClean(await capturePage(stranger.page, shareUrl), truth);
+    await stranger.context.close();
+    for (const { label, person } of everyone) {
+      expectMemberPageClean(await capturePage(person.page, `/g/${slug}/me`), truth, label);
+    }
+  }
+
+  await test.step("leak test: no page exposes anyone else's pair (HTML + network)", async () => {
+    await leakCheck();
+  });
+
+  await test.step("redraw replaces everyone's monito", async () => {
+    const { page } = organizer;
+    await page.goto(`/g/${slug}/admin`);
+    const before = (await getTruth(slug)).pairs.map((p) => p.id);
+    await page.getByRole("button", { name: "Redraw" }).click();
+    await expect(page.getByText("Magbabago ang monito ng lahat.")).toBeVisible();
+    await shot(page, "redraw-confirm");
+    await page.getByRole("button", { name: "Oo, i-redraw" }).click();
+    await expect(page.getByText("Magbabago ang monito ng lahat.")).toHaveCount(0);
+    await expect(page.getByText("Names drawn")).toBeVisible();
+
+    const after = await getTruth(slug);
+    expect(after.pairs).toHaveLength(4);
+    expect(after.pairs.some((p) => before.includes(p.id)), "all assignment rows replaced").toBe(false);
+
+    // With 4 people and Joy–Joy M excluded, a redraw may land on the same
+    // loop by chance; what matters is it's a fresh, valid draw.
+    const secondDraw = await checkResults("joy-sees-monito-after-redraw");
+    expect(secondDraw.size).toBe(firstDraw.size);
+    await leakCheck();
   });
 
   await test.step("no console errors on any page", async () => {
