@@ -6,7 +6,13 @@ import { afterAll, describe, expect, it } from "vitest";
 import { closeDb, db } from "@/server/db";
 import { assignments, groups, members } from "@/server/db/schema";
 import { isSingleLoop } from "@/server/draw";
-import { acknowledgeReceiverChange, drawNames, getOwnReceiver } from "@/server/draw-service";
+import {
+  acknowledgeReceiverChange,
+  countSlipsOpened,
+  drawNames,
+  getOwnReceiver,
+  markSlipOpened,
+} from "@/server/draw-service";
 import { addExclusion } from "@/server/exclusions";
 import { createGroup } from "@/server/groups";
 import { getGroupSummary, joinGroup, removeMember } from "@/server/members";
@@ -71,6 +77,22 @@ describe("remove after the draw (dev DB)", () => {
     expect((await getOwnReceiver(giver.giverId))?.changedAt).toBeInstanceOf(Date);
     await acknowledgeReceiverChange(giver.giverId);
     expect((await getOwnReceiver(giver.giverId))?.changedAt).toBeNull();
+  });
+
+  it("patching clears only the patched giver's opened slip", async () => {
+    const { groupId, ids } = await drawnGroup(["A", "B", "C", "D", "E"]);
+    for (const id of Object.values(ids)) await markSlipOpened(id);
+    const giverId = (await rowsOf(groupId)).find((r) => r.receiverId === ids.C)!.giverId;
+
+    expect(await removeMember(groupId, ids.C)).toEqual({ ok: true, mode: "patched" });
+
+    // They unfold their new monito; everyone else stays opened.
+    expect((await getOwnReceiver(giverId))!.slipOpenedAt).toBeNull();
+    for (const id of Object.values(ids)) {
+      if (id === giverId || id === ids.C) continue;
+      expect((await getOwnReceiver(id))!.slipOpenedAt).toBeInstanceOf(Date);
+    }
+    expect(await countSlipsOpened(groupId)).toEqual({ opened: 3, total: 4 });
   });
 
   it("refuses a patch that would pair an excluded couple (needs a redraw)", async () => {

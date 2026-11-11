@@ -3,9 +3,11 @@
  *
  * Anonymity: the only function here that returns pair data is
  * getOwnReceiver, which takes the viewer's own member id (from their
- * cookie) and returns only their receiver's name.
+ * cookie) and returns only their receiver's name. Slip opens are shown to
+ * the organizer as a count only.
  */
 import { and, count, eq, isNull } from "drizzle-orm";
+import { alias } from "drizzle-orm/pg-core";
 import { db, type Tx } from "./db";
 import { assignments, groups, members } from "./db/schema";
 import { cryptoRandomInt, drawLoop, type RandomInt } from "./draw";
@@ -82,6 +84,8 @@ export async function drawInTransaction(tx: Tx, groupId: string, random: RandomI
 
   await tx.delete(assignments).where(eq(assignments.groupId, groupId));
   await tx.insert(assignments).values(result.assignments.map((a) => ({ groupId, ...a })));
+  // Everyone has a new monito: everyone unfolds a new slip.
+  await tx.update(members).set({ slipOpenedAt: null }).where(eq(members.groupId, groupId));
   await tx.update(groups).set({ status: "DRAWN" }).where(eq(groups.id, groupId));
   return { ok: true, count: result.assignments.length };
 }
@@ -92,20 +96,56 @@ export async function countAssignments(groupId: string): Promise<number> {
   return row?.n ?? 0;
 }
 
+const giver = alias(members, "giver");
+
 /**
- * The viewer's own receiver. Pass only the id of the member verified from
- * the request's own cookie (getMemberSession), never an id from input.
+ * The viewer's own receiver, and whether they've already unfolded the slip.
+ * Pass only the id of the member verified from the request's own cookie
+ * (getMemberSession), never an id from input.
  */
 export async function getOwnReceiver(
   giverId: string,
-): Promise<{ displayName: string; changedAt: Date | null } | null> {
+): Promise<{ displayName: string; changedAt: Date | null; slipOpenedAt: Date | null } | null> {
   const [row] = await db()
-    .select({ displayName: members.displayName, changedAt: assignments.receiverChangedAt })
+    .select({
+      displayName: members.displayName,
+      changedAt: assignments.receiverChangedAt,
+      slipOpenedAt: giver.slipOpenedAt,
+    })
     .from(assignments)
     .innerJoin(members, eq(members.id, assignments.receiverId))
+    .innerJoin(giver, eq(giver.id, assignments.giverId))
     .where(and(eq(assignments.giverId, giverId), isNull(members.removedAt)))
     .limit(1);
   return row ?? null;
+}
+
+/**
+ * The viewer unfolded their slip (their own row only). Only counts once,
+ * and only while they actually have a monito.
+ */
+export async function markSlipOpened(memberId: string): Promise<void> {
+  const [mine] = await db()
+    .select({ id: assignments.id })
+    .from(assignments)
+    .innerJoin(groups, eq(groups.id, assignments.groupId))
+    .where(and(eq(assignments.giverId, memberId), eq(groups.status, "DRAWN")))
+    .limit(1);
+  if (!mine) return;
+  await db()
+    .update(members)
+    .set({ slipOpenedAt: new Date() })
+    .where(and(eq(members.id, memberId), isNull(members.slipOpenedAt), isNull(members.removedAt)));
+}
+
+/** "8 of 12 have opened their slip": counts only, never who. */
+export async function countSlipsOpened(groupId: string): Promise<{ opened: number; total: number }> {
+  const [row] = await db()
+    .select({ total: count(), opened: count(members.slipOpenedAt) })
+    .from(assignments)
+    .innerJoin(members, eq(members.id, assignments.giverId))
+    .where(and(eq(assignments.groupId, groupId), isNull(members.removedAt)));
+  return { opened: row?.opened ?? 0, total: row?.total ?? 0 };
 }
 
 /** The viewer acknowledges "Na-update ang monito mo" (their own row only). */

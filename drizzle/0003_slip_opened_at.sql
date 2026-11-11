@@ -1,0 +1,1 @@
+ALTER TABLE "members" ADD COLUMN "slip_opened_at" timestamp with time zone;

@@ -82,6 +82,41 @@ async function readLink(page: Page, pattern: RegExp): Promise<string> {
   return (await box.textContent())!.trim();
 }
 
+// --- The slip (signature moment #3) ----------------------------------------
+
+const tapToOpen = (page: Page) => page.getByRole("button", { name: "Tap to open your bunutan" });
+
+/** The name written on the open slip ("~ Ate Joy ~" → "Ate Joy"). */
+async function readSlipName(page: Page): Promise<string> {
+  const text = await page.locator('section[aria-label="Your monito"] [data-part="name-inner"]').textContent();
+  return text!.replace(/\u00a0/g, " ").replace(/~/g, "").trim();
+}
+
+/** Taps the folded slip, waits for the unfold and the save, returns the name. */
+async function openSlip(page: Page): Promise<string> {
+  await expect(tapToOpen(page)).toBeVisible();
+  const saved = page.waitForResponse(
+    (r) => r.request().method() === "POST" && Boolean(r.request().headers()["next-action"]),
+    { timeout: 30_000 },
+  );
+  await tapToOpen(page).click();
+  // The button goes away when the animation finishes (~2s).
+  await expect(tapToOpen(page)).toHaveCount(0, { timeout: 15_000 });
+  await saved;
+  return readSlipName(page);
+}
+
+/** Records whether the page downloads GSAP (the lazy unfold chunk). */
+function watchForGsap(page: Page) {
+  const seen = { gsap: false };
+  page.on("response", async (r) => {
+    if (!/\.js(\?|$)/.test(r.url())) return;
+    const body = await r.text().catch(() => "");
+    if (body.includes("GreenSock")) seen.gsap = true;
+  });
+  return seen;
+}
+
 async function join(page: Page, shareUrl: string, name: string) {
   await page.goto(shareUrl);
   await page.getByLabel("Pangalan mo").fill(name);
@@ -452,10 +487,12 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     for (const { label, person } of everyone) {
       const { page } = person;
       await page.goto(`/g/${slug}/me`);
+      // A folded slip first; the wishlist waits until it's unfolded.
+      await expect(tapToOpen(page)).toBeVisible();
+      await expect(page.getByText(/^Wishlist ni /)).toHaveCount(0);
+      if (label === "Joy") await shot(page, `${shotName}-folded`);
+      const receiverName = await openSlip(page);
       await expect(page.getByText("Ang monito mo ay…")).toBeVisible();
-      const slips = page.locator('section[aria-label="Your monito"] p.font-hand');
-      await expect(slips).toHaveCount(1);
-      const receiverName = (await slips.textContent())!.trim();
       seen.set(label, receiverName);
 
       // The receiver's wishlist (latest version) shows under the slip.
@@ -492,6 +529,22 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     firstDraw = await checkResults("joy-sees-monito");
   });
 
+  await test.step("the slip unfolds once: later visits show it open, without GSAP", async () => {
+    const { page } = joy;
+    const loads = watchForGsap(page);
+    await page.reload();
+    await expect(page.getByText("Ang monito mo ay…")).toBeVisible();
+    await expect(page.getByText(/^Wishlist ni /)).toBeVisible();
+    await expect(tapToOpen(page)).toHaveCount(0);
+    expect(await readSlipName(page)).toBe(firstDraw.get("Joy"));
+    await page.waitForLoadState("networkidle");
+    expect(loads.gsap, "GSAP downloaded for an already-open slip").toBe(false);
+
+    // The organizer sees a count, never who.
+    await organizer.page.goto(`/g/${slug}/admin`);
+    await expect(organizer.page.getByText("4 of 4 have opened their slip")).toBeVisible();
+  });
+
   await test.step("joining is closed after the draw", async () => {
     const late = await newPerson(browser, testInfo, "Late Larry");
     await late.page.goto(shareUrl);
@@ -526,6 +579,8 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await page.getByRole("button", { name: "Oo, i-redraw" }).click();
     await expect(page.getByText("Magbabago ang monito ng lahat.")).toHaveCount(0);
     await expect(page.getByText("Names drawn")).toBeVisible();
+    // Everyone's monito changed, so everyone unfolds a new slip.
+    await expect(page.getByText("0 of 4 have opened their slip")).toBeVisible();
 
     const after = await getTruth(slug);
     expect(after.pairs).toHaveLength(4);
@@ -591,18 +646,24 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     for (const { label, person } of remaining) {
       const p = person.page;
       await p.goto(`/g/${slug}/me`);
-      await expect(p.getByText("Ang monito mo ay…")).toBeVisible();
-      await expect(p.locator('section[aria-label="Your monito"] p.font-hand')).toHaveText(loop.get(label)!);
       const notice = p.getByText("Na-update ang monito mo");
       if (label === giverName) {
+        // New monito: the notice, and a new folded slip to unfold.
         await expect(notice).toBeVisible();
         await shot(p, "monito-updated-notice");
+        expect(await openSlip(p)).toBe(loop.get(label));
         await p.getByRole("button", { name: "Okay, gets ko" }).click();
         await expect(notice).toHaveCount(0);
         await p.reload();
         await expect(p.getByText("Ang monito mo ay…")).toBeVisible();
+        await expect(tapToOpen(p)).toHaveCount(0);
+        expect(await readSlipName(p)).toBe(loop.get(label));
         await expect(notice).toHaveCount(0);
       } else {
+        // Same monito as before: still open.
+        await expect(p.getByText("Ang monito mo ay…")).toBeVisible();
+        await expect(tapToOpen(p)).toHaveCount(0);
+        expect(await readSlipName(p)).toBe(loop.get(label));
         await expect(notice).toHaveCount(0);
       }
     }

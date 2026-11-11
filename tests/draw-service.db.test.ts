@@ -5,9 +5,15 @@
 import { eq } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { closeDb, db } from "@/server/db";
-import { assignments, groups } from "@/server/db/schema";
+import { assignments, groups, members } from "@/server/db/schema";
 import { isSingleLoop } from "@/server/draw";
-import { countAssignments, drawNames, getOwnReceiver } from "@/server/draw-service";
+import {
+  countAssignments,
+  countSlipsOpened,
+  drawNames,
+  getOwnReceiver,
+  markSlipOpened,
+} from "@/server/draw-service";
 import { addExclusion } from "@/server/exclusions";
 import { createGroup } from "@/server/groups";
 import { getGroupSummary, joinGroup } from "@/server/members";
@@ -122,12 +128,54 @@ describe("getOwnReceiver (dev DB)", () => {
     const rows = await rowsOf(groupId);
     const nameOf = Object.fromEntries(Object.entries(ids).map(([name, id]) => [id, name]));
     for (const row of rows) {
-      expect(await getOwnReceiver(row.giverId)).toEqual({ displayName: nameOf[row.receiverId], changedAt: null });
+      expect(await getOwnReceiver(row.giverId)).toEqual({
+        displayName: nameOf[row.receiverId],
+        changedAt: null,
+        slipOpenedAt: null,
+      });
     }
   });
 
   it("returns nothing before the draw", async () => {
     const { ids } = await groupWith("Joy", "Ben", "Marco");
     expect(await getOwnReceiver(ids.Joy)).toBeNull();
+  });
+});
+
+describe("slip opened (dev DB)", () => {
+  it("marks only the viewer's own slip, once, and counts without saying who", async () => {
+    const { groupId, ids } = await groupWith("Joy", "Ben", "Marco", "Tita");
+    await drawNames(groupId, "draw");
+    expect(await countSlipsOpened(groupId)).toEqual({ opened: 0, total: 4 });
+
+    await markSlipOpened(ids.Joy);
+    const first = (await getOwnReceiver(ids.Joy))!.slipOpenedAt;
+    expect(first).toBeInstanceOf(Date);
+    expect((await getOwnReceiver(ids.Ben))!.slipOpenedAt).toBeNull();
+
+    // A second open (another tab, a retry) keeps the first time.
+    await markSlipOpened(ids.Joy);
+    expect((await getOwnReceiver(ids.Joy))!.slipOpenedAt).toEqual(first);
+
+    await markSlipOpened(ids.Ben);
+    expect(await countSlipsOpened(groupId)).toEqual({ opened: 2, total: 4 });
+  });
+
+  it("does nothing before the draw", async () => {
+    const { groupId, ids } = await groupWith("Joy", "Ben", "Marco");
+    await markSlipOpened(ids.Joy);
+    const [joy] = await db().select({ at: members.slipOpenedAt }).from(members).where(eq(members.id, ids.Joy));
+    expect(joy.at).toBeNull();
+    expect(await countSlipsOpened(groupId)).toEqual({ opened: 0, total: 0 });
+  });
+
+  it("a redraw clears everyone's opened slip", async () => {
+    const { groupId, ids } = await groupWith("Joy", "Ben", "Marco", "Tita");
+    await drawNames(groupId, "draw");
+    await markSlipOpened(ids.Joy);
+    await markSlipOpened(ids.Ben);
+    await drawNames(groupId, "redraw");
+    expect(await countSlipsOpened(groupId)).toEqual({ opened: 0, total: 4 });
+    expect((await getOwnReceiver(ids.Joy))!.slipOpenedAt).toBeNull();
   });
 });

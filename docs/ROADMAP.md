@@ -34,9 +34,9 @@ Goal: a group can be created, people can join, names can be drawn, and the desig
 
 Goal: everything a member needs between the draw and the party, plus the most important moment.
 
-- [ ] **Paper slip component** (folded / unfolded states)
-- [ ] **Signature moment: unfolding your slip** (3D unfold, handwritten name, gold glow, haptic, plays once, reduced-motion version)
-- [ ] Member home: open slip + their wishlist + this week's theme
+- [x] **Paper slip component** (folded / unfolded states)
+- [x] **Signature moment: unfolding your slip** (3D unfold, handwritten name, gold glow, haptic, plays once, reduced-motion version)
+- [x] Member home: open slip + their wishlist + this week's theme
 - [x] Wishlist add / edit / delete
 - [x] Theme weeks: set up on group creation, current theme shown
 - [x] "Copy reminder for GC" button

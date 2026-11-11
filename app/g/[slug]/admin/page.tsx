@@ -11,7 +11,7 @@ import { formatShortDate, todayIn } from "@/lib/theme-weeks";
 import { getCurrentMember, getCurrentOrganizer, isValidSlug } from "@/server/auth";
 import type { GroupStatus } from "@/server/db/schema";
 import { checkDrawFeasibility } from "@/server/draw-check";
-import { countAssignments } from "@/server/draw-service";
+import { countAssignments, countSlipsOpened } from "@/server/draw-service";
 import { getDrawSetup, toExclusions } from "@/server/exclusions";
 import { getOrganizerView } from "@/server/members";
 import { GroupFacts, PageFallback } from "../group-facts";
@@ -59,11 +59,12 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     );
   }
 
-  const [view, member, setup, drawnCount] = await Promise.all([
+  const [view, member, setup, drawnCount, slipsOpened] = await Promise.all([
     getOrganizerView(organizer.groupId),
     getCurrentMember(slug),
     getDrawSetup(organizer.groupId),
     countAssignments(organizer.groupId),
+    countSlipsOpened(organizer.groupId),
   ]);
   if (!view) notFound();
   const { group, themes } = view;
@@ -170,6 +171,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
             slug={slug}
             status={group.status}
             drawnCount={drawnCount}
+            slipsOpened={slipsOpened}
             blockedReason={
               feasibility.status === "ok"
                 ? null

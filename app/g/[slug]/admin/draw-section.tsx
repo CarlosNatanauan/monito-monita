@@ -7,17 +7,21 @@ import type { GroupStatus } from "@/server/db/schema";
 import { drawNamesAction } from "./actions";
 
 /**
- * Draw names / Names drawn / Redraw. Shows a count only, never pairs.
+ * Draw names / Names drawn / Redraw. Shows counts only, never pairs or who
+ * has opened their slip.
  */
 export function DrawSection({
   slug,
   status,
   drawnCount,
+  slipsOpened,
   blockedReason,
 }: {
   slug: string;
   status: GroupStatus;
   drawnCount: number;
+  /** How many have unfolded their slip, out of everyone with a monito. */
+  slipsOpened: { opened: number; total: number };
   /** Why drawing isn't possible right now (too few members, impossible exclusions). */
   blockedReason: string | null;
 }) {
@@ -76,6 +80,11 @@ export function DrawSection({
       <p className="text-muted-foreground">
         {drawnCount} na ang may monito. Walang makakakita kung sino ang nakabunot kanino, kahit ikaw.
       </p>
+      {status === "DRAWN" && slipsOpened.total > 0 && (
+        <p className="font-semibold">
+          {slipsOpened.opened} of {slipsOpened.total} have opened their slip
+        </p>
+      )}
       {errorBox}
       {status === "DRAWN" &&
         (!confirming ? (

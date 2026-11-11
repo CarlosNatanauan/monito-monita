@@ -65,6 +65,10 @@ export const members = pgTable(
     email: text("email"), // optional, later
     joinedAt: timestamp("joined_at", { withTimezone: true }).notNull().defaultNow(),
     removedAt: timestamp("removed_at", { withTimezone: true }),
+    // When they first unfolded the slip with their current monito on /me.
+    // Cleared when their monito changes (draw, redraw, removal patch), so
+    // they unfold the new name. The organizer only ever sees a count.
+    slipOpenedAt: timestamp("slip_opened_at", { withTimezone: true }),
   },
   (t) => [
     // Target for composite FKs that keep pairs inside one group.

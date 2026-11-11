@@ -296,6 +296,8 @@ export async function removeMember(
         .update(assignments)
         .set({ receiverId: removedRow.receiverId, receiverChangedAt: new Date() })
         .where(and(eq(assignments.groupId, groupId), eq(assignments.giverId, giver.giverId)));
+      // Their monito changed: they unfold a new slip.
+      await tx.update(members).set({ slipOpenedAt: null }).where(eq(members.id, giver.giverId));
       await markRemoved();
       return { ok: true, mode: "patched" };
     });

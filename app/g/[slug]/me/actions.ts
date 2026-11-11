@@ -3,7 +3,7 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { getMemberSession, isValidSlug } from "@/server/auth";
-import { acknowledgeReceiverChange } from "@/server/draw-service";
+import { acknowledgeReceiverChange, markSlipOpened } from "@/server/draw-service";
 import { addWish, deleteWish, updateWish, wishSchema } from "@/server/wishlists";
 
 export type WishActionResult = { ok: true } | { ok: false; message: string; fieldErrors?: Record<string, string> };
@@ -61,6 +61,25 @@ export async function acknowledgeMonitoUpdateAction(input: { slug: string }) {
     await acknowledgeReceiverChange(memberId);
     return { ok: true };
   });
+}
+
+/**
+ * The member unfolded their slip, so later visits show it already open.
+ * No refresh(): the page is already showing the open slip, and a refresh
+ * mid-animation would be wasted work.
+ */
+export async function markSlipOpenedAction(input: { slug: string }): Promise<{ ok: boolean }> {
+  const parsedSlug = slugField.safeParse(input?.slug);
+  if (!parsedSlug.success) return { ok: false };
+  const session = await getMemberSession(parsedSlug.data);
+  if (session.kind !== "member") return { ok: false };
+  try {
+    await markSlipOpened(session.member.id);
+    return { ok: true };
+  } catch (error) {
+    console.error("markSlipOpened failed", error);
+    return { ok: false };
+  }
 }
 
 export async function deleteWishAction(input: { slug: string; itemId: string }) {

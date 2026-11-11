@@ -16,6 +16,7 @@ import { describeThemeStatus, getThemeStatus } from "@/lib/theme-status";
 import { todayIn } from "@/lib/theme-weeks";
 import { getReceiverWishlist, listWishlist } from "@/server/wishlists";
 import { WishlistView } from "@/components/wish-item";
+import { MonitoReveal } from "./monito-reveal";
 import { MonitoUpdatedNotice } from "./monito-updated";
 import { WishlistEditor } from "./wishlist-editor";
 import { GroupFacts, PageFallback, RemovedNotice } from "../group-facts";
@@ -100,14 +101,13 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
       </header>
 
       {drawn ? (
-        // Temporary, plain result. The slip unfold replaces this in Week 2.
-        <section className="flex flex-col items-center gap-3" aria-label="Your monito">
+        <div className="flex flex-col items-center gap-3">
           {receiver?.changedAt && <MonitoUpdatedNotice slug={slug} />}
-          <p className="text-title font-extrabold">Ang monito mo ay…</p>
           {receiver ? (
-            <>
-              <Slip>{receiver.displayName}</Slip>
-              <Card className="mt-3 w-full">
+            // Signature moment #3: the full unfold plays once; later visits
+            // show the slip already open (docs/DESIGN.md).
+            <MonitoReveal slug={slug} receiverName={receiver.displayName} alreadyOpened={receiver.slipOpenedAt !== null}>
+              <Card className="w-full">
                 <CardHeader>
                   <CardTitle>Wishlist ni {receiver.displayName}</CardTitle>
                 </CardHeader>
@@ -118,14 +118,17 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
                   />
                 </CardContent>
               </Card>
-            </>
+            </MonitoReveal>
           ) : (
-            <p className="text-muted-foreground">Inaayos pa ng organizer ang bunutan. Balik ka in a bit.</p>
+            <>
+              <p className="text-title font-extrabold">Ang monito mo ay…</p>
+              <p className="text-muted-foreground">Inaayos pa ng organizer ang bunutan. Balik ka in a bit.</p>
+            </>
           )}
           <p className="text-caption text-muted-foreground">
             Codename mo: <span className="font-hand text-body text-foreground">{member.codename}</span>
           </p>
-        </section>
+        </div>
       ) : (
         <section className="flex flex-col items-center gap-3" aria-label="Your codename">
           <p className="text-caption text-muted-foreground">Ang codename mo:</p>
