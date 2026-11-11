@@ -7,6 +7,8 @@ const nextConfig: NextConfig = {
     return [
       { source: "/g/:path*", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
       { source: "/new", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
+      // Prototypes: never indexed.
+      { source: "/lab/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
     ];
   },
   partialPrefetching: true,
