@@ -86,6 +86,17 @@ export function authCookieOptions(slug: string, maxAge = COOKIE_MAX_AGE_SECONDS)
   };
 }
 
+/**
+ * A device logged in as one member opened another member's link. That
+ * link's token waits here (httpOnly, 10 minutes) until they confirm the
+ * switch on /me, so it never goes back into the URL.
+ */
+export function pendingSwitchCookieName(slug: string): string {
+  if (!isValidSlug(slug)) throw new Error("Invalid group slug");
+  return `mm_sw_${slug}`;
+}
+export const PENDING_SWITCH_MAX_AGE_SECONDS = 10 * 60;
+
 /** Path of a personal link that carries a token (swapped for a cookie on visit). */
 export function personalLinkPath(role: Role, slug: string, token: string): string {
   if (!isValidSlug(slug)) throw new Error("Invalid group slug");
@@ -217,4 +228,56 @@ export async function setAuthCookie(role: Role, slug: string, token: string): Pr
 /** Removes a member or organizer cookie for a group. */
 export async function clearAuthCookie(role: Role, slug: string): Promise<void> {
   (await cookies()).set(authCookieName(role, slug), "", authCookieOptions(slug, 0));
+}
+
+// --- Reissued links and switching members on one device ------------------
+
+/**
+ * A personal link was used on a device (its cookie was set). If it's a
+ * reissued link that hadn't been used yet, the organizer's list now shows
+ * "New link · opened".
+ */
+export async function markLinkOpened(memberId: string): Promise<void> {
+  await db()
+    .update(members)
+    .set({ linkOpenedAt: new Date() })
+    .where(and(eq(members.id, memberId), isNotNull(members.linkReissuedAt), isNull(members.linkOpenedAt)));
+}
+
+export interface PendingSwitch {
+  current: { id: string; displayName: string };
+  other: { id: string; displayName: string };
+}
+
+/**
+ * The switch waiting for confirmation on /me: this device is logged in as
+ * `current` and opened `other`'s personal link. Null if there's nothing to
+ * confirm (no pending link, it's no longer valid, or it's the same person).
+ */
+export async function getPendingSwitch(slug: string): Promise<PendingSwitch | null> {
+  if (!isValidSlug(slug)) return null;
+  const jar = await cookies();
+  const pendingToken = jar.get(pendingSwitchCookieName(slug))?.value;
+  const currentToken = jar.get(authCookieName("member", slug))?.value;
+  if (!pendingToken || !currentToken) return null;
+  const [current, other] = await Promise.all([
+    findMemberByToken(slug, currentToken),
+    findMemberByToken(slug, pendingToken),
+  ]);
+  if (!current || !other || current.id === other.id) return null;
+  return {
+    current: { id: current.id, displayName: current.displayName },
+    other: { id: other.id, displayName: other.displayName },
+  };
+}
+
+/** The raw token waiting in the pending-switch cookie (Server Actions only). */
+export async function getPendingSwitchToken(slug: string): Promise<string | null> {
+  if (!isValidSlug(slug)) return null;
+  const token = (await cookies()).get(pendingSwitchCookieName(slug))?.value;
+  return isWellFormedToken(token) ? token : null;
+}
+
+export async function clearPendingSwitch(slug: string): Promise<void> {
+  (await cookies()).set(pendingSwitchCookieName(slug), "", authCookieOptions(slug, 0));
 }

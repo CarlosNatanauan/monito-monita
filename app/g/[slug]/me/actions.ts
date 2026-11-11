@@ -2,7 +2,15 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { getMemberSession, isValidSlug } from "@/server/auth";
+import {
+  clearPendingSwitch,
+  findMemberByToken,
+  getMemberSession,
+  getPendingSwitchToken,
+  isValidSlug,
+  markLinkOpened,
+  setAuthCookie,
+} from "@/server/auth";
 import { acknowledgeReceiverChange, markSlipOpened } from "@/server/draw-service";
 import { addWish, deleteWish, updateWish, wishSchema } from "@/server/wishlists";
 
@@ -80,6 +88,36 @@ export async function markSlipOpenedAction(input: { slug: string }): Promise<{ o
     console.error("markSlipOpened failed", error);
     return { ok: false };
   }
+}
+
+/**
+ * "Oo, ako si …": switch this device to the member whose link was opened.
+ * The token comes only from the pending httpOnly cookie, re-checked here.
+ */
+export async function confirmSwitchAction(input: { slug: string }): Promise<{ ok: boolean }> {
+  const parsedSlug = slugField.safeParse(input?.slug);
+  if (!parsedSlug.success) return { ok: false };
+  const slug = parsedSlug.data;
+  const token = await getPendingSwitchToken(slug);
+  const member = token ? await findMemberByToken(slug, token) : null;
+  await clearPendingSwitch(slug);
+  if (!token || !member) {
+    refresh();
+    return { ok: false };
+  }
+  await setAuthCookie("member", slug, token);
+  await markLinkOpened(member.id);
+  refresh();
+  return { ok: true };
+}
+
+/** "Stay as …": keep this device as it is and drop the other link. */
+export async function staySwitchAction(input: { slug: string }): Promise<{ ok: boolean }> {
+  const parsedSlug = slugField.safeParse(input?.slug);
+  if (!parsedSlug.success) return { ok: false };
+  await clearPendingSwitch(parsedSlug.data);
+  refresh();
+  return { ok: true };
 }
 
 export async function deleteWishAction(input: { slug: string; itemId: string }) {

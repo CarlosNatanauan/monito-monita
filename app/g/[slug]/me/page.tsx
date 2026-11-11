@@ -10,7 +10,14 @@ import { joinedCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { RememberGroup } from "@/components/remember-group";
 import { RoleSwitch } from "@/components/role-switch";
-import { getCurrentOrganizer, getMemberSession, getOwnToken, isValidSlug, personalLinkPath } from "@/server/auth";
+import {
+  getCurrentOrganizer,
+  getMemberSession,
+  getOwnToken,
+  getPendingSwitch,
+  isValidSlug,
+  personalLinkPath,
+} from "@/server/auth";
 import { getOwnReceiver } from "@/server/draw-service";
 import { getGroupSummary } from "@/server/members";
 import { getThemeWeeks } from "@/server/groups";
@@ -21,6 +28,7 @@ import { WishlistView } from "@/components/wish-item";
 import { CleanWelcomeParam } from "./clean-welcome";
 import { MonitoReveal } from "./monito-reveal";
 import { MonitoUpdatedNotice } from "./monito-updated";
+import { SwitchConfirm } from "./switch-confirm";
 import { WishlistEditor } from "./wishlist-editor";
 import { GroupFacts, PageFallback, RemovedNotice } from "../group-facts";
 
@@ -42,12 +50,13 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   const { slug } = await params;
   if (!isValidSlug(slug)) notFound();
 
-  const [group, session, token, query, organizer] = await Promise.all([
+  const [group, session, token, query, organizer, pendingSwitch] = await Promise.all([
     getGroupSummary(slug),
     getMemberSession(slug),
     getOwnToken("member", slug),
     searchParams,
     getCurrentOrganizer(slug),
+    getPendingSwitch(slug),
   ]);
   if (!group) notFound();
 
@@ -84,6 +93,20 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   }
 
   const { member } = session;
+
+  // Another member's link was opened on this device: confirm before switching.
+  if (pendingSwitch) {
+    return (
+      <>
+        <h1 className="text-heading">{group.name}</h1>
+        <SwitchConfirm
+          slug={slug}
+          current={pendingSwitch.current.displayName}
+          other={pendingSwitch.other.displayName}
+        />
+      </>
+    );
+  }
   const welcome = query.welcome === "1";
   const drawn = group.status !== "OPEN";
   // Only this member's own receiver, looked up by the id from their cookie.

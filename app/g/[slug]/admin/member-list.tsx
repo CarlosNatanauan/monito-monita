@@ -3,13 +3,21 @@
 import { useState, useTransition } from "react";
 import { CopyLink } from "@/components/copy-link";
 import { Button } from "@/components/ui/button";
+import type { LinkStatus } from "@/server/members";
 import { reissueMemberLinkAction, removeMemberAction } from "./actions";
 
 export interface MemberRow {
   id: string;
   displayName: string;
   joinedLabel: string;
+  /** After "Get new link": used yet or not. Status only. */
+  linkStatus: LinkStatus;
 }
+
+const LINK_STATUS: Record<Exclude<LinkStatus, "none">, string> = {
+  "new-unopened": "New link · not opened yet",
+  "new-opened": "New link · opened",
+};
 
 type Confirming = { id: string; kind: "remove" | "link" } | null;
 
@@ -85,6 +93,9 @@ export function MemberList({
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{member.displayName}</p>
                   <p className="text-caption text-muted-foreground">Joined {member.joinedLabel}</p>
+                  {member.linkStatus !== "none" && (
+                    <p className="text-caption font-semibold">{LINK_STATUS[member.linkStatus]}</p>
+                  )}
                 </div>
                 {!isConfirming && (
                   <div className="flex shrink-0 gap-1">

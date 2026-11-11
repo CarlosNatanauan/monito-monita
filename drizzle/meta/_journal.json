@@ -29,6 +29,13 @@
       "when": 1794363495426,
       "tag": "0003_slip_opened_at",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794366797441,
+      "tag": "0004_link_reissue_status",
+      "breakpoints": true
     }
   ]
 }

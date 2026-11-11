@@ -85,10 +85,13 @@ export async function getGroupSummary(slug: string): Promise<GroupSummary | null
   return { ...row, memberCount };
 }
 
+/** After "Get new link": whether that new link has been used yet. Nothing more. */
+export type LinkStatus = "none" | "new-unopened" | "new-opened";
+
 export interface OrganizerView {
   group: Omit<GroupSummary, "memberCount">;
   themes: { title: string; startDate: string }[];
-  members: { id: string; displayName: string; joinedAt: Date }[];
+  members: { id: string; displayName: string; joinedAt: Date; linkStatus: LinkStatus }[];
 }
 
 /**
@@ -118,13 +121,26 @@ export async function getOrganizerView(groupId: string): Promise<OrganizerView |
       .where(eq(themeWeeks.groupId, groupId))
       .orderBy(asc(themeWeeks.position)),
     db()
-      .select({ id: members.id, displayName: members.displayName, joinedAt: members.joinedAt })
+      .select({
+        id: members.id,
+        displayName: members.displayName,
+        joinedAt: members.joinedAt,
+        linkReissuedAt: members.linkReissuedAt,
+        linkOpenedAt: members.linkOpenedAt,
+      })
       .from(members)
       .where(and(eq(members.groupId, groupId), isNull(members.removedAt)))
       .orderBy(asc(members.joinedAt)),
   ]);
 
-  return { group, themes, members: memberRows };
+  return {
+    group,
+    themes,
+    members: memberRows.map(({ linkReissuedAt, linkOpenedAt, ...m }) => ({
+      ...m,
+      linkStatus: !linkReissuedAt ? "none" : linkOpenedAt ? "new-opened" : "new-unopened",
+    })),
+  };
 }
 
 // --- Join ----------------------------------------------------------------
@@ -216,7 +232,7 @@ export async function reissueMemberLink(groupId: string, memberId: string): Prom
   const token = createToken();
   const [row] = await db()
     .update(members)
-    .set({ tokenHash: hashToken(token) })
+    .set({ tokenHash: hashToken(token), linkReissuedAt: new Date(), linkOpenedAt: null })
     .where(and(eq(members.id, memberId), eq(members.groupId, groupId), isNull(members.removedAt)))
     .returning({ displayName: members.displayName });
   if (!row) return { ok: false, reason: "NOT_FOUND", message: "Wala na ang member na 'yan." };

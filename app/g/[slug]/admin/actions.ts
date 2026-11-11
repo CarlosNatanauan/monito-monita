@@ -66,7 +66,7 @@ export type ReissueLinkResult = { ok: true; path: string } | { ok: false; messag
 /**
  * "Get new link" for a member who lost theirs. Their old link and cookie
  * stop working. Returns only the new personal-link path: no codename, no
- * pairs. No refresh: nothing else on the page changes.
+ * pairs. Refreshes so the list shows "New link · not opened yet".
  */
 export async function reissueMemberLinkAction(input: { slug: string; memberId: string }): Promise<ReissueLinkResult> {
   const parsed = z.object({ slug: slugField, memberId: z.uuid() }).safeParse(input);
@@ -76,6 +76,7 @@ export async function reissueMemberLinkAction(input: { slug: string; memberId: s
   try {
     const result = await reissueMemberLink(organizer.groupId, parsed.data.memberId);
     if (!result.ok) return { ok: false, message: result.message };
+    refresh();
     return { ok: true, path: personalLinkPath("member", parsed.data.slug, result.token) };
   } catch (error) {
     console.error("reissueMemberLinkAction failed", error);

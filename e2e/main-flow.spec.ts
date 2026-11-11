@@ -141,6 +141,8 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
   const organizer = await newPerson(browser, testInfo, "organizer");
   let shareUrl = "";
   let organizerUrl = "";
+  let joyLink = "";
+  let joyMLink = "";
   let slug = "";
 
   await test.step("home → Create your group → /new", async () => {
@@ -218,7 +220,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     // Member only: no role switch.
     await expect(page.getByRole("navigation", { name: "Switch view" })).toHaveCount(0);
     await expect(page.getByText("Waiting for the bunutan…")).toBeVisible();
-    await readLink(page, /\/me\?t=/);
+    joyLink = await readLink(page, /\/me\?t=/);
     await shot(page, "joy-me-welcome");
   });
 
@@ -235,6 +237,36 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await expect(page.locator("main").getByRole("alert")).toHaveCount(0);
     await page.getByRole("button", { name: "Join the group" }).click();
     await expect(page.getByRole("heading", { name: "Hi, Joy M!" })).toBeVisible();
+    joyMLink = await readLink(page, /\/me\?t=/);
+  });
+
+  await test.step("someone else's link on a logged-in phone asks before switching", async () => {
+    const { page } = joy;
+    const question = (current: string, other: string) =>
+      page.getByText(`Naka-login ka bilang ${current} sa device na 'to. Ikaw ba talaga si ${other}?`);
+
+    // Joy's phone opens Joy M's link: asked first, and staying is the main button.
+    await page.goto(joyMLink);
+    await expect(page).toHaveURL(new RegExp(`/g/${slug}/me$`));
+    await expect(question("Joy", "Joy M")).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Hi, / })).toHaveCount(0);
+    await shot(page, "switch-confirm");
+    await page.getByRole("button", { name: "Stay as Joy", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Hi, Joy!" })).toBeVisible();
+    await page.reload();
+    await expect(page.getByRole("heading", { name: "Hi, Joy!" })).toBeVisible();
+    await expect(question("Joy", "Joy M")).toHaveCount(0);
+
+    // Confirming switches the phone to Joy M…
+    await page.goto(joyMLink);
+    await page.getByRole("button", { name: "Oo, ako si Joy M", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Hi, Joy M!" })).toBeVisible();
+
+    // …and Joy's own link brings her back, with the same question.
+    await page.goto(joyLink);
+    await expect(question("Joy M", "Joy")).toBeVisible();
+    await page.getByRole("button", { name: "Oo, ako si Joy", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Hi, Joy!" })).toBeVisible();
   });
 
   let marco = await newPerson(browser, testInfo, "Marco");
@@ -617,6 +649,23 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     // Joy: member only. A stale entry for a group that doesn't exist goes away.
     const { page } = joy;
     await page.goto("/");
+    const storedRoles = () =>
+      page.evaluate(
+        (slug) => JSON.parse(localStorage.getItem("mm:groups") ?? "[]").find((g: { slug: string }) => g.slug === slug)?.roles,
+        slug,
+      );
+    // A stale organizer role is dropped when /admin finds no valid organizer cookie.
+    await page.evaluate((slug) => {
+      const list = JSON.parse(localStorage.getItem("mm:groups") ?? "[]");
+      for (const g of list) if (g.slug === slug) g.roles = ["organizer", "member"];
+      localStorage.setItem("mm:groups", JSON.stringify(list));
+    }, slug);
+    expect(await storedRoles()).toEqual(["organizer", "member"]);
+    await page.goto(`/g/${slug}/admin`);
+    await expect(page.getByText("Para sa organizer lang ang page na 'to.")).toBeVisible();
+    await expect.poll(storedRoles).toEqual(["member"]);
+
+    await page.goto("/");
     await page.evaluate(() => {
       const list = JSON.parse(localStorage.getItem("mm:groups") ?? "[]");
       list.push({ slug: "zzzzzzzzzzzz", name: "Wala na 'to", roles: ["member"], seenAt: 1 });
@@ -624,16 +673,16 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     });
     await page.reload();
     const yours = page.getByRole("region", { name: "Your groups" });
-    const joyLink = yours.getByRole("link", { name: `Continue: ${groupName}` });
-    await expect(joyLink).toContainText("member");
-    await expect(joyLink).not.toContainText("organizer");
+    const joyContinue = yours.getByRole("link", { name: `Continue: ${groupName}` });
+    await expect(joyContinue).toContainText("member");
+    await expect(joyContinue).not.toContainText("organizer");
     await expect(yours.getByText("Wala na 'to")).toHaveCount(0);
     const stored = await page.evaluate(() => localStorage.getItem("mm:groups") ?? "");
     expect(stored).not.toContain("zzzzzzzzzzzz");
     // Never a token on the device list.
     expect(stored).not.toMatch(/[A-Za-z0-9_-]{43}/);
     await shot(page, "home-your-groups");
-    await joyLink.click();
+    await joyContinue.click();
     await expect(page).toHaveURL(new RegExp(`/g/${slug}/me$`));
 
     // The organizer (also a member): both roles, and the link goes to Manage.
@@ -692,7 +741,20 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     page.off("response", onResponse);
     expect(newLink).not.toBe(benLink);
     expectOrganizerPageClean((await Promise.all(responses)).join("\n"), truth);
+    const benRow = page.getByRole("list", { name: "Members" }).getByRole("listitem").filter({ hasText: "Ben" });
+    await expect(benRow.getByText("New link · not opened yet")).toBeVisible();
+    // Only Ben's row carries a status.
+    await expect(page.getByText(/^New link · /)).toHaveCount(1);
     await shot(page, "new-link-shown");
+
+    // The organizer opens it on their own phone (logged in as Tita Org):
+    // asked first; staying doesn't count as opened.
+    await page.goto(newLink);
+    await expect(page.getByText("Naka-login ka bilang Tita Org sa device na 'to. Ikaw ba talaga si Ben?")).toBeVisible();
+    await page.getByRole("button", { name: "Stay as Tita Org", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Hi, Tita Org!" })).toBeVisible();
+    await page.goto(`/g/${slug}/admin`);
+    await expect(benRow.getByText("New link · not opened yet")).toBeVisible();
 
     // Ben's old cookie no longer works on his phone…
     await ben.page.goto(`/g/${slug}/me`);
@@ -709,6 +771,11 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await expect(ben.page.getByRole("heading", { name: "Hi, Ben!" })).toBeVisible();
     await expect(tapToOpen(ben.page)).toHaveCount(0);
     expect(await readSlipName(ben.page)).toBe(firstDraw.get("Ben"));
+
+    // Now the organizer sees it was opened. Status only.
+    await page.goto(`/g/${slug}/admin`);
+    await expect(benRow.getByText("New link · opened")).toBeVisible();
+    await shot(page, "new-link-opened");
 
     await leakCheck();
   });

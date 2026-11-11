@@ -50,15 +50,19 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
   const organizer = await getCurrentOrganizer(slug);
   if (!organizer) {
     return (
-      <Card>
+      <>
+        {/* This device's organizer link no longer works: drop it from "Your groups". */}
+        <RememberGroup slug={slug} name="" role="organizer" forget />
+        <Card>
         <CardHeader>
           <CardTitle>Para sa organizer lang ang page na &apos;to.</CardTitle>
         </CardHeader>
         <CardContent className="text-muted-foreground">
           Kung ikaw ang organizer, buksan ang organizer link mo (yung binigay nang ginawa mo ang group). Kung member
           ka, gamitin ang personal link mo.
-        </CardContent>
-      </Card>
+          </CardContent>
+        </Card>
+      </>
     );
   }
 
@@ -195,6 +199,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
             id: m.id,
             displayName: m.displayName,
             joinedLabel: formatJoinedAt(m.joinedAt, group.timezone),
+            linkStatus: m.linkStatus,
           }))}
         />
       </CardContent>

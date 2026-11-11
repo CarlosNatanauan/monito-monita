@@ -69,6 +69,11 @@ export const members = pgTable(
     // Cleared when their monito changes (draw, redraw, removal patch), so
     // they unfold the new name. The organizer only ever sees a count.
     slipOpenedAt: timestamp("slip_opened_at", { withTimezone: true }),
+    // "Get new link": when the organizer last reissued this member's link,
+    // and when that new link was first used on a device. The organizer sees
+    // only "New link · not opened yet / opened", so peeking is visible.
+    linkReissuedAt: timestamp("link_reissued_at", { withTimezone: true }),
+    linkOpenedAt: timestamp("link_opened_at", { withTimezone: true }),
   },
   (t) => [
     // Target for composite FKs that keep pairs inside one group.

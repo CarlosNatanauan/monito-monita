@@ -4,7 +4,7 @@
  */
 import { and, eq, isNull } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
-import { findMemberByToken, hashToken } from "@/server/auth";
+import { findMemberByToken, hashToken, markLinkOpened } from "@/server/auth";
 import { closeDb, db } from "@/server/db";
 import { groups, members } from "@/server/db/schema";
 import { createGroup } from "@/server/groups";
@@ -159,7 +159,10 @@ describe("getOrganizerView (dev DB)", () => {
     await joinGroup(slug, "Marco");
     const view = await getOrganizerView(groupId);
     expect(view?.members.map((m) => m.displayName)).toEqual(["Joy", "Marco"]);
-    for (const m of view!.members) expect(Object.keys(m).sort()).toEqual(["displayName", "id", "joinedAt"]);
+    for (const m of view!.members) {
+      expect(Object.keys(m).sort()).toEqual(["displayName", "id", "joinedAt", "linkStatus"]);
+      expect(m.linkStatus).toBe("none");
+    }
     const json = JSON.stringify(view);
     for (const forbidden of ["receiver", "giver", "assignment", "codename", "tokenHash", "organizerTokenHash"]) {
       expect(json).not.toContain(forbidden);
@@ -194,5 +197,25 @@ describe("reissueMemberLink (dev DB)", () => {
     await removeMember(a.groupId, ben.memberId);
     expect(await reissueMemberLink(a.groupId, ben.memberId)).toMatchObject({ ok: false, reason: "NOT_FOUND" });
     expect(await findMemberByToken(a.slug, joy.token)).not.toBeNull();
+  });
+
+  it("shows the organizer only whether the new link was opened", async () => {
+    const { slug, groupId } = await newGroup();
+    const joy = await joinGroup(slug, "Joy");
+    if (!joy.ok) throw new Error(joy.message);
+    const status = async () => (await getOrganizerView(groupId))!.members[0].linkStatus;
+
+    // Using an original (never reissued) link changes nothing.
+    await markLinkOpened(joy.memberId);
+    expect(await status()).toBe("none");
+
+    await reissueMemberLink(groupId, joy.memberId);
+    expect(await status()).toBe("new-unopened");
+    await markLinkOpened(joy.memberId);
+    expect(await status()).toBe("new-opened");
+
+    // Reissuing again starts over.
+    await reissueMemberLink(groupId, joy.memberId);
+    expect(await status()).toBe("new-unopened");
   });
 });

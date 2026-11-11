@@ -16,7 +16,8 @@ export default defineConfig({
   workers: 1,
   fullyParallel: false,
   retries: 0,
-  timeout: 240_000,
+  // One long flow per phone; WebKit takes ~4 minutes.
+  timeout: 360_000,
   expect: { timeout: 20_000 },
   reporter: [["list"]],
   globalTeardown: "./e2e/global-teardown.ts",
