@@ -1,0 +1,1 @@
+ALTER TABLE "assignments" ADD COLUMN "receiver_changed_at" timestamp with time zone;

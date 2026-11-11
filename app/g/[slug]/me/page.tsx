@@ -16,6 +16,7 @@ import { describeThemeStatus, getThemeStatus } from "@/lib/theme-status";
 import { todayIn } from "@/lib/theme-weeks";
 import { getReceiverWishlist, listWishlist } from "@/server/wishlists";
 import { WishlistView } from "@/components/wish-item";
+import { MonitoUpdatedNotice } from "./monito-updated";
 import { WishlistEditor } from "./wishlist-editor";
 import { GroupFacts, PageFallback, RemovedNotice } from "../group-facts";
 
@@ -101,6 +102,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
       {drawn ? (
         // Temporary, plain result. The slip unfold replaces this in Week 2.
         <section className="flex flex-col items-center gap-3" aria-label="Your monito">
+          {receiver?.changedAt && <MonitoUpdatedNotice slug={slug} />}
           <p className="text-title font-extrabold">Ang monito mo ay…</p>
           {receiver ? (
             <>

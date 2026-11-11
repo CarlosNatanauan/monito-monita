@@ -96,7 +96,7 @@ describe("joinGroup (dev DB)", () => {
 
     // Removing someone opens a spot again.
     const [first] = await db().select({ id: members.id }).from(members).where(eq(members.groupId, groupId)).limit(1);
-    expect(await removeMember(groupId, first.id)).toEqual({ ok: true });
+    expect(await removeMember(groupId, first.id)).toEqual({ ok: true, mode: "removed" });
     expect((await joinGroup(slug, "One too many")).ok).toBe(true);
   });
 
@@ -111,7 +111,7 @@ describe("removeMember (dev DB)", () => {
     const joy = await joinGroup(slug, "Joy");
     if (!joy.ok) throw new Error(joy.message);
 
-    expect(await removeMember(groupId, joy.memberId)).toEqual({ ok: true });
+    expect(await removeMember(groupId, joy.memberId)).toEqual({ ok: true, mode: "removed" });
     expect(await removeMember(groupId, joy.memberId)).toMatchObject({ ok: false, reason: "NOT_FOUND" });
 
     const [row] = await db().select().from(members).where(eq(members.id, joy.memberId));
@@ -126,11 +126,11 @@ describe("removeMember (dev DB)", () => {
     if (again.ok) expect(again.codename).not.toBe(joy.codename);
   });
 
-  it("refuses after the draw", async () => {
+  it("refuses after the reveal", async () => {
     const { slug, groupId } = await newGroup();
     const marco = await joinGroup(slug, "Marco");
     if (!marco.ok) throw new Error(marco.message);
-    await db().update(groups).set({ status: "DRAWN" }).where(eq(groups.id, groupId));
+    await db().update(groups).set({ status: "REVEALED" }).where(eq(groups.id, groupId));
     expect(await removeMember(groupId, marco.memberId)).toMatchObject({ ok: false, reason: "LOCKED" });
     const active = await db().select().from(members).where(and(eq(members.id, marco.memberId), isNull(members.removedAt)));
     expect(active).toHaveLength(1);

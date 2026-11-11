@@ -119,6 +119,9 @@ export const assignments = pgTable(
       .references(() => groups.id, { onDelete: "cascade" }),
     giverId: uuid("giver_id").notNull(),
     receiverId: uuid("receiver_id").notNull(),
+    // Set when a removal after the draw gave this giver a new receiver;
+    // shows "Na-update ang monito mo" on /me until they acknowledge it.
+    receiverChangedAt: timestamp("receiver_changed_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [

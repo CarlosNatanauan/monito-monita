@@ -7,7 +7,7 @@ import { drawNames, type DrawMode } from "@/server/draw-service";
 import { addExclusion, removeExclusion } from "@/server/exclusions";
 import { removeMember } from "@/server/members";
 
-export type ActionResult = { ok: true } | { ok: false; message: string };
+export type ActionResult = { ok: true } | { ok: false; message: string; needsRedraw?: boolean };
 
 const NOT_ORGANIZER = "Para sa organizer lang ito. Buksan ulit ang organizer link mo.";
 const slugField = z.string().refine(isValidSlug);
@@ -39,15 +39,24 @@ async function asOrganizer<T extends { slug: string }>(
   return result;
 }
 
-/** Removes a member before the draw. */
-export async function removeMemberAction(input: { slug: string; memberId: string }): Promise<ActionResult> {
+/**
+ * Removes a member. After the draw the loop is patched; if that would
+ * pair an excluded couple, `needsRedraw` comes back and the organizer can
+ * retry with `redraw: true` (remove + redraw everyone).
+ */
+export async function removeMemberAction(input: {
+  slug: string;
+  memberId: string;
+  redraw?: boolean;
+}): Promise<ActionResult> {
   return asOrganizer(
-    z.object({ slug: slugField, memberId: z.uuid() }),
+    z.object({ slug: slugField, memberId: z.uuid(), redraw: z.boolean().optional() }),
     input,
     "Hindi natanggal. Subukan ulit in a bit.",
-    async (groupId, { memberId }) => {
-      const result = await removeMember(groupId, memberId);
-      return result.ok ? { ok: true } : { ok: false, message: result.message };
+    async (groupId, { memberId, redraw }) => {
+      const result = await removeMember(groupId, memberId, { redraw });
+      if (result.ok) return { ok: true };
+      return { ok: false, message: result.message, needsRedraw: result.reason === "NEEDS_REDRAW" };
     },
   );
 }

@@ -132,7 +132,8 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
         <CardContent>
           <MemberList
             slug={slug}
-            canRemove={isOpen}
+            canRemove={group.status !== "REVEALED"}
+            drawn={!isOpen}
             members={view.members.map((m) => ({
               id: m.id,
               displayName: m.displayName,

@@ -430,9 +430,9 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
       ],
       [shareUrl],
     );
-    // Exclusions and removal are locked now.
+    // Exclusions are locked now (members can still be removed, with a patch).
     await expect(page.getByRole("button", { name: "Add pair" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Remove pair/ })).toHaveCount(0);
     await shot(page, "names-drawn");
 
     const truth = await getTruth(slug);
@@ -501,13 +501,13 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await late.context.close();
   });
 
-  async function leakCheck() {
+  async function leakCheck(people = everyone) {
     const truth = await getTruth(slug);
     expectOrganizerPageClean(await capturePage(organizer.page, `/g/${slug}/admin`), truth);
     const stranger = await newPerson(browser, testInfo, "Stranger");
     expectJoinPageClean(await capturePage(stranger.page, shareUrl), truth);
     await stranger.context.close();
-    for (const { label, person } of everyone) {
+    for (const { label, person } of people) {
       expectMemberPageClean(await capturePage(person.page, `/g/${slug}/me`), truth, label);
     }
   }
@@ -536,6 +536,91 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     const secondDraw = await checkResults("joy-sees-monito-after-redraw");
     expect(secondDraw.size).toBe(firstDraw.size);
     await leakCheck();
+  });
+
+  // --- Remove after the draw ------------------------------------------------
+  // With 4 people and Joy–Joy M excluded, the loop is always
+  // Joy → x → Joy M → y → Joy (x, y = Tita Org and Ben). Removing Ben would
+  // make Joy and Joy M draw each other; removing Joy can be patched.
+
+  const memberList = () => organizer.page.getByRole("list", { name: "Members" });
+
+  await test.step("remove after the draw: blocked when it would pair an excluded couple", async () => {
+    const { page } = organizer;
+    await page.goto(`/g/${slug}/admin`);
+    await page.getByRole("button", { name: "Remove Ben", exact: true }).click();
+    await expect(page.getByText("Ang nakabunot sa kanya ay bibigyan ng bagong monito", { exact: false })).toBeVisible();
+    await page.getByRole("button", { name: "Oo, tanggalin" }).click();
+    await expect(page.locator("main").getByRole("alert")).toHaveText(
+      "Kapag tinanggal si Ben, magkakabunot ang dalawang bawal. Kailangan ng redraw para matanggal siya.",
+    );
+    await expect(page.getByRole("button", { name: "Tanggalin at i-redraw" })).toBeVisible();
+    await shot(page, "remove-needs-redraw");
+    await page.getByRole("button", { name: "Huwag" }).click();
+    await expect(memberList().getByText("Ben", { exact: true })).toBeVisible();
+    expect((await getTruth(slug)).pairs).toHaveLength(4);
+  });
+
+  await test.step("remove Joy after the draw: only her giver's monito changes, with a notice", async () => {
+    const before = await getTruth(slug);
+    const nameOf = new Map(before.members.map((m) => [m.id, m.name]));
+    const joyId = before.members.find((m) => m.name === "Joy")!.id;
+    const giverName = nameOf.get(before.pairs.find((p) => p.receiverId === joyId)!.giverId)!;
+    const newReceiver = nameOf.get(before.pairs.find((p) => p.giverId === joyId)!.receiverId)!;
+
+    const { page } = organizer;
+    await page.getByRole("button", { name: "Remove Joy", exact: true }).click();
+    await page.getByRole("button", { name: "Oo, tanggalin" }).click();
+    await expect(memberList().getByText("Joy", { exact: true })).toHaveCount(0);
+    await expect(memberList().getByRole("listitem")).toHaveCount(3);
+    await shot(page, "removed-after-draw");
+
+    // Still one valid loop of 3, and the exclusion still holds.
+    const after = await getTruth(slug);
+    const afterName = new Map(after.members.map((m) => [m.id, m.name]));
+    const loop = new Map(after.pairs.map((p) => [afterName.get(p.giverId)!, afterName.get(p.receiverId)!]));
+    expect(loop.size).toBe(3);
+    expect(loop.get(giverName)).toBe(newReceiver);
+    expect(loop.get("Joy M")).not.toBe("Joy");
+
+    const remaining = [
+      { label: "Joy M", person: joyM },
+      { label: "Tita Org", person: organizer },
+      { label: "Ben", person: ben },
+    ];
+    for (const { label, person } of remaining) {
+      const p = person.page;
+      await p.goto(`/g/${slug}/me`);
+      await expect(p.getByText("Ang monito mo ay…")).toBeVisible();
+      await expect(p.locator('section[aria-label="Your monito"] p.font-hand')).toHaveText(loop.get(label)!);
+      const notice = p.getByText("Na-update ang monito mo");
+      if (label === giverName) {
+        await expect(notice).toBeVisible();
+        await shot(p, "monito-updated-notice");
+        await p.getByRole("button", { name: "Okay, gets ko" }).click();
+        await expect(notice).toHaveCount(0);
+        await p.reload();
+        await expect(p.getByText("Ang monito mo ay…")).toBeVisible();
+        await expect(notice).toHaveCount(0);
+      } else {
+        await expect(notice).toHaveCount(0);
+      }
+    }
+
+    await joy.page.goto(`/g/${slug}/me`);
+    await expect(joy.page.getByText("Tinanggal ka ng organizer sa group na 'to.")).toBeVisible();
+
+    await leakCheck(remaining);
+  });
+
+  await test.step("removing someone when only 3 remain is blocked", async () => {
+    const { page } = organizer;
+    await page.goto(`/g/${slug}/admin`);
+    await page.getByRole("button", { name: "Remove Ben", exact: true }).click();
+    await page.getByRole("button", { name: "Oo, tanggalin" }).click();
+    await expect(page.locator("main").getByRole("alert")).toContainText("3 na lang kayo");
+    await expect(memberList().getByRole("listitem")).toHaveCount(3);
+    await shot(page, "remove-blocked-three-left");
   });
 
   await test.step("no console errors on any page", async () => {

@@ -3,6 +3,7 @@
 import { refresh } from "next/cache";
 import { z } from "zod";
 import { getMemberSession, isValidSlug } from "@/server/auth";
+import { acknowledgeReceiverChange } from "@/server/draw-service";
 import { addWish, deleteWish, updateWish, wishSchema } from "@/server/wishlists";
 
 export type WishActionResult = { ok: true } | { ok: false; message: string; fieldErrors?: Record<string, string> };
@@ -51,6 +52,14 @@ export async function updateWishAction(input: { slug: string; itemId: string; ti
     const wish = parseWish(input);
     if (!wish.ok) return { ok: false, message: "Pakicheck ang item.", fieldErrors: wish.fieldErrors };
     return updateWish(memberId, id.data, wish.data);
+  });
+}
+
+/** "Okay" on the "Na-update ang monito mo" notice (own assignment only). */
+export async function acknowledgeMonitoUpdateAction(input: { slug: string }) {
+  return asMember(input?.slug, async (memberId) => {
+    await acknowledgeReceiverChange(memberId);
+    return { ok: true };
   });
 }
 

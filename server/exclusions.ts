@@ -37,15 +37,20 @@ export function toExclusions(pairs: ExclusionPair[]): Exclusion[] {
 const memberA = alias(members, "member_a");
 const memberB = alias(members, "member_b");
 
-/** Active members and their exclusion pairs (no assignments involved). */
+/**
+ * Active members and their exclusion pairs (no assignments involved).
+ *
+ * The two queries run one after the other on purpose: `tx` may be a
+ * transaction (a single connection), where concurrent queries are
+ * deprecated in pg and will throw in pg 9.
+ */
 export async function getDrawSetup(groupId: string, tx: Tx | ReturnType<typeof db> = db()): Promise<DrawSetup> {
-  const [memberRows, pairRows] = await Promise.all([
-    tx
-      .select({ id: members.id, displayName: members.displayName })
-      .from(members)
-      .where(and(eq(members.groupId, groupId), isNull(members.removedAt)))
-      .orderBy(asc(members.joinedAt), asc(members.id)),
-    tx
+  const memberRows = await tx
+    .select({ id: members.id, displayName: members.displayName })
+    .from(members)
+    .where(and(eq(members.groupId, groupId), isNull(members.removedAt)))
+    .orderBy(asc(members.joinedAt), asc(members.id));
+  const pairRows = await tx
       .select({
         id: exclusions.id,
         memberAId: exclusions.memberAId,
@@ -57,8 +62,7 @@ export async function getDrawSetup(groupId: string, tx: Tx | ReturnType<typeof d
       .innerJoin(memberA, eq(memberA.id, exclusions.memberAId))
       .innerJoin(memberB, eq(memberB.id, exclusions.memberBId))
       .where(and(eq(exclusions.groupId, groupId), isNull(memberA.removedAt), isNull(memberB.removedAt)))
-      .orderBy(asc(exclusions.createdAt)),
-  ]);
+      .orderBy(asc(exclusions.createdAt));
   return { members: memberRows, pairs: pairRows };
 }
 

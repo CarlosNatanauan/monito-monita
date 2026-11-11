@@ -122,7 +122,7 @@ describe("getOwnReceiver (dev DB)", () => {
     const rows = await rowsOf(groupId);
     const nameOf = Object.fromEntries(Object.entries(ids).map(([name, id]) => [id, name]));
     for (const row of rows) {
-      expect(await getOwnReceiver(row.giverId)).toEqual({ displayName: nameOf[row.receiverId] });
+      expect(await getOwnReceiver(row.giverId)).toEqual({ displayName: nameOf[row.receiverId], changedAt: null });
     }
   });
 

@@ -9,7 +9,11 @@ import { z } from "zod";
 import { createToken, hashToken, isValidSlug } from "./auth";
 import { pickCodename } from "./codenames";
 import { db } from "./db";
-import { groups, members, themeWeeks, type GroupStatus } from "./db/schema";
+import { assignments, groups, members, themeWeeks, type GroupStatus } from "./db/schema";
+import { cryptoRandomInt, patchLoopOnRemoval, type RandomInt } from "./draw";
+import { MIN_MEMBERS_TO_DRAW } from "./draw-check";
+import { drawInTransaction } from "./draw-service";
+import { getDrawSetup, toExclusions } from "./exclusions";
 
 export const MAX_MEMBERS = 150;
 export const NAME_MAX = 40;
@@ -199,32 +203,104 @@ export async function joinGroup(slug: string, rawName: string): Promise<JoinResu
 // --- Remove --------------------------------------------------------------
 
 export type RemoveResult =
-  | { ok: true }
-  | { ok: false; reason: "NOT_FOUND" | "LOCKED"; message: string };
+  | { ok: true; mode: "removed" | "patched" | "redrawn" }
+  | { ok: false; reason: "NOT_FOUND" | "LOCKED" | "TOO_FEW" | "NEEDS_REDRAW" | "IMPOSSIBLE"; message: string };
+
+/** Thrown inside a transaction to roll it back and return a result. */
+class Abort extends Error {
+  constructor(readonly result: RemoveResult) {
+    super("aborted");
+  }
+}
 
 /**
- * Removes a member (soft delete). Only before the draw for now; removing
- * after the draw will patch the loop (Week 2).
+ * Removes a member (soft delete), in one transaction.
+ *
+ * - Before the draw: just removed.
+ * - After the draw: the loop is patched (whoever had them gets their
+ *   receiver, and only that giver is flagged "Na-update ang monito mo").
+ *   If the patch would pair an excluded couple, it's refused with
+ *   NEEDS_REDRAW; pass `{ redraw: true }` to remove and redraw everyone.
+ * - Never after the draw when only 3 remain (2 can't make a loop), and
+ *   never after the reveal.
  */
-export async function removeMember(groupId: string, memberId: string): Promise<RemoveResult> {
-  return db().transaction(async (tx): Promise<RemoveResult> => {
-    const [group] = await tx
-      .select({ status: groups.status })
-      .from(groups)
-      .where(eq(groups.id, groupId))
-      .for("update")
-      .limit(1);
-    if (!group) return { ok: false, reason: "NOT_FOUND", message: "Hindi mahanap ang group." };
-    if (group.status !== "OPEN") {
-      return { ok: false, reason: "LOCKED", message: "Na-draw na ang names, kaya hindi muna puwedeng magtanggal." };
-    }
+export async function removeMember(
+  groupId: string,
+  memberId: string,
+  options: { redraw?: boolean; random?: RandomInt } = {},
+): Promise<RemoveResult> {
+  try {
+    return await db().transaction(async (tx): Promise<RemoveResult> => {
+      const [group] = await tx
+        .select({ status: groups.status })
+        .from(groups)
+        .where(eq(groups.id, groupId))
+        .for("update")
+        .limit(1);
+      if (!group) return { ok: false, reason: "NOT_FOUND", message: "Hindi mahanap ang group." };
+      if (group.status === "REVEALED") {
+        return { ok: false, reason: "LOCKED", message: "Reveal na, kaya hindi na puwedeng magtanggal." };
+      }
 
-    const removed = await tx
-      .update(members)
-      .set({ removedAt: new Date() })
-      .where(and(eq(members.id, memberId), eq(members.groupId, groupId), isNull(members.removedAt)))
-      .returning({ id: members.id });
-    if (removed.length === 0) return { ok: false, reason: "NOT_FOUND", message: "Wala na ang member na 'yan." };
-    return { ok: true };
-  });
+      const active = await tx
+        .select({ id: members.id, displayName: members.displayName })
+        .from(members)
+        .where(and(eq(members.groupId, groupId), isNull(members.removedAt)));
+      const target = active.find((m) => m.id === memberId);
+      if (!target) return { ok: false, reason: "NOT_FOUND", message: "Wala na ang member na 'yan." };
+
+      const markRemoved = () => tx.update(members).set({ removedAt: new Date() }).where(eq(members.id, memberId));
+
+      if (group.status === "OPEN") {
+        await markRemoved();
+        return { ok: true, mode: "removed" };
+      }
+
+      // After the draw.
+      if (active.length <= MIN_MEMBERS_TO_DRAW) {
+        return {
+          ok: false,
+          reason: "TOO_FEW",
+          message: `${active.length} na lang kayo, kaya hindi na puwedeng magtanggal pagkatapos ng draw. Kailangan ng at least ${MIN_MEMBERS_TO_DRAW} para sa bunutan.`,
+        };
+      }
+
+      if (options.redraw) {
+        await markRemoved();
+        const drawn = await drawInTransaction(tx, groupId, options.random ?? cryptoRandomInt);
+        if (!drawn.ok) throw new Abort({ ok: false, reason: "IMPOSSIBLE", message: drawn.message });
+        return { ok: true, mode: "redrawn" };
+      }
+
+      // Sequential: one transaction = one connection (no concurrent queries).
+      const rows = await tx
+        .select({ giverId: assignments.giverId, receiverId: assignments.receiverId })
+        .from(assignments)
+        .where(eq(assignments.groupId, groupId));
+      const setup = await getDrawSetup(groupId, tx);
+      const patch = patchLoopOnRemoval(rows, memberId, toExclusions(setup.pairs));
+      if (!patch.ok) {
+        return {
+          ok: false,
+          reason: "NEEDS_REDRAW",
+          message: `Kapag tinanggal si ${target.displayName}, magkakabunot ang dalawang bawal. Kailangan ng redraw para matanggal siya.`,
+        };
+      }
+
+      // Apply the patch: drop the removed member's own row first (frees
+      // their receiver), then point their giver at that receiver.
+      const giver = rows.find((r) => r.receiverId === memberId)!;
+      const removedRow = rows.find((r) => r.giverId === memberId)!;
+      await tx.delete(assignments).where(and(eq(assignments.groupId, groupId), eq(assignments.giverId, memberId)));
+      await tx
+        .update(assignments)
+        .set({ receiverId: removedRow.receiverId, receiverChangedAt: new Date() })
+        .where(and(eq(assignments.groupId, groupId), eq(assignments.giverId, giver.giverId)));
+      await markRemoved();
+      return { ok: true, mode: "patched" };
+    });
+  } catch (error) {
+    if (error instanceof Abort) return error.result;
+    throw error;
+  }
 }

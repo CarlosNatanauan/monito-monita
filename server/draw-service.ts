@@ -6,7 +6,7 @@
  * cookie) and returns only their receiver's name.
  */
 import { and, count, eq, isNull } from "drizzle-orm";
-import { db } from "./db";
+import { db, type Tx } from "./db";
 import { assignments, groups, members } from "./db/schema";
 import { cryptoRandomInt, drawLoop, type RandomInt } from "./draw";
 import { describeDrawFailure, MIN_MEMBERS_TO_DRAW, TOO_FEW_MESSAGE } from "./draw-check";
@@ -52,30 +52,38 @@ export async function drawNames(
       return { ok: false, reason: "NOT_DRAWN", message: "Hindi pa na-draw ang names." };
     }
 
-    const setup = await getDrawSetup(groupId, tx);
-    if (setup.members.length < MIN_MEMBERS_TO_DRAW) {
-      return { ok: false, reason: "TOO_FEW", message: TOO_FEW_MESSAGE };
-    }
-
-    const result = drawLoop(
-      setup.members.map((m) => m.id),
-      toExclusions(setup.pairs),
-      random,
-    );
-    if (!result.ok) {
-      const names = new Map(setup.members.map((m) => [m.id, m.displayName]));
-      return {
-        ok: false,
-        reason: "IMPOSSIBLE",
-        message: describeDrawFailure(result, (id) => names.get(id) ?? "isang member"),
-      };
-    }
-
-    if (mode === "redraw") await tx.delete(assignments).where(eq(assignments.groupId, groupId));
-    await tx.insert(assignments).values(result.assignments.map((a) => ({ groupId, ...a })));
-    await tx.update(groups).set({ status: "DRAWN" }).where(eq(groups.id, groupId));
-    return { ok: true, count: result.assignments.length };
+    return drawInTransaction(tx, groupId, random);
   });
+}
+
+/**
+ * The draw itself, inside a transaction that has already locked the group
+ * row: draws the active members, replaces all assignments, sets DRAWN.
+ */
+export async function drawInTransaction(tx: Tx, groupId: string, random: RandomInt): Promise<DrawNamesResult> {
+  const setup = await getDrawSetup(groupId, tx);
+  if (setup.members.length < MIN_MEMBERS_TO_DRAW) {
+    return { ok: false, reason: "TOO_FEW", message: TOO_FEW_MESSAGE };
+  }
+
+  const result = drawLoop(
+    setup.members.map((m) => m.id),
+    toExclusions(setup.pairs),
+    random,
+  );
+  if (!result.ok) {
+    const names = new Map(setup.members.map((m) => [m.id, m.displayName]));
+    return {
+      ok: false,
+      reason: "IMPOSSIBLE",
+      message: describeDrawFailure(result, (id) => names.get(id) ?? "isang member"),
+    };
+  }
+
+  await tx.delete(assignments).where(eq(assignments.groupId, groupId));
+  await tx.insert(assignments).values(result.assignments.map((a) => ({ groupId, ...a })));
+  await tx.update(groups).set({ status: "DRAWN" }).where(eq(groups.id, groupId));
+  return { ok: true, count: result.assignments.length };
 }
 
 /** How many people have a monito. A number only, never pairs. */
@@ -88,12 +96,19 @@ export async function countAssignments(groupId: string): Promise<number> {
  * The viewer's own receiver. Pass only the id of the member verified from
  * the request's own cookie (getMemberSession), never an id from input.
  */
-export async function getOwnReceiver(giverId: string): Promise<{ displayName: string } | null> {
+export async function getOwnReceiver(
+  giverId: string,
+): Promise<{ displayName: string; changedAt: Date | null } | null> {
   const [row] = await db()
-    .select({ displayName: members.displayName })
+    .select({ displayName: members.displayName, changedAt: assignments.receiverChangedAt })
     .from(assignments)
     .innerJoin(members, eq(members.id, assignments.receiverId))
     .where(and(eq(assignments.giverId, giverId), isNull(members.removedAt)))
     .limit(1);
   return row ?? null;
+}
+
+/** The viewer acknowledges "Na-update ang monito mo" (their own row only). */
+export async function acknowledgeReceiverChange(giverId: string): Promise<void> {
+  await db().update(assignments).set({ receiverChangedAt: null }).where(eq(assignments.giverId, giverId));
 }
