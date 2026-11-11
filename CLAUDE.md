@@ -51,5 +51,7 @@ Keep this list updated as scripts are added.
 - `npm run db:migrate`: apply pending migrations to the database in `DATABASE_URL` (`.env.local` = Neon dev branch)
 - `npm run db:migrate:prod`: apply migrations to PRODUCTION, using only `.env.production.local`; shows host and pending migrations and asks for confirmation. The human runs this, never the AI assistant.
 - `npm run db:studio`: browse the database in Drizzle Studio
+- `node scripts/perf/slip-perf.mjs http://localhost:3100`: slip unfold frame rate at 4x CPU throttling, lazy-GSAP, reduced-motion, and noindex checks on `/lab/slip`. Run against a production build (`npm run build && npx next start -p 3100`), not `next dev`
+- `node scripts/perf/slip-frames.mjs [baseUrl] [outDir]`: screenshots of the slip unfold at fixed timeline points (`TIMES=0.3,1.5` to pick), into `test-results/slip-frames/` by default
 
 Database notes: use `db()` from `server/db` for everything (node-postgres pool, attached with `attachDatabasePool` for Vercel); use `db().transaction(...)` when writes must succeed or fail together. Exclusion pairs must be stored sorted (`member_a_id < member_b_id`).
