@@ -42,13 +42,19 @@ const FLAT_CREASES = [
 // layers show; right and bottom are the two folds, softly rounded.
 const layerLines = (to: Side) =>
   `linear-gradient(to ${to}, transparent 2px, rgb(${INK} / 0.09) 2px, rgb(${INK} / 0.09) 3px, transparent 3px, transparent 5px, rgb(${INK} / 0.06) 5px, rgb(${INK} / 0.06) 6px, transparent 6px)`;
+// A faint crease across the top layer, like a slip that's been handled:
+// a shadow line with a highlight right next to it.
+const TOP_CREASE = `linear-gradient(173deg, transparent 45%, rgb(${INK} / 0.07) 48.5%, rgb(255 255 255 / 0.85) 50%, transparent 53%)`;
 const PACKET = [
+  TOP_CREASE,
   layerLines("bottom"),
   layerLines("right"),
   `linear-gradient(to top, rgb(${INK} / 0.10), transparent 9px)`,
   `linear-gradient(to left, rgb(${INK} / 0.08), transparent 9px)`,
 ].join(", ");
-const BACK = "linear-gradient(135deg, #ffffff 0%, #f5f3fa 100%)";
+// The outside of the paper: a slightly warm off-white, so the folded slip
+// reads as paper. The inside (where the name is) stays Slip white.
+const BACK = "linear-gradient(135deg, #fffefb 0%, #f8f5ee 100%)";
 
 // Shading overlays. A turning panel darkens toward its free edge as it goes
 // edge-on; a panel lifting off casts a shadow that starts at the fold.
