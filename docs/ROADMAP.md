@@ -14,18 +14,18 @@ Part-time reality: plan for about 2 hours on weekdays and longer sessions on wee
 
 Goal: a group can be created, people can join, names can be drawn, and the design system exists.
 
-- [ ] Create repo, Next.js + TypeScript + Tailwind + shadcn/ui setup
-- [ ] Design tokens from `docs/DESIGN.md`: colors, fonts (Plus Jakarta Sans, Gochi Hand), type scale
-- [ ] Repo hygiene: `.gitattributes` (LF endings), `.env.example`, pinned Node 24, remove starter page and assets
-- [ ] Neon Postgres + Drizzle schema + first migration
-- [ ] Deploy empty app to Vercel (deploy on day 1, not day 20)
-- [ ] Token + cookie helpers (`server/auth.ts`)
-- [ ] Create group page → returns share link + organizer link
-- [ ] Join page → name only → creates member, sets cookie, shows personal link
-- [ ] Organizer page: member list, remove member
-- [ ] Exclusions UI (pick two members)
-- [ ] **Draw algorithm + unit tests**
-- [ ] Draw button → saves assignments, locks joins
+- [x] Create repo, Next.js + TypeScript + Tailwind + shadcn/ui setup
+- [x] Design tokens from `docs/DESIGN.md`: colors, fonts (Plus Jakarta Sans, Gochi Hand), type scale
+- [x] Repo hygiene: `.gitattributes` (LF endings), `.env.example`, pinned Node 24, remove starter page and assets
+- [x] Neon Postgres + Drizzle schema + first migration
+- [x] Deploy empty app to Vercel (deploy on day 1, not day 20)
+- [x] Token + cookie helpers (`server/auth.ts`)
+- [x] Create group page → returns share link + organizer link
+- [x] Join page → name only → creates member, sets cookie, shows personal link
+- [x] Organizer page: member list, remove member
+- [x] Exclusions UI (pick two members)
+- [x] **Draw algorithm + unit tests**
+- [x] Draw button → saves assignments, locks joins
 - [ ] Weekend: quick mockups of the 4 signature screens (Figma or paper), and decide: SVG + GSAP only, or Rive for the bowl
 
 ✅ Done when: you can create a group, join from 3 phones, and draw, with the right colors and fonts.
@@ -37,12 +37,12 @@ Goal: everything a member needs between the draw and the party, plus the most im
 - [ ] **Paper slip component** (folded / unfolded states)
 - [ ] **Signature moment: unfolding your slip** (3D unfold, handwritten name, gold glow, haptic, plays once, reduced-motion version)
 - [ ] Member home: open slip + their wishlist + this week's theme
-- [ ] Wishlist add / edit / delete
-- [ ] Theme weeks: set up on group creation, current theme shown
-- [ ] "Copy reminder for GC" button
-- [ ] Codenames (random generated list, Filipino-flavored)
-- [ ] Remove member after draw → patch the loop
-- [ ] Anonymity check: inspect network responses, confirm no leaks
+- [x] Wishlist add / edit / delete
+- [x] Theme weeks: set up on group creation, current theme shown
+- [x] "Copy reminder for GC" button
+- [x] Codenames (random generated list, Filipino-flavored)
+- [x] Remove member after draw → patch the loop
+- [x] Anonymity check: inspect network responses, confirm no leaks
 - [ ] **Weekend: test with a real group** (family, friends, or office), on real Android phones
 
 ✅ Done when: a real group can use it start to finish (except the reveal), and people react to the slip unfold.
@@ -58,7 +58,7 @@ Goal: the moments strangers see first, then launch.
 - [ ] Performance pass: Lighthouse mobile 90+, test on a budget Android
 - [ ] Basic rate limiting + input limits
 - [ ] PostHog analytics (create → join → draw → slip opened funnel)
-- [ ] Playwright test of the main flow on a mobile viewport
+- [x] Playwright test of the main flow on a mobile viewport
 - [ ] Fix everything from the test group's feedback
 - [ ] **Launch Nov 28:** post in your own GCs, Facebook, Reddit (r/Philippines), LinkedIn
 
