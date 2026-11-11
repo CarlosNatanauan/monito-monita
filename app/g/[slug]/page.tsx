@@ -49,7 +49,8 @@ async function JoinContent({ params }: Pick<PageProps<"/g/[slug]">, "params">) {
             <CardTitle>Sarado na ang sali.</CardTitle>
           </CardHeader>
           <CardContent className="text-muted-foreground">
-            Na-draw na ang names para sa group na &apos;to. Kung kasali ka, buksan ang personal link mo.
+            <p>Na-draw na ang names para sa group na &apos;to. Kung kasali ka, buksan ang personal link mo.</p>
+            <p className="mt-3 font-semibold text-foreground">Kasali ka na? Hingin ang link mo sa organizer.</p>
           </CardContent>
         </Card>
       ) : isFull ? (

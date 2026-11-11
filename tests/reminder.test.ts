@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGcReminder, type ReminderInput } from "@/lib/reminder";
+import { buildGcReminder, mostHaveOpened, type ReminderInput } from "@/lib/reminder";
 import { getThemeStatus } from "@/lib/theme-status";
 import { themeStartDates } from "@/lib/theme-weeks";
 
@@ -55,5 +55,29 @@ describe("buildGcReminder", () => {
     );
     expect(buildGcReminder({ ...drawn, theme: getThemeStatus(themes, PARTY, PARTY) })).toContain("🎉 Party na ngayon!");
     expect(buildGcReminder({ ...drawn, theme: getThemeStatus([], PARTY, "2026-12-01") })).not.toContain("✨");
+  });
+
+  it("right after the draw: tells everyone to open their link, with party and budget", () => {
+    const message = buildGcReminder({ ...base, status: "DRAWN", kind: "drawn" });
+    expect(message).toBe(
+      [
+        "🎁 Barkada Party",
+        "",
+        "Na-draw na! Buksan ang link mo para makita ang monito mo 🎁",
+        "",
+        "🎉 Party: Sat, Dec 19, 2026",
+        "💸 Budget: ₱500",
+      ].join("\n"),
+    );
+  });
+});
+
+describe("mostHaveOpened", () => {
+  it("is true only when more than half have opened their slip", () => {
+    expect(mostHaveOpened({ opened: 0, total: 0 })).toBe(false);
+    expect(mostHaveOpened({ opened: 0, total: 4 })).toBe(false);
+    expect(mostHaveOpened({ opened: 2, total: 4 })).toBe(false);
+    expect(mostHaveOpened({ opened: 3, total: 4 })).toBe(true);
+    expect(mostHaveOpened({ opened: 8, total: 12 })).toBe(true);
   });
 });

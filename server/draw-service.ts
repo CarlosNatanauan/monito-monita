@@ -138,6 +138,19 @@ export async function markSlipOpened(memberId: string): Promise<void> {
     .where(and(eq(members.id, memberId), isNull(members.slipOpenedAt), isNull(members.removedAt)));
 }
 
+/**
+ * Whether this member has opened their slip, without touching their
+ * receiver (for the organizer page's own "Buksan ang slip mo" step).
+ */
+export async function hasOpenedOwnSlip(memberId: string): Promise<boolean> {
+  const [row] = await db()
+    .select({ at: members.slipOpenedAt })
+    .from(members)
+    .where(eq(members.id, memberId))
+    .limit(1);
+  return Boolean(row?.at);
+}
+
 /** "8 of 12 have opened their slip": counts only, never who. */
 export async function countSlipsOpened(groupId: string): Promise<{ opened: number; total: number }> {
   const [row] = await db()

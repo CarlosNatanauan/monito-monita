@@ -200,6 +200,29 @@ export async function joinGroup(slug: string, rawName: string): Promise<JoinResu
   }
 }
 
+// --- Lost links ----------------------------------------------------------
+
+export type ReissueResult =
+  | { ok: true; token: string; displayName: string }
+  | { ok: false; reason: "NOT_FOUND"; message: string };
+
+/**
+ * "Get new link": gives an active member a new personal-link token. Only
+ * the new hash is stored, so the old link and the old cookie stop working.
+ * Returns just the token and the name the organizer already sees (never a
+ * codename or anything about pairs).
+ */
+export async function reissueMemberLink(groupId: string, memberId: string): Promise<ReissueResult> {
+  const token = createToken();
+  const [row] = await db()
+    .update(members)
+    .set({ tokenHash: hashToken(token) })
+    .where(and(eq(members.id, memberId), eq(members.groupId, groupId), isNull(members.removedAt)))
+    .returning({ displayName: members.displayName });
+  if (!row) return { ok: false, reason: "NOT_FOUND", message: "Wala na ang member na 'yan." };
+  return { ok: true, token, displayName: row.displayName };
+}
+
 // --- Remove --------------------------------------------------------------
 
 export type RemoveResult =

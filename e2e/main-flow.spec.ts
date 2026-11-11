@@ -7,7 +7,7 @@
  * deleted afterwards.
  */
 import { mkdirSync, rmSync } from "node:fs";
-import { expect, test, type Browser, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
+import { expect, test, type Browser, type BrowserContext, type Page, type Response, type TestInfo } from "@playwright/test";
 import { formatPartyDate } from "../lib/format";
 import { addDays, todayIn } from "../lib/theme-weeks";
 import { closeDb } from "../server/db";
@@ -117,6 +117,14 @@ function watchForGsap(page: Page) {
   return seen;
 }
 
+/** The organizer page's cards appear in exactly this order (by card title). */
+async function expectCardOrder(page: Page, titles: string[]) {
+  const all = await page.locator('[data-slot="card-title"]').allTextContents();
+  const positions = titles.map((t) => all.findIndex((text) => text.trim() === t));
+  for (const [i, t] of titles.entries()) expect(positions[i], `card "${t}" is on the page`).toBeGreaterThanOrEqual(0);
+  expect(positions, `cards in order: ${titles.join(" → ")}`).toEqual([...positions].sort((a, b) => a - b));
+}
+
 async function join(page: Page, shareUrl: string, name: string) {
   await page.goto(shareUrl);
   await page.getByLabel("Pangalan mo").fill(name);
@@ -202,9 +210,13 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
 
     await page.getByLabel("Pangalan mo").fill("Joy");
     await page.getByRole("button", { name: "Join the group" }).click();
-    await expect(page).toHaveURL(new RegExp(`/g/${slug}/me\\?welcome=1$`));
     await expect(page.getByRole("heading", { name: "Hi, Joy!" })).toBeVisible();
     await expect(page.getByText("Save this link!")).toBeVisible();
+    // The welcome highlight stays, but ?welcome=1 is replaced away (no reload).
+    await expect(page).toHaveURL(new RegExp(`/g/${slug}/me$`));
+    await expect(page.getByText("Save this link!")).toBeVisible();
+    // Member only: no role switch.
+    await expect(page.getByRole("navigation", { name: "Switch view" })).toHaveCount(0);
     await expect(page.getByText("Waiting for the bunutan…")).toBeVisible();
     await readLink(page, /\/me\?t=/);
     await shot(page, "joy-me-welcome");
@@ -267,6 +279,20 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await shot(page, "admin-after-organizer-joined");
   });
 
+  await test.step("organizer + member: switch between 'Manage group' and 'My slip'", async () => {
+    const { page } = organizer;
+    const nav = page.getByRole("navigation", { name: "Switch view" });
+    await expect(nav.getByRole("link", { name: "Manage group" })).toHaveAttribute("aria-current", "page");
+    await nav.getByRole("link", { name: "My slip" }).click();
+    await expect(page).toHaveURL(new RegExp(`/g/${slug}/me$`));
+    await expect(page.getByRole("heading", { name: "Hi, Tita Org!" })).toBeVisible();
+    await expect(nav.getByRole("link", { name: "My slip" })).toHaveAttribute("aria-current", "page");
+    await shot(page, "role-switch-me");
+    await nav.getByRole("link", { name: "Manage group" }).click();
+    await expect(page).toHaveURL(new RegExp(`/g/${slug}/admin$`));
+    await expect(page.getByRole("heading", { name: groupName })).toBeVisible();
+  });
+
   await test.step("organizer removes Marco; his link stops working", async () => {
     const { page } = organizer;
     await page.getByRole("button", { name: "Remove Marco" }).click();
@@ -312,9 +338,11 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
   // --- Exclusions, draw, results, leaks, redraw ------------------------------
 
   const ben = await newPerson(browser, testInfo, "Ben");
+  let benLink = "";
   await test.step("Ben joins (4 active members: Joy, Joy M, Tita Org, Ben)", async () => {
     await join(ben.page, shareUrl, "Ben");
     await expect(ben.page.getByRole("heading", { name: "Hi, Ben!" })).toBeVisible();
+    benLink = await readLink(ben.page, /\/me\?t=/);
   });
 
   // Wishlists. Titles are unique and contain no member names (leak checks).
@@ -390,6 +418,15 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
 
   await test.step("GC reminder before the draw: invite, link, count, party date", async () => {
     await organizer.page.goto(`/g/${slug}/admin`);
+    // Before the draw: share link and Draw near the top, the rest below.
+    await expectCardOrder(organizer.page, [
+      "Share link (para sa GC)",
+      "Bunutan",
+      "Bawal magkabunot",
+      "Members",
+      "Reminder para sa GC",
+    ]);
+    await expect(organizer.page.getByRole("group", { name: "Reminder type" })).toHaveCount(0);
     await checkReminder([
       "Sali na sa exchange gift natin! 🎄",
       `👉 ${shareUrl}`,
@@ -438,7 +475,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await expect(pairList().getByRole("listitem")).toHaveCount(2);
     await expect(warning()).toHaveText("Masyadong maraming bawal kay Joy. Tanggalin ang isa sa mga pair niya.");
     await expect(page.getByRole("button", { name: "Draw names" })).toBeDisabled();
-    await expect(page.getByText("Ayusin muna ang mga bawal sa itaas.")).toBeVisible();
+    await expect(page.getByText("Ayusin muna ang mga bawal sa baba.")).toBeVisible();
     await shot(page, "exclusion-impossible");
 
     await page.getByRole("button", { name: /Remove pair (Joy and Tita Org|Tita Org and Joy)/ }).click();
@@ -456,6 +493,27 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await expect(page.getByText("Names drawn")).toBeVisible();
     await expect(page.getByText("4 na ang may monito.", { exact: false })).toBeVisible();
     await expect(page.getByText("Na-draw na ang names")).toBeVisible();
+
+    // Right after the draw: next steps first, then the draw status, members lower.
+    await expect(page.getByText("0 of 4 have opened their slip")).toBeVisible();
+    await expectCardOrder(page, ["Na-draw na! I-announce sa GC", "Bunutan", "Members", "Share link (para sa GC)"]);
+    await expect(page.getByText("Reminder para sa GC", { exact: true })).toHaveCount(0);
+    // The organizer is a member too, with an unopened slip.
+    await expect(page.getByRole("link", { name: "Buksan ang slip mo" })).toHaveAttribute("href", `/g/${slug}/me`);
+    // "Na-draw na!" is the default GC message…
+    const kind = page.getByRole("group", { name: "Reminder type" });
+    await expect(kind.getByRole("button", { name: "Na-draw na" })).toHaveAttribute("aria-pressed", "true");
+    await checkReminder(
+      [
+        "Na-draw na! Buksan ang link mo para makita ang monito mo 🎁",
+        `🎉 Party: ${formatPartyDate(partyDate)}`,
+        "💸 Budget: ₱500",
+      ],
+      [shareUrl, "Unang theme"],
+    );
+    await shot(page, "names-drawn-next-steps");
+    // …with an easy switch to the theme reminder.
+    await kind.getByRole("button", { name: "Theme reminder" }).click();
     await checkReminder(
       [
         "reminder!",
@@ -543,6 +601,49 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     // The organizer sees a count, never who.
     await organizer.page.goto(`/g/${slug}/admin`);
     await expect(organizer.page.getByText("4 of 4 have opened their slip")).toBeVisible();
+    // Most have opened: the next steps give way to the usual layout, and the
+    // theme reminder is the default again.
+    await expect(organizer.page.getByText("Na-draw na! I-announce sa GC")).toHaveCount(0);
+    await expect(organizer.page.getByRole("link", { name: "Buksan ang slip mo" })).toHaveCount(0);
+    await expectCardOrder(organizer.page, ["Bunutan", "Reminder para sa GC", "Members", "Share link (para sa GC)"]);
+    await expect(
+      organizer.page.getByRole("group", { name: "Reminder type" }).getByRole("button", { name: "Theme reminder" }),
+    ).toHaveAttribute("aria-pressed", "true");
+    await expect(organizer.page.getByLabel("Reminder preview")).toContainText("Na-update n'yo na ba ang wishlist n'yo?");
+    await shot(organizer.page, "admin-most-opened");
+  });
+
+  await test.step("home page: 'Your groups' on this device, dead groups dropped", async () => {
+    // Joy: member only. A stale entry for a group that doesn't exist goes away.
+    const { page } = joy;
+    await page.goto("/");
+    await page.evaluate(() => {
+      const list = JSON.parse(localStorage.getItem("mm:groups") ?? "[]");
+      list.push({ slug: "zzzzzzzzzzzz", name: "Wala na 'to", roles: ["member"], seenAt: 1 });
+      localStorage.setItem("mm:groups", JSON.stringify(list));
+    });
+    await page.reload();
+    const yours = page.getByRole("region", { name: "Your groups" });
+    const joyLink = yours.getByRole("link", { name: `Continue: ${groupName}` });
+    await expect(joyLink).toContainText("member");
+    await expect(joyLink).not.toContainText("organizer");
+    await expect(yours.getByText("Wala na 'to")).toHaveCount(0);
+    const stored = await page.evaluate(() => localStorage.getItem("mm:groups") ?? "");
+    expect(stored).not.toContain("zzzzzzzzzzzz");
+    // Never a token on the device list.
+    expect(stored).not.toMatch(/[A-Za-z0-9_-]{43}/);
+    await shot(page, "home-your-groups");
+    await joyLink.click();
+    await expect(page).toHaveURL(new RegExp(`/g/${slug}/me$`));
+
+    // The organizer (also a member): both roles, and the link goes to Manage.
+    await organizer.page.goto("/");
+    const orgLink = organizer.page
+      .getByRole("region", { name: "Your groups" })
+      .getByRole("link", { name: `Continue: ${groupName}` });
+    await expect(orgLink).toContainText("organizer, member");
+    await orgLink.click();
+    await expect(organizer.page).toHaveURL(new RegExp(`/g/${slug}/admin$`));
   });
 
   await test.step("joining is closed after the draw", async () => {
@@ -550,6 +651,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await late.page.goto(shareUrl);
     await expect(late.page.getByText("Sarado na ang sali.")).toBeVisible();
     await expect(late.page.getByLabel("Pangalan mo")).toHaveCount(0);
+    await expect(late.page.getByText("Kasali ka na? Hingin ang link mo sa organizer.")).toBeVisible();
     await shot(late.page, "join-closed");
     await late.context.close();
   });
@@ -566,6 +668,48 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
   }
 
   await test.step("leak test: no page exposes anyone else's pair (HTML + network)", async () => {
+    await leakCheck();
+  });
+
+  await test.step("lost link: organizer gets Ben a new one; the old link and cookie stop working", async () => {
+    const { page } = organizer;
+    await page.goto(`/g/${slug}/admin`);
+    await page.getByRole("button", { name: "Get new link for Ben" }).click();
+    await expect(page.getByText("Hindi na gagana ang luma niyang link", { exact: false })).toBeVisible();
+    await shot(page, "new-link-confirm");
+
+    // The action's response carries the new link only: no pairs, no codenames.
+    const truth = await getTruth(slug);
+    const responses: Promise<string>[] = [];
+    const onResponse = (r: Response) => {
+      if (r.request().method() === "POST") responses.push(r.text().catch(() => ""));
+    };
+    page.on("response", onResponse);
+    await page.getByRole("button", { name: "Oo, gumawa ng bago" }).click();
+    const box = page.getByRole("group", { name: "New link for Ben" }).locator("p.select-all");
+    await expect(box).toHaveText(new RegExp(`^https?://.+/g/${slug}/me\\?t=`));
+    const newLink = (await box.textContent())!.trim();
+    page.off("response", onResponse);
+    expect(newLink).not.toBe(benLink);
+    expectOrganizerPageClean((await Promise.all(responses)).join("\n"), truth);
+    await shot(page, "new-link-shown");
+
+    // Ben's old cookie no longer works on his phone…
+    await ben.page.goto(`/g/${slug}/me`);
+    await expect(ben.page.getByText("Hindi ka pa namin kilala sa device na 'to.")).toBeVisible();
+    // …nor does his old link on another phone.
+    const oldLinkPhone = await newPerson(browser, testInfo, "Ben (old link)");
+    await oldLinkPhone.page.goto(benLink);
+    await expect(oldLinkPhone.page.getByText("Hindi ka pa namin kilala sa device na 'to.")).toBeVisible();
+    await oldLinkPhone.context.close();
+
+    // The new link works, and his slip is still open.
+    await ben.page.goto(newLink);
+    await expect(ben.page).toHaveURL(new RegExp(`/g/${slug}/me$`));
+    await expect(ben.page.getByRole("heading", { name: "Hi, Ben!" })).toBeVisible();
+    await expect(tapToOpen(ben.page)).toHaveCount(0);
+    expect(await readSlipName(ben.page)).toBe(firstDraw.get("Ben"));
+
     await leakCheck();
   });
 

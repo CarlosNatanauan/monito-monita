@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { YourGroups } from "./your-groups";
 
 // Placeholder home page: shows the design foundation (colors, fonts, slip).
 // The real landing page ("Try a bunutan") comes in Week 3.
@@ -12,6 +13,9 @@ export default function Home() {
           Bunutan, wishlists, and the big reveal. Isang link lang.
         </p>
       </header>
+
+      {/* Returning on this device: groups they created or joined. */}
+      <YourGroups />
 
       <div
         aria-label="Sample slip"

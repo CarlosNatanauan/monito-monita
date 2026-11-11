@@ -8,7 +8,9 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { joinedCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { getMemberSession, getOwnToken, isValidSlug, personalLinkPath } from "@/server/auth";
+import { RememberGroup } from "@/components/remember-group";
+import { RoleSwitch } from "@/components/role-switch";
+import { getCurrentOrganizer, getMemberSession, getOwnToken, isValidSlug, personalLinkPath } from "@/server/auth";
 import { getOwnReceiver } from "@/server/draw-service";
 import { getGroupSummary } from "@/server/members";
 import { getThemeWeeks } from "@/server/groups";
@@ -16,6 +18,7 @@ import { describeThemeStatus, getThemeStatus } from "@/lib/theme-status";
 import { todayIn } from "@/lib/theme-weeks";
 import { getReceiverWishlist, listWishlist } from "@/server/wishlists";
 import { WishlistView } from "@/components/wish-item";
+import { CleanWelcomeParam } from "./clean-welcome";
 import { MonitoReveal } from "./monito-reveal";
 import { MonitoUpdatedNotice } from "./monito-updated";
 import { WishlistEditor } from "./wishlist-editor";
@@ -39,17 +42,19 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   const { slug } = await params;
   if (!isValidSlug(slug)) notFound();
 
-  const [group, session, token, query] = await Promise.all([
+  const [group, session, token, query, organizer] = await Promise.all([
     getGroupSummary(slug),
     getMemberSession(slug),
     getOwnToken("member", slug),
     searchParams,
+    getCurrentOrganizer(slug),
   ]);
   if (!group) notFound();
 
   if (session.kind === "removed") {
     return (
       <>
+        <RememberGroup slug={slug} name={group.name} role="member" forget />
         <h1 className="text-heading">{group.name}</h1>
         <RemovedNotice />
       </>
@@ -59,6 +64,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   if (session.kind === "none") {
     return (
       <>
+        <RememberGroup slug={slug} name={group.name} role="member" forget />
         <h1 className="text-heading">{group.name}</h1>
         <Card>
           <CardHeader>
@@ -95,6 +101,9 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
 
   return (
     <>
+      <RememberGroup slug={slug} name={group.name} role="member" />
+      {welcome && <CleanWelcomeParam />}
+      {organizer && <RoleSwitch slug={slug} current="member" />}
       <header className="flex flex-col gap-2">
         <p className="text-caption font-semibold text-muted-foreground">{group.name}</p>
         <h1 className="text-heading">Hi, {member.displayName}!</h1>

@@ -3,7 +3,7 @@
  */
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, inArray } from "drizzle-orm";
 import { addDays, DEFAULT_TIMEZONE, isIsoDate, MAX_THEMES, themeStartDates, todayIn } from "@/lib/theme-weeks";
 import { createToken, hashToken } from "./auth";
 import { db } from "./db";
@@ -159,4 +159,19 @@ export async function getThemeWeeks(groupId: string): Promise<{ title: string; s
     .from(themeWeeks)
     .where(eq(themeWeeks.groupId, groupId))
     .orderBy(asc(themeWeeks.position));
+}
+
+/** Most groups a device's "Your groups" list asks about at once. */
+export const MAX_REMEMBERED_GROUPS = 20;
+
+/**
+ * Current names of the groups that still exist, for the home page's
+ * "Your groups" list. Only what the public join page already shows.
+ */
+export async function getGroupNames(slugs: string[]): Promise<{ slug: string; name: string }[]> {
+  if (slugs.length === 0) return [];
+  return db()
+    .select({ slug: groups.slug, name: groups.name })
+    .from(groups)
+    .where(inArray(groups.slug, slugs.slice(0, MAX_REMEMBERED_GROUPS)));
 }

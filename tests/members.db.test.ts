@@ -8,7 +8,14 @@ import { findMemberByToken, hashToken } from "@/server/auth";
 import { closeDb, db } from "@/server/db";
 import { groups, members } from "@/server/db/schema";
 import { createGroup } from "@/server/groups";
-import { getGroupSummary, getOrganizerView, joinGroup, MAX_MEMBERS, removeMember } from "@/server/members";
+import {
+  getGroupSummary,
+  getOrganizerView,
+  joinGroup,
+  MAX_MEMBERS,
+  reissueMemberLink,
+  removeMember,
+} from "@/server/members";
 
 const slugs: string[] = [];
 
@@ -157,5 +164,35 @@ describe("getOrganizerView (dev DB)", () => {
     for (const forbidden of ["receiver", "giver", "assignment", "codename", "tokenHash", "organizerTokenHash"]) {
       expect(json).not.toContain(forbidden);
     }
+  });
+});
+
+describe("reissueMemberLink (dev DB)", () => {
+  it("gives a new working token; the old one stops working", async () => {
+    const { slug, groupId } = await newGroup();
+    const joy = await joinGroup(slug, "Joy");
+    if (!joy.ok) throw new Error(joy.message);
+
+    const result = await reissueMemberLink(groupId, joy.memberId);
+    if (!result.ok) throw new Error(result.message);
+    expect(result).toEqual({ ok: true, token: expect.any(String), displayName: "Joy" });
+    expect(result.token).not.toBe(joy.token);
+    expect(await findMemberByToken(slug, joy.token)).toBeNull();
+    expect((await findMemberByToken(slug, result.token))?.id).toBe(joy.memberId);
+    // Only the hash is stored.
+    const [row] = await db().select({ tokenHash: members.tokenHash }).from(members).where(eq(members.id, joy.memberId));
+    expect(row.tokenHash).toBe(hashToken(result.token));
+  });
+
+  it("only for active members of the organizer's own group", async () => {
+    const a = await newGroup();
+    const b = await newGroup();
+    const joy = await joinGroup(a.slug, "Joy");
+    const ben = await joinGroup(a.slug, "Ben");
+    if (!joy.ok || !ben.ok) throw new Error("join failed");
+    expect(await reissueMemberLink(b.groupId, joy.memberId)).toMatchObject({ ok: false, reason: "NOT_FOUND" });
+    await removeMember(a.groupId, ben.memberId);
+    expect(await reissueMemberLink(a.groupId, ben.memberId)).toMatchObject({ ok: false, reason: "NOT_FOUND" });
+    expect(await findMemberByToken(a.slug, joy.token)).not.toBeNull();
   });
 });

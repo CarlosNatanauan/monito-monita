@@ -3,6 +3,7 @@
 import { KeyRound, Share2 } from "lucide-react";
 import { useSyncExternalStore } from "react";
 import { CopyButton, LinkBox } from "@/components/copy-link";
+import { RememberGroup } from "@/components/remember-group";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
@@ -45,6 +46,7 @@ export function GroupCreated({
 
   return (
     <>
+      <RememberGroup slug={slug} name={groupName} role="organizer" />
       <header className="flex flex-col gap-2">
         <h1 className="text-heading">Ready na ang group mo!</h1>
         <p className="text-muted-foreground">

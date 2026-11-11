@@ -5,9 +5,14 @@
 import { formatPartyDate, formatPeso } from "./format";
 import type { ThemeStatus } from "./theme-status";
 
+/** After the draw: announce it ("drawn"), or the weekly theme nudge ("theme"). */
+export type ReminderKind = "drawn" | "theme";
+
 export interface ReminderInput {
   groupName: string;
   status: "OPEN" | "DRAWN" | "REVEALED";
+  /** After the draw only. Defaults to "theme". */
+  kind?: ReminderKind;
   shareUrl: string;
   memberCount: number;
   partyDate: string;
@@ -49,6 +54,17 @@ export function buildGcReminder(input: ReminderInput): string {
     ].join("\n");
   }
 
+  if (input.kind === "drawn") {
+    return [
+      `🎁 ${input.groupName}`,
+      "",
+      "Na-draw na! Buksan ang link mo para makita ang monito mo 🎁",
+      "",
+      `🎉 Party: ${party}`,
+      `💸 Budget: ${formatPeso(input.budget)}`,
+    ].join("\n");
+  }
+
   const theme = themeLine(input.theme);
   return [
     `🎁 ${input.groupName} reminder!`,
@@ -59,4 +75,12 @@ export function buildGcReminder(input: ReminderInput): string {
     "",
     "Na-update n'yo na ba ang wishlist n'yo? Buksan ang personal link n'yo para hindi mahirapan ang monito n'yo 😉",
   ].join("\n");
+}
+
+/**
+ * "Most members have opened their slip": more than half of everyone with a
+ * monito. Until then, the organizer page leads with the "Na-draw na!" steps.
+ */
+export function mostHaveOpened({ opened, total }: { opened: number; total: number }): boolean {
+  return total > 0 && opened * 2 > total;
 }

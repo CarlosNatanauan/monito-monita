@@ -12,7 +12,7 @@ import { db } from "../server/db";
 import { assignments, groups, members, wishlistItems } from "../server/db/schema";
 
 export interface Truth {
-  members: { id: string; name: string; removed: boolean }[];
+  members: { id: string; name: string; codename: string; removed: boolean }[];
   pairs: { id: string; giverId: string; receiverId: string }[];
   wishes: { memberId: string; title: string; note: string | null }[];
 }
@@ -22,7 +22,7 @@ export async function getTruth(slug: string): Promise<Truth> {
   const [group] = await db().select({ id: groups.id }).from(groups).where(eq(groups.slug, slug));
   const [memberRows, pairRows, wishRows] = await Promise.all([
     db()
-      .select({ id: members.id, name: members.displayName, removedAt: members.removedAt })
+      .select({ id: members.id, name: members.displayName, codename: members.codename, removedAt: members.removedAt })
       .from(members)
       .where(eq(members.groupId, group.id)),
     db()
@@ -36,7 +36,7 @@ export async function getTruth(slug: string): Promise<Truth> {
       .where(eq(members.groupId, group.id)),
   ]);
   return {
-    members: memberRows.map((m) => ({ id: m.id, name: m.name, removed: m.removedAt !== null })),
+    members: memberRows.map((m) => ({ id: m.id, name: m.name, codename: m.codename, removed: m.removedAt !== null })),
     pairs: pairRows,
     wishes: wishRows,
   };
@@ -95,9 +95,15 @@ function commonChecks(text: string, truth: Truth, label: string) {
   for (const pair of truth.pairs) expect(text, `${label}: contains an assignment id`).not.toContain(pair.id);
 }
 
-/** Organizer page: names are fine (member list), pair data is not. */
+/**
+ * Organizer page (and its action responses): names are fine (member list),
+ * pair data and codenames are not.
+ */
 export function expectOrganizerPageClean(text: string, truth: Truth) {
   commonChecks(text, truth, "organizer page");
+  for (const m of truth.members) {
+    expect(text, `organizer page shows the codename of ${m.name}`).not.toContain(m.codename);
+  }
   expect(text, "organizer page shows a monito").not.toContain("Ang monito mo");
   expectNoWishesOf(text, truth, new Set(truth.members.map((m) => m.id)), "organizer page");
 }

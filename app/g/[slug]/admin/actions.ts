@@ -2,10 +2,10 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
-import { getCurrentOrganizer, isValidSlug } from "@/server/auth";
+import { getCurrentOrganizer, isValidSlug, personalLinkPath } from "@/server/auth";
 import { drawNames, type DrawMode } from "@/server/draw-service";
 import { addExclusion, removeExclusion } from "@/server/exclusions";
-import { removeMember } from "@/server/members";
+import { reissueMemberLink, removeMember } from "@/server/members";
 
 export type ActionResult = { ok: true } | { ok: false; message: string; needsRedraw?: boolean };
 
@@ -59,6 +59,28 @@ export async function removeMemberAction(input: {
       return { ok: false, message: result.message, needsRedraw: result.reason === "NEEDS_REDRAW" };
     },
   );
+}
+
+export type ReissueLinkResult = { ok: true; path: string } | { ok: false; message: string };
+
+/**
+ * "Get new link" for a member who lost theirs. Their old link and cookie
+ * stop working. Returns only the new personal-link path: no codename, no
+ * pairs. No refresh: nothing else on the page changes.
+ */
+export async function reissueMemberLinkAction(input: { slug: string; memberId: string }): Promise<ReissueLinkResult> {
+  const parsed = z.object({ slug: slugField, memberId: z.uuid() }).safeParse(input);
+  if (!parsed.success) return { ok: false, message: "Hindi ma-process ang request." };
+  const organizer = await getCurrentOrganizer(parsed.data.slug);
+  if (!organizer) return { ok: false, message: NOT_ORGANIZER };
+  try {
+    const result = await reissueMemberLink(organizer.groupId, parsed.data.memberId);
+    if (!result.ok) return { ok: false, message: result.message };
+    return { ok: true, path: personalLinkPath("member", parsed.data.slug, result.token) };
+  } catch (error) {
+    console.error("reissueMemberLinkAction failed", error);
+    return { ok: false, message: "Hindi nakagawa ng bagong link. Subukan ulit in a bit." };
+  }
 }
 
 /** "These two can't draw each other." */
