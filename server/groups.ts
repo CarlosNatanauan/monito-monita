@@ -96,6 +96,8 @@ export function createGroupFormValues(formData: FormData) {
 // --- Creation ------------------------------------------------------------
 
 export interface CreatedGroup {
+  /** Internal id: server-side only (e.g. hashed for analytics). */
+  groupId: string;
   slug: string;
   /** Raw organizer token: shown once to the creator, never stored. */
   organizerToken: string;
@@ -119,7 +121,7 @@ export async function createGroup(input: CreateGroupInput): Promise<CreatedGroup
   for (let attempt = 1; ; attempt++) {
     const slug = createSlug();
     try {
-      await db().transaction(async (tx) => {
+      const groupId = await db().transaction(async (tx) => {
         const [group] = await tx
           .insert(groups)
           .values({
@@ -142,8 +144,9 @@ export async function createGroup(input: CreateGroupInput): Promise<CreatedGroup
             })),
           );
         }
+        return group.id;
       });
-      return { slug, organizerToken };
+      return { groupId, slug, organizerToken };
     } catch (error) {
       // A slug collision is astronomically unlikely, but retry just in case.
       if (attempt < 3 && isUniqueViolation(error, "groups_slug_unique")) continue;

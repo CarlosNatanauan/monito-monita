@@ -40,7 +40,7 @@ Each tool has one clear job. Animation code is **lazy-loaded** only on the scree
 |---|---|
 | Unit tests | **Vitest** (draw algorithm, token helpers) |
 | End-to-end tests | **Playwright** on a mobile viewport (create → join → draw → open slip) |
-| Product analytics | **PostHog** (free tier): funnel of group created → members joined → drawn → slip opened |
+| Product analytics | **PostHog** (free tier), server-side events only: see "Analytics" below |
 | Share previews | `next/og` (built into Next.js) |
 | Email (later) | Resend |
 | Realtime (later) | Not needed for launch: the bowl refreshes by polling every few seconds while open. Pick a realtime service in December when building anonymous chat |
@@ -55,7 +55,8 @@ Backend logic lives in **Server Actions** and **Route Handlers**, with all busin
 Group
   id, slug (random, unguessable), name
   budget (int, in pesos), partyDate, timezone (default Asia/Manila)
-  status: OPEN | DRAWN | REVEALED
+  status: OPEN | DRAWN | REVEALING | REVEALED
+  revealStep (int: pair on the reveal screen, 1-based, while REVEALING)
   organizerTokenHash
   organizationId (nullable — reserved for future office plans)
   createdAt
@@ -138,7 +139,7 @@ The server knows everything. The API must never leak it.
 
 - A member can only fetch **their own** assignment (who they're giving to).
 - No endpoint returns "who is giving to me" before `REVEALED`.
-- Organizer pages show who has joined and the draw status, **not** the pairs.
+- Organizer pages show who has joined and the draw status, **not** the pairs. The one exception is the reveal screen once the organizer starts the reveal: one pair at a time, then all of them after `REVEALED`.
 - Before reveal, nothing in page HTML, JSON, or network responses should contain other people's pairs. Check this in the browser's Network tab.
 
 ## Changes after the draw
@@ -153,11 +154,23 @@ The server knows everything. The API must never leak it.
 - **"Copy reminder for GC"** generates a ready-to-paste message ("This week's theme: Something soft 🧸 — budget ₱300 — party on Dec 19!"). This is the MVP reminder system: free and works everywhere.
 - Email/push reminders come later via a daily Vercel Cron job.
 
-## Reveal
+## Reveal (`server/reveal.ts`)
 
-- Organizer opens the reveal screen (or it unlocks at a set time).
-- Group becomes `REVEALED` and all pairs become visible.
-- Reveal screen: big, projector-friendly, goes one by one along the loop.
+- The organizer opens `/g/[slug]/reveal` (organizer only) and taps **Start the reveal**: the group becomes `REVEALING` at step 1.
+- **Next / Previous** move along the loop, starting with the first member to join. The step is stored on the group (`revealStep`), so a refreshed projector or another device (organizer link on a laptop) resumes at the same pair. Each move sends the step the screen was showing; if the server already moved (double tap, second device), nothing changes and the screen catches up.
+- Next on the last pair sets the group to `REVEALED`. Then the reveal screen lists every pair, and each member's /me shows "Ang nagbigay sa'yo ay…" (their own giver only).
+- Once the reveal starts, redraws and removals are blocked (the loop on screen must not change). There is no going back to `DRAWN`.
+- **Leaks:** while `REVEALING`, the reveal screen receives only the pair on screen, never the whole loop. The organizer page, join page, and /me stay as before (no giver) until `REVEALED`. The e2e leak test checks this.
+- The current screen is plain; the animated parol version comes after the redesign.
+
+## Analytics (`server/analytics.ts`)
+
+PostHog, sent **from the server only** (a `fetch` to PostHog's capture API inside `after()`, so it never slows down or breaks a request). There is no PostHog script in the browser, so there's no session recording, no autocapture of clicks or form inputs, no cookies, and no pageview URLs (which would contain slugs and tokens).
+
+- **Events (the funnel):** `group_created`, `member_joined`, `names_drawn`, `slip_opened` (first unfold only), `wishlist_item_added`, `reminder_copied`, `reveal_started`, `reveal_finished`. Tracked in Server Actions after the change succeeds.
+- **Identity:** the distinct id is a SHA-256 hash of the group's internal UUID (`group` property too), so a PostHog funnel over distinct ids is a funnel of groups. No person profiles (`$process_person_profile: false`), GeoIP off.
+- **Properties:** counts, booleans, or fixed words only, typed per event (e.g. `names_drawn: { members, redraw }`). Never names, PINs, tokens, slugs, wishlist text, or raw ids.
+- **Env vars:** `POSTHOG_KEY` (project API key) and optional `POSTHOG_HOST` (default `https://us.i.posthog.com`; EU: `https://eu.i.posthog.com`). Without a key (local dev, tests), nothing is sent.
 
 ## Security basics
 

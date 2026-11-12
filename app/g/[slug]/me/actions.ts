@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
+import { track } from "@/server/analytics";
 import {
   clearPendingSwitch,
   findMemberByToken,
@@ -22,14 +23,14 @@ const slugField = z.string().refine(isValidSlug);
 /** Resolves the member from their own cookie; never from input. */
 async function asMember(
   slug: unknown,
-  fn: (memberId: string) => Promise<WishActionResult>,
+  fn: (memberId: string, groupId: string) => Promise<WishActionResult>,
 ): Promise<WishActionResult> {
   const parsedSlug = slugField.safeParse(slug);
   if (!parsedSlug.success) return { ok: false, message: "Hindi ma-process ang request." };
   const session = await getMemberSession(parsedSlug.data);
   if (session.kind !== "member") return { ok: false, message: "Hindi ka namin kilala sa device na 'to." };
   try {
-    const result = await fn(session.member.id);
+    const result = await fn(session.member.id, session.member.groupId);
     if (result.ok) refresh();
     return result;
   } catch (error) {
@@ -47,10 +48,12 @@ function parseWish(input: unknown) {
 }
 
 export async function addWishAction(input: { slug: string; title: string; url?: string; note?: string }) {
-  return asMember(input?.slug, async (memberId) => {
+  return asMember(input?.slug, async (memberId, groupId) => {
     const wish = parseWish(input);
     if (!wish.ok) return { ok: false, message: "Pakicheck ang item.", fieldErrors: wish.fieldErrors };
-    return addWish(memberId, wish.data);
+    const result = await addWish(memberId, wish.data);
+    if (result.ok) track("wishlist_item_added", groupId, { has_link: Boolean(wish.data.url) });
+    return result;
   });
 }
 
@@ -83,7 +86,7 @@ export async function markSlipOpenedAction(input: { slug: string }): Promise<{ o
   const session = await getMemberSession(parsedSlug.data);
   if (session.kind !== "member") return { ok: false };
   try {
-    await markSlipOpened(session.member.id);
+    if (await markSlipOpened(session.member.id)) track("slip_opened", session.member.groupId, {});
     return { ok: true };
   } catch (error) {
     console.error("markSlipOpened failed", error);

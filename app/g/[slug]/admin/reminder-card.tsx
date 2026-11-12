@@ -4,6 +4,7 @@ import { useState } from "react";
 import { CopyButton, useOrigin } from "@/components/copy-link";
 import { buildGcReminder, type ReminderInput, type ReminderKind } from "@/lib/reminder";
 import { cn } from "@/lib/utils";
+import { reminderCopiedAction } from "./actions";
 
 const KINDS: { kind: ReminderKind; label: string }[] = [
   { kind: "drawn", label: "Na-draw na" },
@@ -52,7 +53,12 @@ export function ReminderCard({
       >
         {message}
       </pre>
-      <CopyButton text={origin ? message : ""} label="Copy reminder" variant="outline" />
+      <CopyButton
+        text={origin ? message : ""}
+        label="Copy reminder"
+        variant="outline"
+        onCopied={() => void reminderCopiedAction({ slug, kind: drawn ? kind : "invite" }).catch(() => {})}
+      />
     </div>
   );
 }

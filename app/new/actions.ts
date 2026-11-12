@@ -1,5 +1,6 @@
 "use server";
 
+import { track } from "@/server/analytics";
 import { setAuthCookie } from "@/server/auth";
 import { createGroup, createGroupFormValues, validateCreateGroup } from "@/server/groups";
 import { allowRequest, clientIp, RATE_LIMITED_MESSAGE } from "@/server/rate-limit";
@@ -23,8 +24,9 @@ export async function createGroupAction(
   }
 
   try {
-    const { slug, organizerToken } = await createGroup(validation.data);
+    const { groupId, slug, organizerToken } = await createGroup(validation.data);
     await setAuthCookie("organizer", slug, organizerToken);
+    track("group_created", groupId, { themes: validation.data.themes.length });
     return { status: "success", groupName: validation.data.name, slug, organizerToken };
   } catch (error) {
     console.error("createGroupAction failed", error);

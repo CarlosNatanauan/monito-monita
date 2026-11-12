@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { z } from "zod";
+import { track } from "@/server/analytics";
 import { isValidSlug, setAuthCookie } from "@/server/auth";
 import { joinGroup, joinSchema, NAME_MAX } from "@/server/members";
 import { COME_BACK_FAILED, comeBack } from "@/server/pin";
@@ -57,6 +58,7 @@ export async function joinAction(_previous: JoinState, formData: FormData): Prom
   }
 
   await setAuthCookie("member", slug, result.token);
+  track("member_joined", result.groupId, {});
   // /me shows the personal link with "Send this link to yourself".
   redirect(`/g/${slug}/me?welcome=1`);
 }

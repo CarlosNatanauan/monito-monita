@@ -2,6 +2,7 @@
 
 import { refresh } from "next/cache";
 import { z } from "zod";
+import { track } from "@/server/analytics";
 import { getCurrentOrganizer, isValidSlug, personalLinkPath } from "@/server/auth";
 import { drawNames, type DrawMode } from "@/server/draw-service";
 import { addExclusion, removeExclusion } from "@/server/exclusions";
@@ -129,6 +130,7 @@ export async function drawNamesAction(input: { slug: string; mode: DrawMode }): 
     "Hindi natuloy ang draw. Subukan ulit in a bit.",
     async (groupId, { mode }) => {
       const result = await drawNames(groupId, mode);
+      if (result.ok) track("names_drawn", groupId, { members: result.count, redraw: mode === "redraw" });
       if (result.ok || result.reason === "ALREADY_DRAWN") return { ok: true };
       return { ok: false, message: result.message };
     },
@@ -142,4 +144,15 @@ export async function removeExclusionAction(input: { slug: string; exclusionId: 
     "Hindi natanggal ang pair. Subukan ulit in a bit.",
     (groupId, { exclusionId }) => removeExclusion(groupId, exclusionId),
   );
+}
+
+/**
+ * "Copy reminder" was tapped: analytics only (the kind of message, nothing
+ * else). No refresh, and it never fails visibly.
+ */
+export async function reminderCopiedAction(input: { slug: string; kind: "invite" | "drawn" | "theme" }): Promise<void> {
+  const parsed = z.object({ slug: slugField, kind: z.enum(["invite", "drawn", "theme"]) }).safeParse(input);
+  if (!parsed.success) return;
+  const organizer = await getCurrentOrganizer(parsed.data.slug);
+  if (organizer) track("reminder_copied", organizer.groupId, { kind: parsed.data.kind });
 }

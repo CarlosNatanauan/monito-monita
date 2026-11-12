@@ -58,7 +58,7 @@ Goal: the moments strangers see first, then launch.
 - [ ] Performance pass: Lighthouse mobile 90+, test on a budget Android
 - [x] Basic rate limiting + input limits (Upstash per-IP on create, join, come-back)
 - [x] Name + PIN: come back on any device (join with PIN, come-back form, lockout, organizer unlock / reset PIN, "send this link to yourself")
-- [ ] PostHog analytics (create → join → draw → slip opened funnel)
+- [x] PostHog analytics (create → join → draw → slip opened funnel), server-side only
 - [x] Playwright test of the main flow on a mobile viewport
 - [ ] Fix everything from the test group's feedback
 - [ ] **Launch Nov 28:** post in your own GCs, Facebook, Reddit (r/Philippines), LinkedIn
@@ -77,6 +77,7 @@ Goal: the moments strangers see first, then launch.
 
 Ship before the first parties.
 
+- [x] Reveal logic: start, Next / Previous stored on the server, REVEALED at the end, "Ang nagbigay sa'yo ay…" on /me (plain screen for now)
 - [ ] Reveal screen: ring of slips on indigo, gold light travels along the loop, slips flip one by one
 - [ ] Final "parol lights up" moment when everyone is revealed
 - [ ] Projector check: readable from the back of a room

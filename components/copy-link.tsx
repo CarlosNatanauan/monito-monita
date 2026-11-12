@@ -25,11 +25,14 @@ export function CopyButton({
   label,
   variant = "default",
   className,
+  onCopied,
 }: {
   text: string;
   label: string;
   variant?: "default" | "outline";
   className?: string;
+  /** Called after a successful copy. */
+  onCopied?: () => void;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -37,6 +40,7 @@ export function CopyButton({
     try {
       await navigator.clipboard.writeText(text);
       setCopied(true);
+      onCopied?.();
       setTimeout(() => setCopied(false), 2000);
     } catch {
       // Clipboard blocked (rare): the link is still selectable.
