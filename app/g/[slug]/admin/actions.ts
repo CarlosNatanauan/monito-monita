@@ -6,6 +6,7 @@ import { getCurrentOrganizer, isValidSlug, personalLinkPath } from "@/server/aut
 import { drawNames, type DrawMode } from "@/server/draw-service";
 import { addExclusion, removeExclusion } from "@/server/exclusions";
 import { reissueMemberLink, removeMember } from "@/server/members";
+import { unlockMemberPin } from "@/server/pin";
 
 export type ActionResult = { ok: true } | { ok: false; message: string; needsRedraw?: boolean };
 
@@ -64,17 +65,25 @@ export async function removeMemberAction(input: {
 export type ReissueLinkResult = { ok: true; path: string } | { ok: false; message: string };
 
 /**
- * "Get new link" for a member who lost theirs. Their old link and cookie
- * stop working. Returns only the new personal-link path: no codename, no
- * pairs. Refreshes so the list shows "New link · not opened yet".
+ * "Get new link" for a member who lost theirs. Their old link, cookie, and
+ * every device they came back on stop working. With `resetPin`, their PIN
+ * is cleared too and they set a new one after opening the link.
+ * Returns only the new personal-link path: no codename, no pairs.
+ * Refreshes so the list shows "New link · not opened yet".
  */
-export async function reissueMemberLinkAction(input: { slug: string; memberId: string }): Promise<ReissueLinkResult> {
-  const parsed = z.object({ slug: slugField, memberId: z.uuid() }).safeParse(input);
+export async function reissueMemberLinkAction(input: {
+  slug: string;
+  memberId: string;
+  resetPin?: boolean;
+}): Promise<ReissueLinkResult> {
+  const parsed = z.object({ slug: slugField, memberId: z.uuid(), resetPin: z.boolean().optional() }).safeParse(input);
   if (!parsed.success) return { ok: false, message: "Hindi ma-process ang request." };
   const organizer = await getCurrentOrganizer(parsed.data.slug);
   if (!organizer) return { ok: false, message: NOT_ORGANIZER };
   try {
-    const result = await reissueMemberLink(organizer.groupId, parsed.data.memberId);
+    const result = await reissueMemberLink(organizer.groupId, parsed.data.memberId, {
+      resetPin: parsed.data.resetPin,
+    });
     if (!result.ok) return { ok: false, message: result.message };
     refresh();
     return { ok: true, path: personalLinkPath("member", parsed.data.slug, result.token) };
@@ -82,6 +91,17 @@ export async function reissueMemberLinkAction(input: { slug: string; memberId: s
     console.error("reissueMemberLinkAction failed", error);
     return { ok: false, message: "Hindi nakagawa ng bagong link. Subukan ulit in a bit." };
   }
+}
+
+/** "Unlock" on "Na-lock ang PIN ni …": clears the lock and the wrong-try count. */
+export async function unlockPinAction(input: { slug: string; memberId: string }): Promise<ActionResult> {
+  return asOrganizer(
+    z.object({ slug: slugField, memberId: z.uuid() }),
+    input,
+    "Hindi na-unlock. Subukan ulit in a bit.",
+    async (groupId, { memberId }) =>
+      (await unlockMemberPin(groupId, memberId)) ? { ok: true } : { ok: false, message: "Wala na ang member na 'yan." },
+  );
 }
 
 /** "These two can't draw each other." */

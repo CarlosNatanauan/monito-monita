@@ -12,6 +12,7 @@ import {
   setAuthCookie,
 } from "@/server/auth";
 import { acknowledgeReceiverChange, markSlipOpened } from "@/server/draw-service";
+import { pinSchema, setOwnPin } from "@/server/pin";
 import { addWish, deleteWish, updateWish, wishSchema } from "@/server/wishlists";
 
 export type WishActionResult = { ok: true } | { ok: false; message: string; fieldErrors?: Record<string, string> };
@@ -87,6 +88,26 @@ export async function markSlipOpenedAction(input: { slug: string }): Promise<{ o
   } catch (error) {
     console.error("markSlipOpened failed", error);
     return { ok: false };
+  }
+}
+
+/**
+ * "Mag-set ng PIN" for a member without one. No refresh(): the card shows
+ * "Na-save" in place and is gone on the next visit.
+ */
+export async function setPinAction(input: { slug: string; pin: string }): Promise<WishActionResult> {
+  const parsedSlug = slugField.safeParse(input?.slug);
+  if (!parsedSlug.success) return { ok: false, message: "Hindi ma-process ang request." };
+  const pin = pinSchema.safeParse(input?.pin);
+  if (!pin.success) return { ok: false, message: pin.error.issues[0].message };
+  const session = await getMemberSession(parsedSlug.data);
+  if (session.kind !== "member") return { ok: false, message: "Hindi ka namin kilala sa device na 'to." };
+  try {
+    if (!(await setOwnPin(session.member.id, pin.data))) return { ok: false, message: "May PIN ka na." };
+    return { ok: true };
+  } catch (error) {
+    console.error("setPinAction failed", error);
+    return { ok: false, message: "Hindi na-save. Subukan ulit in a bit." };
   }
 }
 

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { CopyLink } from "@/components/copy-link";
 import { Slip } from "@/components/slip";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -10,6 +9,7 @@ import { joinedCount } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { RememberGroup } from "@/components/remember-group";
 import { RoleSwitch } from "@/components/role-switch";
+import { ShareLink } from "@/components/share-link";
 import {
   getCurrentOrganizer,
   getMemberSession,
@@ -28,6 +28,7 @@ import { WishlistView } from "@/components/wish-item";
 import { CleanWelcomeParam } from "./clean-welcome";
 import { MonitoReveal } from "./monito-reveal";
 import { MonitoUpdatedNotice } from "./monito-updated";
+import { SetPinCard } from "./set-pin-card";
 import { SwitchConfirm } from "./switch-confirm";
 import { WishlistEditor } from "./wishlist-editor";
 import { GroupFacts, PageFallback, RemovedNotice } from "../group-facts";
@@ -80,12 +81,17 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
             <CardTitle>Hindi ka pa namin kilala sa device na &apos;to.</CardTitle>
           </CardHeader>
           <CardContent className="flex flex-col gap-4 text-muted-foreground">
-            <p>Kung kasali ka na, buksan ang personal link mo. Kung hindi pa, sali ka muna.</p>
-            {group.status === "OPEN" && (
-              <Button asChild variant="outline" className="self-start">
-                <Link href={`/g/${slug}`}>Join the group</Link>
+            <p>Kung kasali ka na, bumalik gamit ang pangalan at PIN mo, o buksan ang personal link mo.</p>
+            <div className="flex flex-wrap gap-3">
+              <Button asChild className="self-start">
+                <Link href={`/g/${slug}?bumalik=1`}>Bumalik gamit ang PIN</Link>
               </Button>
-            )}
+              {group.status === "OPEN" && (
+                <Button asChild variant="outline" className="self-start">
+                  <Link href={`/g/${slug}`}>Join the group</Link>
+                </Button>
+              )}
+            </div>
           </CardContent>
         </Card>
       </>
@@ -122,6 +128,28 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
     group.budget,
   );
 
+  // The personal link. Right after joining it's the first thing on the
+  // page, with "Send to yourself" as the main button; later it sits at the
+  // bottom.
+  const personalLink = token && (
+    <Card className={cn(welcome && "ring-2 ring-parol-gold")}>
+      <CardHeader>
+        <CardTitle>{welcome ? "Save this link!" : "Your personal link"}</CardTitle>
+        <p className="text-caption text-muted-foreground">
+          Ito ang susi mo para makabalik dito. I-send sa sarili mo (Messenger o Notes), o gamitin ang pangalan at PIN
+          mo. Huwag i-share sa GC.
+        </p>
+      </CardHeader>
+      <CardContent>
+        <ShareLink
+          path={personalLinkPath("member", slug, token)}
+          shareText={`Personal link ko sa ${group.name} (huwag i-share)`}
+          prominent={welcome}
+        />
+      </CardContent>
+    </Card>
+  );
+
   return (
     <>
       <RememberGroup slug={slug} name={group.name} role="member" />
@@ -131,6 +159,8 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         <p className="text-caption font-semibold text-muted-foreground">{group.name}</p>
         <h1 className="text-heading">Hi, {member.displayName}!</h1>
       </header>
+
+      {welcome && personalLink}
 
       {drawn ? (
         <div className="flex flex-col items-center gap-3">
@@ -167,6 +197,8 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
           <Slip>{member.codename}</Slip>
         </section>
       )}
+
+      {!member.hasPin && <SetPinCard slug={slug} />}
 
       <Card>
         <CardHeader>
@@ -206,20 +238,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         </CardContent>
       </Card>
 
-      {token && (
-        <Card className={cn(welcome && "ring-2 ring-parol-gold")}>
-          <CardHeader>
-            <CardTitle>{welcome ? "Save this link!" : "Your personal link"}</CardTitle>
-            <p className="text-caption text-muted-foreground">
-              Ito ang susi mo para makabalik dito, kahit sa ibang phone. I-bookmark o i-send sa sarili mo.
-              Huwag i-share sa GC.
-            </p>
-          </CardHeader>
-          <CardContent>
-            <CopyLink path={personalLinkPath("member", slug, token)} label="Copy my link" variant={welcome ? "default" : "outline"} />
-          </CardContent>
-        </Card>
-      )}
+      {!welcome && personalLink}
     </>
   );
 }

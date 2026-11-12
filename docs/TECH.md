@@ -15,7 +15,7 @@ Chosen for what this project needs (premium animation, fast on budget Android ph
 | ORM | **Drizzle ORM** | Lightweight, SQL-first, fast cold starts on serverless, fully typed. A transferable skill: you write and understand real SQL |
 | Validation | **Zod** | Validate every input on the server |
 | Styling | **Tailwind v4 + shadcn/ui** | Fast base components, restyled to match `docs/DESIGN.md` |
-| Rate limiting | **Upstash Redis** + `@upstash/ratelimit` | Serverless-friendly, free tier, protects create/join endpoints |
+| Rate limiting | **Upstash Redis** + `@upstash/ratelimit` | Serverless-friendly, free tier, protects create, join, and come-back (name + PIN) |
 | Hosting | **Vercel** | Free tier, preview deploy per branch, built-in OG images and cron |
 | Node | **24 LTS** (pinned in `package.json` engines and `.nvmrc`) | Same version locally and on Vercel |
 
@@ -63,8 +63,14 @@ Group
 Member
   id, groupId, displayName, codename
   tokenHash (for their personal link)
+  pinHash (nullable: scrypt hash of the 4-digit PIN; null for pre-PIN members or after a reset)
+  pinFailedAttempts, pinLockedUntil (15-min lock), pinLockedAt (locked until organizer unlocks)
+  linkReissuedAt, linkOpenedAt, slipOpenedAt
   email (optional, later)
   joinedAt, removedAt (nullable)
+
+MemberSession                           -- extra devices, from coming back with name + PIN
+  id, memberId, tokenHash, createdAt    -- newest 10 kept per member
 
 Exclusion
   id, groupId, memberAId, memberBId     -- A and B can't draw each other
@@ -90,12 +96,24 @@ Guess
 
 No sign-up, but people still need to come back.
 
-- **Joining** creates a `Member` with a random secret token.
+- **Joining** takes a name and a 4-digit PIN and creates a `Member` with a random secret token.
 - The token is saved in an **httpOnly cookie** (so returning on the same phone just works).
-- The member also gets a **personal link** (`/g/[slug]/me?t=TOKEN`) to save and open on another device. Show it clearly with a "Save this link" message.
+- The member also gets a **personal link** (`/g/[slug]/me?t=TOKEN`) to save and open on another device. /me shows it with "I-send sa sarili mo" (Web Share API, Copy as fallback); right after joining it's the first card.
 - The **organizer** gets a separate organizer link with its own token.
 - Only **hashes** of tokens are stored in the database (like passwords).
-- Lost link? Organizer can generate a new personal link for that member (later).
+- Lost link? The organizer's "Get new link" issues a new token and deletes the member's device sessions, so every old link and cookie stops working.
+
+### Name + PIN (`server/pin.ts`)
+
+For people who joined in Messenger's browser and later open the link elsewhere.
+
+- **Storage:** the PIN is hashed with salted **scrypt** (N=2^14, r=8), never stored in plain text. PINs aren't unique and are never compared across members. No hash can make a 4-digit PIN strong against an offline attack, so the real protection is the online limits below; the hash keeps a leaked database from showing PINs at a glance.
+- **Joining with a taken name** (case-insensitive, extra spaces ignored, same matching as the unique-name index) creates nothing and returns the come-back form. Taken-name results count toward the IP failure limit.
+- **Coming back:** active member with that name + correct PIN → a **new device token** in `member_sessions` (hash only), set as the member cookie. The member's original token keeps working, so the old device stays logged in. Session tokens work everywhere a member token does, including as a personal link.
+- **One failure for everything:** unknown name, wrong PIN, locked, removed, no PIN set, rate limited, bad input: all return exactly "Mali ang pangalan o PIN", and each runs one scrypt so timing doesn't tell them apart. Works in every group status (only new joins close at the draw).
+- **Lockout per member** (pure logic, unit tested): 5 wrong → `pinLockedUntil` = now + 15 min; 10 wrong → `pinLockedAt` (until the organizer unlocks). Tries during a lock aren't checked or counted. A correct PIN or an unlock resets the count. The member row is locked (`SELECT … FOR UPDATE`) while checking, so parallel guesses are counted one by one.
+- **Organizer:** sees "Na-lock ang PIN ni {name}" + Unlock for fully locked members; "Get new link" has a **Reset PIN** option (clears the PIN and lock).
+- **No PIN** (pre-PIN members, or after a reset): /me shows a one-time "Mag-set ng PIN" card; it can only set a PIN when there is none.
 
 ## The draw
 
@@ -145,9 +163,25 @@ The server knows everything. The API must never leak it.
 
 - Random, long slugs and tokens (`crypto.randomBytes`)
 - Zod validation on every input
-- Rate limit join and create endpoints (simple per-IP limit)
+- Rate limit per IP (`server/rate-limit.ts`, Upstash): see below
 - Limits: max members per group (e.g. 150), max wishlist items, text lengths
 - No personal data required beyond a display name
+
+## Rate limiting
+
+Per IP, sliding windows in Upstash Redis via `@upstash/ratelimit`:
+
+| Budget | Limit | Counts |
+|---|---|---|
+| Create group | 10 / hour | every create |
+| Join | 30 / 10 min | every join (generous for an office on one Wi-Fi) |
+| Come back | 30 / 10 min | every name + PIN try |
+| Failures | 10 / 15 min | taken-name results and failed come-backs; when used up, join and come-back stop for that IP |
+
+- The IP is the first `x-forwarded-for` entry (set by Vercel).
+- **Env vars:** `UPSTASH_REDIS_REST_URL` and `UPSTASH_REDIS_REST_TOKEN` (Vercel's Upstash integration names, `KV_REST_API_URL` / `KV_REST_API_TOKEN`, also work). If they're missing (local dev), the IP limit is skipped; the per-member PIN lockout still applies.
+- If Redis errors or takes over 1.5 s, requests are let through (fail open).
+- A rate-limited come-back shows the same "Mali ang pangalan o PIN"; a rate-limited join or create says to try again in a few minutes.
 
 ## Folder structure (suggested)
 

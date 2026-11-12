@@ -200,6 +200,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
             displayName: m.displayName,
             joinedLabel: formatJoinedAt(m.joinedAt, group.timezone),
             linkStatus: m.linkStatus,
+            pinLocked: m.pinLocked,
           }))}
         />
       </CardContent>

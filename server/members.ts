@@ -9,30 +9,27 @@ import { z } from "zod";
 import { createToken, hashToken, isValidSlug } from "./auth";
 import { pickCodename } from "./codenames";
 import { db } from "./db";
-import { assignments, groups, members, themeWeeks, type GroupStatus } from "./db/schema";
+import { assignments, groups, members, memberSessions, themeWeeks, type GroupStatus } from "./db/schema";
 import { cryptoRandomInt, patchLoopOnRemoval, type RandomInt } from "./draw";
 import { MIN_MEMBERS_TO_DRAW } from "./draw-check";
 import { drawInTransaction } from "./draw-service";
 import { getDrawSetup, toExclusions } from "./exclusions";
+import { NAME_MAX, normalizeDisplayName } from "./names";
+import { hashPin, PIN_UNLOCKED_COLUMNS, pinSchema } from "./pin";
+
+export { isSameName, NAME_MAX, normalizeDisplayName } from "./names";
 
 export const MAX_MEMBERS = 150;
-export const NAME_MAX = 40;
 
 // --- Names ---------------------------------------------------------------
 
-/** Trims and collapses whitespace so "  Joy   Cruz " and "Joy Cruz" match. */
-export function normalizeDisplayName(raw: string): string {
-  return raw.normalize("NFC").trim().replace(/\s+/g, " ");
-}
-
-/** True if two names count as the same person's name (case-insensitive). */
-export function isSameName(a: string, b: string): boolean {
-  return normalizeDisplayName(a).toLowerCase() === normalizeDisplayName(b).toLowerCase();
-}
-
-export function duplicateNameHint(name: string): string {
-  return `May ${normalizeDisplayName(name)} na. Dagdagan ng initial ng apelyido mo.`;
-}
+/**
+ * Shown when someone joins with a name that's already in the group. It
+ * never repeats the name, and it's the same whether they're that member
+ * coming back or a new person with the same name.
+ */
+export const NAME_TAKEN_MESSAGE =
+  "Kung kasali ka na, ilagay ang PIN mo. Kung bago ka, gumamit ng ibang pangalan (dagdagan ng initial ng apelyido).";
 
 export const joinSchema = z.object({
   slug: z.string().refine(isValidSlug, "Hindi mahanap ang group."),
@@ -45,6 +42,7 @@ export const joinSchema = z.object({
         .min(1, "Pakilagay ang pangalan mo.")
         .max(NAME_MAX, `Hanggang ${NAME_MAX} characters lang ang pangalan.`),
     ),
+  pin: pinSchema,
 });
 
 // --- Reads ---------------------------------------------------------------
@@ -91,7 +89,7 @@ export type LinkStatus = "none" | "new-unopened" | "new-opened";
 export interface OrganizerView {
   group: Omit<GroupSummary, "memberCount">;
   themes: { title: string; startDate: string }[];
-  members: { id: string; displayName: string; joinedAt: Date; linkStatus: LinkStatus }[];
+  members: { id: string; displayName: string; joinedAt: Date; linkStatus: LinkStatus; pinLocked: boolean }[];
 }
 
 /**
@@ -127,6 +125,8 @@ export async function getOrganizerView(groupId: string): Promise<OrganizerView |
         joinedAt: members.joinedAt,
         linkReissuedAt: members.linkReissuedAt,
         linkOpenedAt: members.linkOpenedAt,
+        // Fully locked (10 wrong PINs): the organizer can unlock it.
+        pinLocked: sql<boolean>`${members.pinLockedAt} is not null`,
       })
       .from(members)
       .where(and(eq(members.groupId, groupId), isNull(members.removedAt)))
@@ -136,8 +136,9 @@ export async function getOrganizerView(groupId: string): Promise<OrganizerView |
   return {
     group,
     themes,
-    members: memberRows.map(({ linkReissuedAt, linkOpenedAt, ...m }) => ({
+    members: memberRows.map(({ linkReissuedAt, linkOpenedAt, pinLocked, ...m }) => ({
       ...m,
+      pinLocked: Boolean(pinLocked),
       linkStatus: !linkReissuedAt ? "none" : linkOpenedAt ? "new-opened" : "new-unopened",
     })),
   };
@@ -147,7 +148,7 @@ export async function getOrganizerView(groupId: string): Promise<OrganizerView |
 
 export type JoinResult =
   | { ok: true; memberId: string; codename: string; token: string }
-  | { ok: false; reason: "NOT_FOUND" | "CLOSED" | "FULL" | "DUPLICATE_NAME"; message: string };
+  | { ok: false; reason: "NOT_FOUND" | "CLOSED" | "FULL" | "NAME_TAKEN"; message: string };
 
 function isUniqueViolation(error: unknown, constraint: string): boolean {
   const e = error as { cause?: { code?: string; constraint?: string }; code?: string; constraint?: string };
@@ -155,12 +156,18 @@ function isUniqueViolation(error: unknown, constraint: string): boolean {
 }
 
 /**
- * Adds a member to an open group. Locks the group row so the member cap,
- * the open/closed check, and codename uniqueness can't race.
+ * Adds a member to an open group with their PIN. Locks the group row so
+ * the member cap, the open/closed check, and codename uniqueness can't race.
+ *
+ * A name that's already taken creates nothing and returns NAME_TAKEN (the
+ * page then offers the come-back form). It's checked before "full", so an
+ * existing member is pointed back in even when the group is full.
  */
-export async function joinGroup(slug: string, rawName: string): Promise<JoinResult> {
+export async function joinGroup(slug: string, rawName: string, pin: string): Promise<JoinResult> {
   const displayName = normalizeDisplayName(rawName);
   const token = createToken();
+  // Slow hash, done before taking the group lock.
+  const pinHash = await hashPin(pin);
 
   try {
     return await db().transaction(async (tx): Promise<JoinResult> => {
@@ -175,14 +182,6 @@ export async function joinGroup(slug: string, rawName: string): Promise<JoinResu
         return { ok: false, reason: "CLOSED", message: "Sarado na ang sali. Na-draw na ang names." };
       }
 
-      const [{ active }] = await tx
-        .select({ active: count() })
-        .from(members)
-        .where(and(eq(members.groupId, group.id), isNull(members.removedAt)));
-      if (active >= MAX_MEMBERS) {
-        return { ok: false, reason: "FULL", message: `Puno na ang group (${MAX_MEMBERS} members).` };
-      }
-
       const [sameName] = await tx
         .select({ id: members.id })
         .from(members)
@@ -194,7 +193,15 @@ export async function joinGroup(slug: string, rawName: string): Promise<JoinResu
           ),
         )
         .limit(1);
-      if (sameName) return { ok: false, reason: "DUPLICATE_NAME", message: duplicateNameHint(displayName) };
+      if (sameName) return { ok: false, reason: "NAME_TAKEN", message: NAME_TAKEN_MESSAGE };
+
+      const [{ active }] = await tx
+        .select({ active: count() })
+        .from(members)
+        .where(and(eq(members.groupId, group.id), isNull(members.removedAt)));
+      if (active >= MAX_MEMBERS) {
+        return { ok: false, reason: "FULL", message: `Puno na ang group (${MAX_MEMBERS} members).` };
+      }
 
       // Codenames stay unique even against removed members (DB constraint).
       const taken = await tx.select({ codename: members.codename }).from(members).where(eq(members.groupId, group.id));
@@ -202,7 +209,7 @@ export async function joinGroup(slug: string, rawName: string): Promise<JoinResu
 
       const [member] = await tx
         .insert(members)
-        .values({ groupId: group.id, displayName, codename, tokenHash: hashToken(token) })
+        .values({ groupId: group.id, displayName, codename, tokenHash: hashToken(token), pinHash })
         .returning({ id: members.id });
 
       return { ok: true, memberId: member.id, codename, token };
@@ -210,7 +217,7 @@ export async function joinGroup(slug: string, rawName: string): Promise<JoinResu
   } catch (error) {
     // Backstop for the DB index (the lock above should make this unreachable).
     if (isUniqueViolation(error, "members_group_active_name_unique")) {
-      return { ok: false, reason: "DUPLICATE_NAME", message: duplicateNameHint(displayName) };
+      return { ok: false, reason: "NAME_TAKEN", message: NAME_TAKEN_MESSAGE };
     }
     throw error;
   }
@@ -224,19 +231,36 @@ export type ReissueResult =
 
 /**
  * "Get new link": gives an active member a new personal-link token. Only
- * the new hash is stored, so the old link and the old cookie stop working.
+ * the new hash is stored, and their device sessions (from coming back with
+ * name + PIN) are deleted, so every old link and cookie stops working.
+ *
+ * With `resetPin`, their PIN is cleared too (and any lock lifted): they set
+ * a new one on /me after opening the new link.
+ *
  * Returns just the token and the name the organizer already sees (never a
  * codename or anything about pairs).
  */
-export async function reissueMemberLink(groupId: string, memberId: string): Promise<ReissueResult> {
+export async function reissueMemberLink(
+  groupId: string,
+  memberId: string,
+  options: { resetPin?: boolean } = {},
+): Promise<ReissueResult> {
   const token = createToken();
-  const [row] = await db()
-    .update(members)
-    .set({ tokenHash: hashToken(token), linkReissuedAt: new Date(), linkOpenedAt: null })
-    .where(and(eq(members.id, memberId), eq(members.groupId, groupId), isNull(members.removedAt)))
-    .returning({ displayName: members.displayName });
-  if (!row) return { ok: false, reason: "NOT_FOUND", message: "Wala na ang member na 'yan." };
-  return { ok: true, token, displayName: row.displayName };
+  return db().transaction(async (tx): Promise<ReissueResult> => {
+    const [row] = await tx
+      .update(members)
+      .set({
+        tokenHash: hashToken(token),
+        linkReissuedAt: new Date(),
+        linkOpenedAt: null,
+        ...(options.resetPin ? { pinHash: null, ...PIN_UNLOCKED_COLUMNS } : {}),
+      })
+      .where(and(eq(members.id, memberId), eq(members.groupId, groupId), isNull(members.removedAt)))
+      .returning({ displayName: members.displayName });
+    if (!row) return { ok: false, reason: "NOT_FOUND", message: "Wala na ang member na 'yan." };
+    await tx.delete(memberSessions).where(eq(memberSessions.memberId, memberId));
+    return { ok: true, token, displayName: row.displayName };
+  });
 }
 
 // --- Remove --------------------------------------------------------------

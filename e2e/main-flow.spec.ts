@@ -125,9 +125,10 @@ async function expectCardOrder(page: Page, titles: string[]) {
   expect(positions, `cards in order: ${titles.join(" → ")}`).toEqual([...positions].sort((a, b) => a - b));
 }
 
-async function join(page: Page, shareUrl: string, name: string) {
+async function join(page: Page, shareUrl: string, name: string, pin = "1234") {
   await page.goto(shareUrl);
   await page.getByLabel("Pangalan mo").fill(name);
+  await page.getByLabel("PIN (4 digits)").fill(pin);
   await page.getByRole("button", { name: "Join the group" }).click();
 }
 
@@ -211,6 +212,11 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await shot(page, "join-page");
 
     await page.getByLabel("Pangalan mo").fill("Joy");
+    // The PIN is required, on a numeric keypad.
+    await page.getByRole("button", { name: "Join the group" }).click();
+    await expect(page.locator("main").getByRole("alert")).toHaveText("Pakilagay ang 4-digit PIN.");
+    await expect(page.getByLabel("PIN (4 digits)")).toHaveAttribute("inputmode", "numeric");
+    await page.getByLabel("PIN (4 digits)").fill("1234");
     await page.getByRole("button", { name: "Join the group" }).click();
     await expect(page.getByRole("heading", { name: "Hi, Joy!" })).toBeVisible();
     await expect(page.getByText("Save this link!")).toBeVisible();
@@ -225,16 +231,24 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
   });
 
   const joyM = await newPerson(browser, testInfo, "Joy M");
-  await test.step("'joy' is a duplicate; joins as 'Joy M' instead", async () => {
+  await test.step("'joy' is taken: the come-back form, then 'Bago ako' → joins as 'Joy M'", async () => {
     const { page } = joyM;
-    await join(page, shareUrl, "joy");
-    await expect(page.locator("main").getByRole("alert")).toHaveText("May joy na. Dagdagan ng initial ng apelyido mo.");
-    await expect(page.getByLabel("Pangalan mo")).toHaveValue("joy");
-    await shot(page, "duplicate-name");
+    await join(page, shareUrl, "joy", "5678");
+    // Nothing created; neutral wording that doesn't repeat the name.
+    await expect(
+      page.getByText(
+        "Kung kasali ka na, ilagay ang PIN mo. Kung bago ka, gumamit ng ibang pangalan (dagdagan ng initial ng apelyido).",
+      ),
+    ).toBeVisible();
+    await expect(page.getByRole("form", { name: "Bumalik" })).toBeVisible();
+    await expect(page.getByLabel("Pangalan mo")).toHaveCount(0);
+    await expect(page.getByText(/joy/i)).toHaveCount(0);
+    await shot(page, "name-taken-come-back");
 
+    await page.getByRole("button", { name: "Bago ako" }).click();
+    await expect(page.getByLabel("Pangalan mo")).toHaveValue("joy");
     await page.getByLabel("Pangalan mo").fill("Joy M");
-    // The warning clears as soon as the name is edited.
-    await expect(page.locator("main").getByRole("alert")).toHaveCount(0);
+    await page.getByLabel("PIN (4 digits)").fill("5678");
     await page.getByRole("button", { name: "Join the group" }).click();
     await expect(page.getByRole("heading", { name: "Hi, Joy M!" })).toBeVisible();
     joyMLink = await readLink(page, /\/me\?t=/);
@@ -302,6 +316,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await page.getByRole("link", { name: "Join as a member" }).click();
     await expect(page).toHaveURL(new RegExp(`/g/${slug}$`));
     await page.getByLabel("Pangalan mo").fill("Tita Org");
+    await page.getByLabel("PIN (4 digits)").fill("2580");
     await page.getByRole("button", { name: "Join the group" }).click();
     await expect(page.getByRole("heading", { name: "Hi, Tita Org!" })).toBeVisible();
 
@@ -700,7 +715,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await late.page.goto(shareUrl);
     await expect(late.page.getByText("Sarado na ang sali.")).toBeVisible();
     await expect(late.page.getByLabel("Pangalan mo")).toHaveCount(0);
-    await expect(late.page.getByText("Kasali ka na? Hingin ang link mo sa organizer.")).toBeVisible();
+    await expect(late.page.getByRole("link", { name: "Kasali ka na? Bumalik dito" })).toBeVisible();
     await shot(late.page, "join-closed");
     await late.context.close();
   });

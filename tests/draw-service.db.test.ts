@@ -37,7 +37,7 @@ async function groupWith(...names: string[]) {
   const groupId = (await getGroupSummary(slug))!.id;
   const ids: Record<string, string> = {};
   for (const name of names) {
-    const r = await joinGroup(slug, name);
+    const r = await joinGroup(slug, name, "1234");
     if (!r.ok) throw new Error(r.message);
     ids[name] = r.memberId;
   }
@@ -66,7 +66,7 @@ describe("drawNames (dev DB)", () => {
     expect(isSingleLoop(rows, [[ids.Joy, ids["Joy M"]]])).toBe(true);
     expect((await getGroupSummary(slug))?.status).toBe("DRAWN");
     expect(await countAssignments(groupId)).toBe(4);
-    expect(await joinGroup(slug, "Late Larry")).toMatchObject({ ok: false, reason: "CLOSED" });
+    expect(await joinGroup(slug, "Late Larry", "1234")).toMatchObject({ ok: false, reason: "CLOSED" });
   });
 
   it("only ever draws once, even with simultaneous clicks", async () => {

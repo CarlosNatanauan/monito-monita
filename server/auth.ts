@@ -8,15 +8,18 @@
  *   that group's path (/g/<slug>), valid ~90 days.
  * - Personal links (/g/<slug>/me?t=TOKEN, /g/<slug>/admin?t=TOKEN) are
  *   swapped for the cookie in proxy.ts, then redirected to the clean URL.
+ * - A member's token is either their original one (members.token_hash) or
+ *   a device session from coming back with name + PIN (member_sessions).
+ *   Both work the same everywhere, including as a personal link.
  *
  * Pure helpers are at the top (unit tested); request helpers that read
  * cookies or the database are at the bottom.
  */
 import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
-import { and, eq, isNotNull, isNull } from "drizzle-orm";
+import { and, eq, isNotNull, isNull, or, sql } from "drizzle-orm";
 import { cookies } from "next/headers";
 import { db } from "./db";
-import { groups, members } from "./db/schema";
+import { groups, members, memberSessions } from "./db/schema";
 
 export type Role = "member" | "organizer";
 
@@ -117,6 +120,8 @@ export interface CurrentMember {
   groupId: string;
   displayName: string;
   codename: string;
+  /** False until they set a name + PIN (older members, or after a reset). */
+  hasPin: boolean;
 }
 
 export interface CurrentOrganizer {
@@ -124,23 +129,48 @@ export interface CurrentOrganizer {
   slug: string;
 }
 
-/** The active (not removed) member of the group `slug` holding `token`. */
-export async function findMemberByToken(slug: string, token: string): Promise<CurrentMember | null> {
-  if (!isValidSlug(slug) || !isWellFormedToken(token)) return null;
-  const [row] = await db()
+/** Matches a member's original token or one of their device sessions. */
+function memberTokenQuery(slug: string, token: string, removed: boolean) {
+  const hash = hashToken(token);
+  return db()
     .select({
       id: members.id,
       groupId: members.groupId,
       displayName: members.displayName,
       codename: members.codename,
+      hasPin: sql<boolean>`${members.pinHash} is not null`,
       tokenHash: members.tokenHash,
+      sessionHash: memberSessions.tokenHash,
     })
     .from(members)
     .innerJoin(groups, eq(groups.id, members.groupId))
-    .where(and(eq(groups.slug, slug), eq(members.tokenHash, hashToken(token)), isNull(members.removedAt)))
+    .leftJoin(memberSessions, and(eq(memberSessions.memberId, members.id), eq(memberSessions.tokenHash, hash)))
+    .where(
+      and(
+        eq(groups.slug, slug),
+        removed ? isNotNull(members.removedAt) : isNull(members.removedAt),
+        or(eq(members.tokenHash, hash), eq(memberSessions.tokenHash, hash)),
+      ),
+    )
     .limit(1);
-  if (!row || !tokenMatchesHash(token, row.tokenHash)) return null;
-  return { id: row.id, groupId: row.groupId, displayName: row.displayName, codename: row.codename };
+}
+
+function rowMatches(token: string, row: { tokenHash: string; sessionHash: string | null }): boolean {
+  return tokenMatchesHash(token, row.tokenHash) || (row.sessionHash !== null && tokenMatchesHash(token, row.sessionHash));
+}
+
+/** The active (not removed) member of the group `slug` holding `token`. */
+export async function findMemberByToken(slug: string, token: string): Promise<CurrentMember | null> {
+  if (!isValidSlug(slug) || !isWellFormedToken(token)) return null;
+  const [row] = await memberTokenQuery(slug, token, false);
+  if (!row || !rowMatches(token, row)) return null;
+  return {
+    id: row.id,
+    groupId: row.groupId,
+    displayName: row.displayName,
+    codename: row.codename,
+    hasPin: Boolean(row.hasPin),
+  };
 }
 
 /** The group `slug`, if `token` is its organizer token. */
@@ -184,13 +214,8 @@ export async function getCurrentOrganizer(slug: string): Promise<CurrentOrganize
 /** True if `token` belonged to a member of group `slug` who was removed. */
 export async function isRemovedMemberToken(slug: string, token: string): Promise<boolean> {
   if (!isValidSlug(slug) || !isWellFormedToken(token)) return false;
-  const [row] = await db()
-    .select({ tokenHash: members.tokenHash })
-    .from(members)
-    .innerJoin(groups, eq(groups.id, members.groupId))
-    .where(and(eq(groups.slug, slug), eq(members.tokenHash, hashToken(token)), isNotNull(members.removedAt)))
-    .limit(1);
-  return row !== undefined && tokenMatchesHash(token, row.tokenHash);
+  const [row] = await memberTokenQuery(slug, token, true);
+  return row !== undefined && rowMatches(token, row);
 }
 
 export type MemberSession =

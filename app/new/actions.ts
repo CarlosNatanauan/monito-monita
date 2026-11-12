@@ -2,6 +2,7 @@
 
 import { setAuthCookie } from "@/server/auth";
 import { createGroup, createGroupFormValues, validateCreateGroup } from "@/server/groups";
+import { allowRequest, clientIp, RATE_LIMITED_MESSAGE } from "@/server/rate-limit";
 
 export type CreateGroupState =
   | { status: "idle" }
@@ -15,6 +16,10 @@ export async function createGroupAction(
   const validation = validateCreateGroup(createGroupFormValues(formData));
   if (!validation.ok) {
     return { status: "error", message: "May kulang o mali sa form. Pakicheck sa baba.", fieldErrors: validation.fieldErrors };
+  }
+
+  if (!(await allowRequest("create", await clientIp()))) {
+    return { status: "error", message: RATE_LIMITED_MESSAGE, fieldErrors: {} };
   }
 
   try {

@@ -8,6 +8,8 @@
  *   group (composite foreign keys on (group_id, member_id)).
  * - One assignment per giver and one per receiver per group, never self.
  * - Exclusion pairs are stored once, ordered (member_a_id < member_b_id).
+ * - PINs are stored only as slow (scrypt) hashes; extra device sessions
+ *   only as token hashes.
  *
  * Message and Guess (nice-to-have) are intentionally not here yet.
  */
@@ -74,8 +76,18 @@ export const members = pgTable(
     // only "New link · not opened yet / opened", so peeking is visible.
     linkReissuedAt: timestamp("link_reissued_at", { withTimezone: true }),
     linkOpenedAt: timestamp("link_opened_at", { withTimezone: true }),
+    // Name + PIN, to come back on another device (server/pin.ts). Null for
+    // members who joined before PINs, or after the organizer reset it.
+    pinHash: text("pin_hash"),
+    // Wrong PINs since the last correct one (or unlock). 5 → locked for
+    // 15 minutes (pinLockedUntil); 10 → locked until the organizer unlocks
+    // it (pinLockedAt).
+    pinFailedAttempts: integer("pin_failed_attempts").notNull().default(0),
+    pinLockedUntil: timestamp("pin_locked_until", { withTimezone: true }),
+    pinLockedAt: timestamp("pin_locked_at", { withTimezone: true }),
   },
   (t) => [
+    check("members_pin_failed_attempts_non_negative", sql`${t.pinFailedAttempts} >= 0`),
     // Target for composite FKs that keep pairs inside one group.
     unique("members_group_id_id_unique").on(t.groupId, t.id),
     unique("members_group_codename_unique").on(t.groupId, t.codename),
@@ -85,6 +97,27 @@ export const members = pgTable(
       .on(t.groupId, sql`lower(${t.displayName})`)
       .where(sql`${t.removedAt} is null`),
   ],
+);
+
+// --- MemberSession ---------------------------------------------------------
+
+/**
+ * Extra device tokens for a member, created when they come back with name +
+ * PIN. Their original token (members.token_hash) keeps working too, so
+ * coming back in Chrome doesn't log out Messenger's browser. "Get new link"
+ * deletes all of these.
+ */
+export const memberSessions = pgTable(
+  "member_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    memberId: uuid("member_id")
+      .notNull()
+      .references(() => members.id, { onDelete: "cascade" }),
+    tokenHash: text("token_hash").notNull().unique(),
+    createdAt: createdAt(),
+  },
+  (t) => [index("member_sessions_member_created_idx").on(t.memberId, t.createdAt)],
 );
 
 // --- Exclusion -------------------------------------------------------------
@@ -198,6 +231,7 @@ export type Group = typeof groups.$inferSelect;
 export type NewGroup = typeof groups.$inferInsert;
 export type Member = typeof members.$inferSelect;
 export type NewMember = typeof members.$inferInsert;
+export type MemberSessionRow = typeof memberSessions.$inferSelect;
 export type ExclusionRow = typeof exclusions.$inferSelect;
 export type AssignmentRow = typeof assignments.$inferSelect;
 export type WishlistItem = typeof wishlistItems.$inferSelect;

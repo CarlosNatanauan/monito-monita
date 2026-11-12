@@ -13,6 +13,7 @@ import {
   getOrganizerView,
   joinGroup,
   MAX_MEMBERS,
+  NAME_TAKEN_MESSAGE,
   reissueMemberLink,
   removeMember,
 } from "@/server/members";
@@ -34,7 +35,7 @@ afterAll(async () => {
 describe("joinGroup (dev DB)", () => {
   it("adds a member with a codename and a working token (hash only stored)", async () => {
     const { slug, groupId } = await newGroup();
-    const result = await joinGroup(slug, "  Joy  ");
+    const result = await joinGroup(slug, "  Joy  ", "1234");
     expect(result.ok).toBe(true);
     if (!result.ok) return;
 
@@ -46,36 +47,35 @@ describe("joinGroup (dev DB)", () => {
     expect((await getGroupSummary(slug))?.memberCount).toBe(1);
   });
 
-  it("rejects the same name in the same group, case-insensitively, with a hint", async () => {
-    const { slug } = await newGroup();
-    expect((await joinGroup(slug, "Joy")).ok).toBe(true);
-    expect(await joinGroup(slug, "  JOY ")).toEqual({
-      ok: false,
-      reason: "DUPLICATE_NAME",
-      message: "May JOY na. Dagdagan ng initial ng apelyido mo.",
-    });
-    expect((await joinGroup(slug, "Joy C.")).ok).toBe(true);
+  it("creates nothing for a taken name (case/space-insensitive), with a message that doesn't repeat it", async () => {
+    const { slug, groupId } = await newGroup();
+    expect((await joinGroup(slug, "Joy", "1234")).ok).toBe(true);
+    const taken = await joinGroup(slug, "  JOY ", "5678");
+    expect(taken).toEqual({ ok: false, reason: "NAME_TAKEN", message: NAME_TAKEN_MESSAGE });
+    expect(NAME_TAKEN_MESSAGE.toLowerCase()).not.toContain("joy");
+    expect(await db().select().from(members).where(eq(members.groupId, groupId))).toHaveLength(1);
+    expect((await joinGroup(slug, "Joy C.", "1234")).ok).toBe(true);
   });
 
   it("allows the same name in a different group", async () => {
     const a = await newGroup();
     const b = await newGroup();
-    expect((await joinGroup(a.slug, "Joy")).ok).toBe(true);
-    expect((await joinGroup(b.slug, "Joy")).ok).toBe(true);
+    expect((await joinGroup(a.slug, "Joy", "1234")).ok).toBe(true);
+    expect((await joinGroup(b.slug, "Joy", "1234")).ok).toBe(true);
   });
 
   it("lets only one of many simultaneous same-name joins through", async () => {
     const { slug, groupId } = await newGroup();
-    const results = await Promise.all(Array.from({ length: 8 }, () => joinGroup(slug, "Marco")));
+    const results = await Promise.all(Array.from({ length: 8 }, () => joinGroup(slug, "Marco", "1234")));
     expect(results.filter((r) => r.ok)).toHaveLength(1);
-    expect(results.filter((r) => !r.ok && r.reason === "DUPLICATE_NAME")).toHaveLength(7);
+    expect(results.filter((r) => !r.ok && r.reason === "NAME_TAKEN")).toHaveLength(7);
     const rows = await db().select().from(members).where(eq(members.groupId, groupId));
     expect(rows).toHaveLength(1);
   });
 
   it("gives unique codenames even when many join at once", async () => {
     const { slug, groupId } = await newGroup();
-    const results = await Promise.all(Array.from({ length: 20 }, (_, i) => joinGroup(slug, `Member ${i}`)));
+    const results = await Promise.all(Array.from({ length: 20 }, (_, i) => joinGroup(slug, `Member ${i}`, "1234")));
     expect(results.every((r) => r.ok)).toBe(true);
     const rows = await db().select({ codename: members.codename }).from(members).where(eq(members.groupId, groupId));
     expect(new Set(rows.map((r) => r.codename)).size).toBe(20);
@@ -84,7 +84,7 @@ describe("joinGroup (dev DB)", () => {
   it("closes joining after the draw", async () => {
     const { slug, groupId } = await newGroup();
     await db().update(groups).set({ status: "DRAWN" }).where(eq(groups.id, groupId));
-    expect(await joinGroup(slug, "Late Larry")).toMatchObject({ ok: false, reason: "CLOSED" });
+    expect(await joinGroup(slug, "Late Larry", "1234")).toMatchObject({ ok: false, reason: "CLOSED" });
   });
 
   it(`caps groups at ${MAX_MEMBERS} active members`, async () => {
@@ -99,23 +99,23 @@ describe("joinGroup (dev DB)", () => {
           tokenHash: hashToken(`bulk-${slug}-${i}`),
         })),
       );
-    expect(await joinGroup(slug, "One too many")).toMatchObject({ ok: false, reason: "FULL" });
+    expect(await joinGroup(slug, "One too many", "1234")).toMatchObject({ ok: false, reason: "FULL" });
 
     // Removing someone opens a spot again.
     const [first] = await db().select({ id: members.id }).from(members).where(eq(members.groupId, groupId)).limit(1);
     expect(await removeMember(groupId, first.id)).toEqual({ ok: true, mode: "removed" });
-    expect((await joinGroup(slug, "One too many")).ok).toBe(true);
+    expect((await joinGroup(slug, "One too many", "1234")).ok).toBe(true);
   });
 
   it("returns NOT_FOUND for an unknown group", async () => {
-    expect(await joinGroup("zzzzzzzzzzzz", "Joy")).toMatchObject({ ok: false, reason: "NOT_FOUND" });
+    expect(await joinGroup("zzzzzzzzzzzz", "Joy", "1234")).toMatchObject({ ok: false, reason: "NOT_FOUND" });
   });
 });
 
 describe("removeMember (dev DB)", () => {
   it("soft-removes before the draw, frees the name, and hides them from lists and login", async () => {
     const { slug, groupId } = await newGroup();
-    const joy = await joinGroup(slug, "Joy");
+    const joy = await joinGroup(slug, "Joy", "1234");
     if (!joy.ok) throw new Error(joy.message);
 
     expect(await removeMember(groupId, joy.memberId)).toEqual({ ok: true, mode: "removed" });
@@ -128,14 +128,14 @@ describe("removeMember (dev DB)", () => {
     expect((await getGroupSummary(slug))?.memberCount).toBe(0);
 
     // The name is free again (new member, new codename).
-    const again = await joinGroup(slug, "joy");
+    const again = await joinGroup(slug, "joy", "1234");
     expect(again.ok).toBe(true);
     if (again.ok) expect(again.codename).not.toBe(joy.codename);
   });
 
   it("refuses after the reveal", async () => {
     const { slug, groupId } = await newGroup();
-    const marco = await joinGroup(slug, "Marco");
+    const marco = await joinGroup(slug, "Marco", "1234");
     if (!marco.ok) throw new Error(marco.message);
     await db().update(groups).set({ status: "REVEALED" }).where(eq(groups.id, groupId));
     expect(await removeMember(groupId, marco.memberId)).toMatchObject({ ok: false, reason: "LOCKED" });
@@ -146,7 +146,7 @@ describe("removeMember (dev DB)", () => {
   it("can't remove a member of another group", async () => {
     const a = await newGroup();
     const b = await newGroup();
-    const joy = await joinGroup(a.slug, "Joy");
+    const joy = await joinGroup(a.slug, "Joy", "1234");
     if (!joy.ok) throw new Error(joy.message);
     expect(await removeMember(b.groupId, joy.memberId)).toMatchObject({ ok: false, reason: "NOT_FOUND" });
   });
@@ -155,16 +155,26 @@ describe("removeMember (dev DB)", () => {
 describe("getOrganizerView (dev DB)", () => {
   it("lists members and group details, never pairs or codenames", async () => {
     const { slug, groupId } = await newGroup();
-    await joinGroup(slug, "Joy");
-    await joinGroup(slug, "Marco");
+    await joinGroup(slug, "Joy", "1234");
+    await joinGroup(slug, "Marco", "1234");
     const view = await getOrganizerView(groupId);
     expect(view?.members.map((m) => m.displayName)).toEqual(["Joy", "Marco"]);
     for (const m of view!.members) {
-      expect(Object.keys(m).sort()).toEqual(["displayName", "id", "joinedAt", "linkStatus"]);
+      expect(Object.keys(m).sort()).toEqual(["displayName", "id", "joinedAt", "linkStatus", "pinLocked"]);
       expect(m.linkStatus).toBe("none");
+      expect(m.pinLocked).toBe(false);
     }
     const json = JSON.stringify(view);
-    for (const forbidden of ["receiver", "giver", "assignment", "codename", "tokenHash", "organizerTokenHash"]) {
+    for (const forbidden of [
+      "receiver",
+      "giver",
+      "assignment",
+      "codename",
+      "tokenHash",
+      "organizerTokenHash",
+      "pinHash",
+      "scrypt",
+    ]) {
       expect(json).not.toContain(forbidden);
     }
   });
@@ -173,7 +183,7 @@ describe("getOrganizerView (dev DB)", () => {
 describe("reissueMemberLink (dev DB)", () => {
   it("gives a new working token; the old one stops working", async () => {
     const { slug, groupId } = await newGroup();
-    const joy = await joinGroup(slug, "Joy");
+    const joy = await joinGroup(slug, "Joy", "1234");
     if (!joy.ok) throw new Error(joy.message);
 
     const result = await reissueMemberLink(groupId, joy.memberId);
@@ -190,8 +200,8 @@ describe("reissueMemberLink (dev DB)", () => {
   it("only for active members of the organizer's own group", async () => {
     const a = await newGroup();
     const b = await newGroup();
-    const joy = await joinGroup(a.slug, "Joy");
-    const ben = await joinGroup(a.slug, "Ben");
+    const joy = await joinGroup(a.slug, "Joy", "1234");
+    const ben = await joinGroup(a.slug, "Ben", "1234");
     if (!joy.ok || !ben.ok) throw new Error("join failed");
     expect(await reissueMemberLink(b.groupId, joy.memberId)).toMatchObject({ ok: false, reason: "NOT_FOUND" });
     await removeMember(a.groupId, ben.memberId);
@@ -201,7 +211,7 @@ describe("reissueMemberLink (dev DB)", () => {
 
   it("shows the organizer only whether the new link was opened", async () => {
     const { slug, groupId } = await newGroup();
-    const joy = await joinGroup(slug, "Joy");
+    const joy = await joinGroup(slug, "Joy", "1234");
     if (!joy.ok) throw new Error(joy.message);
     const status = async () => (await getOrganizerView(groupId))!.members[0].linkStatus;
 

@@ -4,7 +4,7 @@ import { useState, useTransition } from "react";
 import { CopyLink } from "@/components/copy-link";
 import { Button } from "@/components/ui/button";
 import type { LinkStatus } from "@/server/members";
-import { reissueMemberLinkAction, removeMemberAction } from "./actions";
+import { reissueMemberLinkAction, removeMemberAction, unlockPinAction } from "./actions";
 
 export interface MemberRow {
   id: string;
@@ -12,6 +12,8 @@ export interface MemberRow {
   joinedLabel: string;
   /** After "Get new link": used yet or not. Status only. */
   linkStatus: LinkStatus;
+  /** 10 wrong PINs: locked until the organizer unlocks it. */
+  pinLocked: boolean;
 }
 
 const LINK_STATUS: Record<Exclude<LinkStatus, "none">, string> = {
@@ -37,7 +39,9 @@ export function MemberList({
   // Set when removing would break an exclusion: offer remove + redraw.
   const [needsRedrawId, setNeedsRedrawId] = useState<string | null>(null);
   // The new personal link from "Get new link", shown until another action.
-  const [newLink, setNewLink] = useState<{ id: string; path: string } | null>(null);
+  const [newLink, setNewLink] = useState<{ id: string; path: string; pinReset: boolean } | null>(null);
+  // "Reset PIN din" on the "Get new link" confirm.
+  const [resetPin, setResetPin] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -54,6 +58,7 @@ export function MemberList({
     setError(null);
     setNeedsRedrawId(null);
     setNewLink(null);
+    setResetPin(false);
     setConfirming({ id, kind });
   };
 
@@ -70,10 +75,18 @@ export function MemberList({
   const reissue = (memberId: string) => {
     setError(null);
     startTransition(async () => {
-      const result = await reissueMemberLinkAction({ slug, memberId });
+      const result = await reissueMemberLinkAction({ slug, memberId, resetPin });
       if (!result.ok) return setError(result.message);
       close();
-      setNewLink({ id: memberId, path: result.path });
+      setNewLink({ id: memberId, path: result.path, pinReset: resetPin });
+    });
+  };
+
+  const unlock = (memberId: string) => {
+    setError(null);
+    startTransition(async () => {
+      const result = await unlockPinAction({ slug, memberId });
+      if (!result.ok) setError(result.message);
     });
   };
 
@@ -123,6 +136,21 @@ export function MemberList({
                 )}
               </div>
 
+              {member.pinLocked && (
+                <div
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-destructive/8 px-3 py-2"
+                  role="group"
+                  aria-label={`PIN lock for ${member.displayName}`}
+                >
+                  <p className="text-caption font-semibold text-destructive">
+                    Na-lock ang PIN ni {member.displayName}
+                  </p>
+                  <Button type="button" variant="outline" size="sm" disabled={pending} onClick={() => unlock(member.id)}>
+                    Unlock
+                  </Button>
+                </div>
+              )}
+
               {isConfirming && confirming.kind === "link" && (
                 <div
                   className="flex flex-col gap-2 rounded-xl bg-muted p-3"
@@ -133,6 +161,17 @@ export function MemberList({
                     Gawan ng bagong personal link si <strong>{member.displayName}</strong>? Hindi na gagana ang luma
                     niyang link, pati sa phone niya.
                   </p>
+                  <label className="flex items-start gap-2 text-caption">
+                    <input
+                      type="checkbox"
+                      checked={resetPin}
+                      onChange={(event) => setResetPin(event.target.checked)}
+                      className="mt-0.5 size-4 accent-simbang-gabi"
+                    />
+                    <span>
+                      <strong>Reset PIN</strong> din (kung nakalimutan niya). Magse-set siya ng bago pagbukas ng link.
+                    </span>
+                  </label>
                   <div className="flex gap-2">
                     <Button type="button" size="sm" disabled={pending} onClick={() => reissue(member.id)}>
                       {pending ? "Gumagawa…" : "Oo, gumawa ng bago"}
@@ -153,6 +192,7 @@ export function MemberList({
                   <p className="text-caption">
                     Bagong link ni <strong>{member.displayName}</strong>. I-send sa kanya nang private (huwag sa GC, at
                     huwag buksan sa phone mo).
+                    {newLink.pinReset && " Na-reset ang PIN niya: magse-set siya ng bago pagbukas ng link."}
                   </p>
                   <CopyLink path={newLink.path} label="Copy link" variant="outline" />
                 </div>

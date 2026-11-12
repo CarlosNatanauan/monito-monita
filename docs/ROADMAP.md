@@ -56,7 +56,8 @@ Goal: the moments strangers see first, then launch.
 - [ ] Landing page copy: how it works in 3 steps, "Create your group"
 - [ ] Share previews (Open Graph image + title for Messenger/FB links)
 - [ ] Performance pass: Lighthouse mobile 90+, test on a budget Android
-- [ ] Basic rate limiting + input limits
+- [x] Basic rate limiting + input limits (Upstash per-IP on create, join, come-back)
+- [x] Name + PIN: come back on any device (join with PIN, come-back form, lockout, organizer unlock / reset PIN, "send this link to yourself")
 - [ ] PostHog analytics (create → join → draw → slip opened funnel)
 - [x] Playwright test of the main flow on a mobile viewport
 - [ ] Fix everything from the test group's feedback
@@ -89,7 +90,7 @@ The real usage happens now. Priority is **keeping it working**, then adding the 
 - [ ] Watch errors and fix fast
 - [ ] Anonymous chat (giver ↔ receiver)
 - [ ] Guessing game + leaderboard at reveal
-- [ ] Organizer can reissue a lost personal link
+- [x] Organizer can reissue a lost personal link
 - [ ] Collect feedback (short form after reveal)
 
 ## January–February: Look back and level up

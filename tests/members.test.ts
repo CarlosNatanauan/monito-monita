@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { CODENAMES, pickCodename } from "@/server/codenames";
-import { duplicateNameHint, isSameName, joinSchema, MAX_MEMBERS, normalizeDisplayName } from "@/server/members";
+import { isSameName, joinSchema, MAX_MEMBERS, NAME_TAKEN_MESSAGE, normalizeDisplayName } from "@/server/members";
 
 describe("codenames", () => {
   it("has 150+ unique, tidy codenames (enough for a full group)", () => {
@@ -57,18 +57,37 @@ describe("names", () => {
     expect(isSameName("Joy", "Joey")).toBe(false);
   });
 
-  it("gives a friendly hint for duplicates", () => {
-    expect(duplicateNameHint("  Joy ")).toBe("May Joy na. Dagdagan ng initial ng apelyido mo.");
+  it("matches names across odd whitespace and Unicode forms", () => {
+    // Non-breaking spaces, newlines, and tabs count as plain spaces.
+    expect(isSameName("Joy\u00a0Cruz", "joy cruz")).toBe(true);
+    expect(isSameName(" Joy\n Cruz\t", "JOY CRUZ")).toBe(true);
+    // "ñ" typed as one character or as n + combining tilde.
+    expect(isSameName("Ni\u00f1o", "Nin\u0303o")).toBe(true);
+    expect(isSameName("NI\u00d1O", "ni\u00f1o")).toBe(true);
+    // Different names stay different.
+    expect(isSameName("Joy Cruz", "JoyCruz")).toBe(false);
+    expect(isSameName("Nino", "Ni\u00f1o")).toBe(false);
   });
 
-  it("validates join input", () => {
-    expect(joinSchema.safeParse({ slug: "abc123xyz", displayName: "  Joy  " })).toMatchObject({
+  it("the taken-name message never repeats a name", () => {
+    expect(NAME_TAKEN_MESSAGE).toBe(
+      "Kung kasali ka na, ilagay ang PIN mo. Kung bago ka, gumamit ng ibang pangalan (dagdagan ng initial ng apelyido).",
+    );
+  });
+
+  it("validates join input (name + 4-digit PIN)", () => {
+    expect(joinSchema.safeParse({ slug: "abc123xyz", displayName: "  Joy  ", pin: "0123" })).toMatchObject({
       success: true,
-      data: { slug: "abc123xyz", displayName: "Joy" },
+      data: { slug: "abc123xyz", displayName: "Joy", pin: "0123" },
     });
     for (const displayName of ["", "   ", "x".repeat(41), null]) {
-      expect(joinSchema.safeParse({ slug: "abc123xyz", displayName }).success, String(displayName)).toBe(false);
+      expect(joinSchema.safeParse({ slug: "abc123xyz", displayName, pin: "1234" }).success, String(displayName)).toBe(
+        false,
+      );
     }
-    expect(joinSchema.safeParse({ slug: "../bad", displayName: "Joy" }).success).toBe(false);
+    for (const pin of ["", "123", "12345", "12a4", "١٢٣٤", null, undefined, 1234]) {
+      expect(joinSchema.safeParse({ slug: "abc123xyz", displayName: "Joy", pin }).success, String(pin)).toBe(false);
+    }
+    expect(joinSchema.safeParse({ slug: "../bad", displayName: "Joy", pin: "1234" }).success).toBe(false);
   });
 });

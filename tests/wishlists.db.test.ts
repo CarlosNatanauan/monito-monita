@@ -19,7 +19,7 @@ async function groupWith(...names: string[]) {
   const groupId = (await getGroupSummary(slug))!.id;
   const ids: Record<string, string> = {};
   for (const name of names) {
-    const r = await joinGroup(slug, name);
+    const r = await joinGroup(slug, name, "1234");
     if (!r.ok) throw new Error(r.message);
     ids[name] = r.memberId;
   }
