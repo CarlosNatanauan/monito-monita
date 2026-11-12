@@ -20,6 +20,7 @@ import {
 } from "@/server/auth";
 import { getOwnReceiver } from "@/server/draw-service";
 import { getGroupSummary } from "@/server/members";
+import { getOwnGiver } from "@/server/reveal";
 import { getThemeWeeks } from "@/server/groups";
 import { describeThemeStatus, getThemeStatus } from "@/lib/theme-status";
 import { todayIn } from "@/lib/theme-weeks";
@@ -116,11 +117,13 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   const welcome = query.welcome === "1";
   const drawn = group.status !== "OPEN";
   // Only this member's own receiver, looked up by the id from their cookie.
-  const [receiver, receiverWishlist, myWishlist, themeWeeks] = await Promise.all([
+  // Who gave to them: only after the reveal (getOwnGiver checks too).
+  const [receiver, receiverWishlist, myWishlist, themeWeeks, giver] = await Promise.all([
     drawn ? getOwnReceiver(member.id) : null,
     drawn ? getReceiverWishlist(member.id) : [],
     listWishlist(member.id),
     getThemeWeeks(group.id),
+    group.status === "REVEALED" ? getOwnGiver(member.id) : null,
   ]);
   // "Today" in the group's timezone (Asia/Manila), never the server's (UTC on Vercel).
   const theme = describeThemeStatus(
@@ -196,6 +199,20 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
           <p className="text-caption text-muted-foreground">Ang codename mo:</p>
           <Slip>{member.codename}</Slip>
         </section>
+      )}
+
+      {giver && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Ang nagbigay sa&apos;yo ay…</CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-col gap-1">
+            <p className="text-heading">{giver.displayName}!</p>
+            <p className="text-caption text-muted-foreground">
+              Siya pala si <span className="font-hand text-body text-foreground">{giver.codename}</span>.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {!member.hasPin && <SetPinCard slug={slug} />}

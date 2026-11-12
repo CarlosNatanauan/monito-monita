@@ -1,6 +1,9 @@
 /**
- * Anonymity leak checks: before the reveal, no page may expose who is
- * giving to whom, except a member's own receiver on their own /me.
+ * Anonymity leak checks: no page may expose who is giving to whom, except
+ * - a member's own receiver on their own /me (after the draw),
+ * - the one pair on screen on the organizer's reveal screen (during the
+ *   reveal), and every pair there once the group is REVEALED,
+ * - a member's own giver on their own /me, only once REVEALED.
  *
  * For each page we capture the final HTML plus every same-origin HTML,
  * RSC (text/x-component), JSON, and text response the page loaded, and
@@ -118,25 +121,72 @@ export function expectJoinPageClean(text: string, truth: Truth) {
   expectNoWishesOf(text, truth, new Set(truth.members.map((m) => m.id)), "join page");
 }
 
-/** A member's /me: only their own name and their own receiver. */
-export function expectMemberPageClean(text: string, truth: Truth, memberName: string) {
+/**
+ * A member's /me: only their own name and their own receiver; after the
+ * reveal (`revealed`), also their own giver.
+ */
+export function expectMemberPageClean(
+  text: string,
+  truth: Truth,
+  memberName: string,
+  { revealed = false }: { revealed?: boolean } = {},
+) {
   const me = truth.members.find((m) => m.name === memberName && !m.removed);
   if (!me) throw new Error(`No active member named ${memberName}`);
   const pair = truth.pairs.find((p) => p.giverId === me.id);
   const receiver = truth.members.find((m) => m.id === pair?.receiverId);
   if (!receiver) throw new Error(`${memberName} has no receiver`);
+  const giverId = truth.pairs.find((p) => p.receiverId === me.id)?.giverId;
+  const giver = revealed ? truth.members.find((m) => m.id === giverId) : undefined;
+  if (revealed && !giver) throw new Error(`${memberName} has no giver`);
 
-  const label = `${memberName}'s /me`;
+  const label = `${memberName}'s /me${revealed ? " (revealed)" : ""}`;
   commonChecks(text, truth, label);
-  const allowed = [me.name, receiver.name];
+  const allowed = [me.name, receiver.name, ...(giver ? [giver.name] : [])];
+  const visible = new Set([me.id, receiver.id, ...(giver ? [giver.id] : [])]);
   for (const other of truth.members) {
-    if (other.id === me.id || other.id === receiver.id) continue;
+    if (visible.has(other.id)) continue;
     expect(containsName(text, other.name, allowed), `${label} shows "${other.name}"`).toBe(false);
     expect(text, `${label} contains the member id of ${other.name}`).not.toContain(other.id);
   }
+  // Before the reveal, "who gave to me" is never on the page.
+  if (!revealed) expect(text, `${label} shows "Ang nagbigay sa'yo"`).not.toContain("Ang nagbigay sa");
   // Wishlists: only their own and their receiver's.
   const others = new Set(truth.members.filter((m) => m.id !== me.id && m.id !== receiver.id).map((m) => m.id));
   expectNoWishesOf(text, truth, others, label);
   // Their receiver's id isn't needed on the page either.
   expect(text, `${label} contains the receiver's member id`).not.toContain(receiver.id);
+}
+
+/** Pairs in the order the reveal screen shows them: from the first giver to join, along the loop. */
+export function revealOrderOf(truth: Truth, firstGiverName: string): { giver: string; receiver: string; codename: string }[] {
+  const byId = new Map(truth.members.map((m) => [m.id, m]));
+  const receiverOf = new Map(truth.pairs.map((p) => [p.giverId, p.receiverId]));
+  let current = truth.members.find((m) => m.name === firstGiverName && !m.removed)!.id;
+  const order = [];
+  for (let i = 0; i < truth.pairs.length; i++) {
+    const receiverId = receiverOf.get(current)!;
+    order.push({ giver: byId.get(current)!.name, receiver: byId.get(receiverId)!.name, codename: byId.get(current)!.codename });
+    current = receiverId;
+  }
+  return order;
+}
+
+/**
+ * The organizer's reveal screen during the reveal: only the pair on
+ * screen (giver, their codename, receiver). No other names, codenames,
+ * ids, or wishlists.
+ */
+export function expectRevealPageClean(text: string, truth: Truth, onScreen: { giver: string; receiver: string }) {
+  const label = `reveal screen (${onScreen.giver} → ${onScreen.receiver})`;
+  commonChecks(text, truth, label);
+  const allowed = [onScreen.giver, onScreen.receiver];
+  for (const m of truth.members) {
+    expect(text, `${label} contains the member id of ${m.name}`).not.toContain(m.id);
+    if (m.name === onScreen.giver) continue;
+    expect(text, `${label} shows the codename of ${m.name}`).not.toContain(m.codename);
+    if (m.name === onScreen.receiver) continue;
+    expect(containsName(text, m.name, allowed), `${label} shows "${m.name}"`).toBe(false);
+  }
+  expectNoWishesOf(text, truth, new Set(truth.members.map((m) => m.id)), label);
 }

@@ -6,7 +6,7 @@
  * cookie) and returns only their receiver's name. Slip opens are shown to
  * the organizer as a count only.
  */
-import { and, count, eq, isNull } from "drizzle-orm";
+import { and, count, eq, isNull, ne } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db, type Tx } from "./db";
 import { assignments, groups, members } from "./db/schema";
@@ -44,7 +44,7 @@ export async function drawNames(
       .for("update")
       .limit(1);
     if (!group) return { ok: false, reason: "NOT_FOUND", message: "Hindi mahanap ang group." };
-    if (group.status === "REVEALED") {
+    if (group.status === "REVEALING" || group.status === "REVEALED") {
       return { ok: false, reason: "REVEALED", message: "Reveal na, kaya hindi na puwedeng mag-draw ulit." };
     }
     if (mode === "draw" && group.status !== "OPEN") {
@@ -122,20 +122,24 @@ export async function getOwnReceiver(
 
 /**
  * The viewer unfolded their slip (their own row only). Only counts once,
- * and only while they actually have a monito.
+ * and only while they actually have a monito (also during and after the
+ * reveal, so a late opener doesn't replay the unfold forever).
+ * Returns true only the first time.
  */
-export async function markSlipOpened(memberId: string): Promise<void> {
+export async function markSlipOpened(memberId: string): Promise<boolean> {
   const [mine] = await db()
     .select({ id: assignments.id })
     .from(assignments)
     .innerJoin(groups, eq(groups.id, assignments.groupId))
-    .where(and(eq(assignments.giverId, memberId), eq(groups.status, "DRAWN")))
+    .where(and(eq(assignments.giverId, memberId), ne(groups.status, "OPEN")))
     .limit(1);
-  if (!mine) return;
-  await db()
+  if (!mine) return false;
+  const updated = await db()
     .update(members)
     .set({ slipOpenedAt: new Date() })
-    .where(and(eq(members.id, memberId), isNull(members.slipOpenedAt), isNull(members.removedAt)));
+    .where(and(eq(members.id, memberId), isNull(members.slipOpenedAt), isNull(members.removedAt)))
+    .returning({ id: members.id });
+  return updated.length > 0;
 }
 
 /**

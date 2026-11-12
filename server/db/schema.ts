@@ -29,7 +29,11 @@ import {
   uuid,
 } from "drizzle-orm/pg-core";
 
-export const groupStatus = pgEnum("group_status", ["OPEN", "DRAWN", "REVEALED"]);
+/**
+ * OPEN → DRAWN → REVEALING (party reveal in progress, organizer steps
+ * through the loop) → REVEALED (everyone can see who gave to them).
+ */
+export const groupStatus = pgEnum("group_status", ["OPEN", "DRAWN", "REVEALING", "REVEALED"]);
 
 const createdAt = () => timestamp("created_at", { withTimezone: true }).notNull().defaultNow();
 
@@ -47,9 +51,16 @@ export const groups = pgTable(
     status: groupStatus("status").notNull().default("OPEN"),
     organizerTokenHash: text("organizer_token_hash").notNull().unique(),
     organizationId: uuid("organization_id"), // reserved for future office plans
+    // Party reveal: which pair along the loop is on screen (1-based) while
+    // REVEALING; 0 before the reveal starts. Stored so a refreshed
+    // projector or another device resumes at the same pair.
+    revealStep: integer("reveal_step").notNull().default(0),
     createdAt: createdAt(),
   },
-  (t) => [check("groups_budget_non_negative", sql`${t.budget} >= 0`)],
+  (t) => [
+    check("groups_budget_non_negative", sql`${t.budget} >= 0`),
+    check("groups_reveal_step_non_negative", sql`${t.revealStep} >= 0`),
+  ],
 );
 
 // --- Member ----------------------------------------------------------------

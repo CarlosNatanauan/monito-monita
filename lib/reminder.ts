@@ -10,7 +10,7 @@ export type ReminderKind = "drawn" | "theme";
 
 export interface ReminderInput {
   groupName: string;
-  status: "OPEN" | "DRAWN" | "REVEALED";
+  status: "OPEN" | "DRAWN" | "REVEALING" | "REVEALED";
   /** After the draw only. Defaults to "theme". */
   kind?: ReminderKind;
   shareUrl: string;

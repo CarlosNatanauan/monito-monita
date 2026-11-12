@@ -12,7 +12,15 @@ import { formatPartyDate } from "../lib/format";
 import { addDays, todayIn } from "../lib/theme-weeks";
 import { closeDb } from "../server/db";
 import { deleteGroups, E2E_PREFIX } from "./db-cleanup";
-import { capturePage, expectJoinPageClean, expectMemberPageClean, expectOrganizerPageClean, getTruth } from "./leak";
+import {
+  capturePage,
+  expectJoinPageClean,
+  expectMemberPageClean,
+  expectOrganizerPageClean,
+  expectRevealPageClean,
+  getTruth,
+  revealOrderOf,
+} from "./leak";
 
 const createdSlugs: string[] = [];
 
@@ -134,7 +142,7 @@ async function join(page: Page, shareUrl: string, name: string, pin = "1234") {
 
 // --- The flow ----------------------------------------------------------------
 
-test("main flow: create, join, organizer, exclusions, draw, results, leaks", async ({ browser }, testInfo) => {
+test("main flow: create, join, organizer, exclusions, draw, results, reveal, leaks", async ({ browser }, testInfo) => {
   const shot = screenshotter(testInfo);
   const groupName = `${E2E_PREFIX}Barkada (${testInfo.project.name})`;
   const partyDate = addDays(todayIn("Asia/Manila"), 40);
@@ -908,6 +916,138 @@ test("main flow: create, join, organizer, exclusions, draw, results, leaks", asy
     await expect(page.locator("main").getByRole("alert")).toContainText("3 na lang kayo");
     await expect(memberList().getByRole("listitem")).toHaveCount(3);
     await shot(page, "remove-blocked-three-left");
+  });
+
+  // --- The party reveal ------------------------------------------------------
+  // 3 active members left: Joy M, Tita Org (the organizer), Ben, in join order.
+
+  const stillIn = [
+    { label: "Joy M", person: joyM },
+    { label: "Tita Org", person: organizer },
+    { label: "Ben", person: ben },
+  ];
+  const revealUrl = `/g/${slug}/reveal`;
+  const onScreen = (page: Page) => page.getByRole("region", { name: "Reveal" });
+
+  /** The reveal screen shows exactly this pair, at this step. */
+  async function expectPair(page: Page, step: number, pair: { giver: string; receiver: string; codename: string }) {
+    await expect(page.getByText(`${step} of 3`, { exact: true })).toBeVisible();
+    await expect(onScreen(page)).toContainText(`${pair.codename} ay si…`);
+    await expect(onScreen(page)).toContainText(`${pair.giver}!`);
+    await expect(onScreen(page)).toContainText(`→ para kay ${pair.receiver}`);
+  }
+
+  let order: ReturnType<typeof revealOrderOf> = [];
+
+  await test.step("reveal: organizer only; a count before it starts", async () => {
+    const { page } = organizer;
+    await page.goto(`/g/${slug}/admin`);
+    await page.getByRole("link", { name: "Open the reveal screen" }).click();
+    await expect(page).toHaveURL(new RegExp(`${revealUrl}$`));
+    await expect(page.getByRole("heading", { name: "Party reveal" })).toBeVisible();
+    await expect(page.getByText("3 slips. Handa na?")).toBeVisible();
+    await shot(page, "reveal-ready");
+
+    // A member (and a stranger) only sees "for the organizer", with no names.
+    const truth = await getTruth(slug);
+    const memberView = await capturePage(joyM.page, revealUrl);
+    await expect(joyM.page.getByText("Para sa organizer lang ang page na 'to.")).toBeVisible();
+    expectJoinPageClean(memberView, truth);
+    const stranger = await newPerson(browser, testInfo, "Stranger");
+    expectJoinPageClean(await capturePage(stranger.page, revealUrl), truth);
+    await stranger.context.close();
+    // Before the start, the ready screen itself shows no pairs either.
+    expectJoinPageClean(await capturePage(page, revealUrl), truth);
+  });
+
+  await test.step("start the reveal: first pair, redraw and remove are locked", async () => {
+    const { page } = organizer;
+    await page.getByRole("button", { name: "Start the reveal" }).click();
+    await expect(page.getByText("hindi na puwedeng mag-redraw o magtanggal", { exact: false })).toBeVisible();
+    await page.getByRole("button", { name: "Oo, simulan na" }).dblclick();
+
+    order = revealOrderOf(await getTruth(slug), "Joy M");
+    await expectPair(page, 1, order[0]);
+    await expect(page.getByRole("button", { name: "Previous", exact: true })).toBeDisabled();
+    await shot(page, "reveal-step-1");
+
+    await page.goto(`/g/${slug}/admin`);
+    await expect(page.getByText("Nagre-reveal na")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Redraw" })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(0);
+    await expectCardOrder(page, ["Party reveal", "Bunutan", "Members"]);
+    await shot(page, "admin-revealing");
+  });
+
+  await test.step("leak test during the reveal: only the pair on screen, only on the reveal screen", async () => {
+    const truth = await getTruth(slug);
+    expectRevealPageClean(await capturePage(organizer.page, revealUrl), truth, order[0]);
+    expectOrganizerPageClean(await capturePage(organizer.page, `/g/${slug}/admin`), truth);
+    const stranger = await newPerson(browser, testInfo, "Stranger");
+    expectJoinPageClean(await capturePage(stranger.page, shareUrl), truth);
+    await stranger.context.close();
+    // With 3 people, the one name a member doesn't see is their giver.
+    for (const { label, person } of stillIn) {
+      expectMemberPageClean(await capturePage(person.page, `/g/${slug}/me`), truth, label);
+    }
+  });
+
+  await test.step("Next / Previous; refreshing and another device resume at the same pair", async () => {
+    const { page } = organizer;
+    await page.goto(revealUrl);
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expectPair(page, 2, order[1]);
+    await page.reload();
+    await expectPair(page, 2, order[1]);
+    expectRevealPageClean(await capturePage(page, revealUrl), await getTruth(slug), order[1]);
+    await page.getByRole("button", { name: "Previous", exact: true }).click();
+    await expectPair(page, 1, order[0]);
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expectPair(page, 2, order[1]);
+
+    // The organizer link on a laptop (projector): same pair; arrow keys work.
+    const laptop = await newPerson(browser, testInfo, "Organizer laptop");
+    await laptop.page.goto(organizerUrl);
+    await laptop.page.goto(revealUrl);
+    await expectPair(laptop.page, 2, order[1]);
+    await laptop.page.keyboard.press("ArrowRight");
+    await expectPair(laptop.page, 3, order[2]);
+    await expect(laptop.page.getByRole("button", { name: "Tapusin ang reveal" })).toBeVisible();
+    await shot(laptop.page, "reveal-step-3-laptop");
+    await laptop.context.close();
+
+    // The phone still shows step 2: its Next catches up instead of skipping to the end.
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expectPair(page, 3, order[2]);
+  });
+
+  await test.step("finish: REVEALED, all pairs on the reveal screen", async () => {
+    const { page } = organizer;
+    await page.getByRole("button", { name: "Tapusin ang reveal" }).click();
+    await expect(page.getByRole("heading", { name: "Tapos na ang reveal! 🎉" })).toBeVisible();
+    const all = page.getByRole("list", { name: "All pairs" });
+    await expect(all.getByRole("listitem")).toHaveCount(3);
+    for (const [i, pair] of order.entries()) {
+      await expect(all.getByRole("listitem").nth(i)).toHaveText(`${pair.giver} → ${pair.receiver}`);
+    }
+    await shot(page, "reveal-done");
+
+    await page.goto(`/g/${slug}/admin`);
+    await expect(page.getByText("Reveal na!")).toBeVisible();
+    await expect(page.getByRole("link", { name: "See all pairs" })).toHaveAttribute("href", revealUrl);
+  });
+
+  await test.step("after the reveal: each /me shows who gave to them, and nothing more", async () => {
+    const truth = await getTruth(slug);
+    for (const { label, person } of stillIn) {
+      const giver = order.find((p) => p.receiver === label)!;
+      const text = await capturePage(person.page, `/g/${slug}/me`);
+      const card = person.page.locator('[data-slot="card"]').filter({ hasText: "Ang nagbigay sa'yo ay…" });
+      await expect(card).toContainText(`${giver.giver}!`);
+      await expect(card).toContainText(giver.codename);
+      if (label === "Ben") await shot(person.page, "ben-me-revealed");
+      expectMemberPageClean(text, truth, label, { revealed: true });
+    }
   });
 
   await test.step("no console errors on any page", async () => {

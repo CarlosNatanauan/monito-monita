@@ -30,6 +30,7 @@ export const metadata: Metadata = {
 const STATUS_LABEL: Record<GroupStatus, string> = {
   OPEN: "Open: tumatanggap pa ng members",
   DRAWN: "Na-draw na ang names",
+  REVEALING: "Nagre-reveal na",
   REVEALED: "Reveal na!",
 };
 
@@ -193,7 +194,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
       <CardContent>
         <MemberList
           slug={slug}
-          canRemove={group.status !== "REVEALED"}
+          canRemove={group.status === "OPEN" || group.status === "DRAWN"}
           drawn={!isOpen}
           members={view.members.map((m) => ({
             id: m.id,
@@ -221,6 +222,30 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
           editable={isOpen}
           warning={isOpen && feasibility.status === "impossible" ? feasibility.message : null}
         />
+      </CardContent>
+    </Card>
+  );
+
+  // The party reveal (plain for now). Links only: no pairs on this page.
+  const reveal = !isOpen && (
+    <Card>
+      <CardHeader>
+        <CardTitle>Party reveal</CardTitle>
+        <p className="text-caption text-muted-foreground">
+          {group.status === "DRAWN" &&
+            "Sa party: buksan sa laptop o TV at isa-isang ipakita kung sino ang nagbigay kanino."}
+          {group.status === "REVEALING" && "Ongoing ang reveal. Ituloy kung saan ka huminto."}
+          {group.status === "REVEALED" && "Tapos na! Makikita na ng lahat kung sino ang nagbigay sa kanila."}
+        </p>
+      </CardHeader>
+      <CardContent>
+        <Button asChild variant={group.status === "REVEALING" ? "default" : "outline"}>
+          <Link href={`/g/${slug}/reveal`}>
+            {group.status === "DRAWN" && "Open the reveal screen"}
+            {group.status === "REVEALING" && "Continue the reveal"}
+            {group.status === "REVEALED" && "See all pairs"}
+          </Link>
+        </Button>
       </CardContent>
     </Card>
   );
@@ -268,8 +293,10 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
       ) : (
         // After the draw: announce it, track slips, then the rest.
         <>
+          {group.status === "REVEALING" && reveal}
           {nextSteps}
           {bunutan}
+          {group.status !== "REVEALING" && reveal}
           {!justDrawn && reminder}
           {membersCard}
           {shareLink}

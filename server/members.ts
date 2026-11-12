@@ -147,7 +147,7 @@ export async function getOrganizerView(groupId: string): Promise<OrganizerView |
 // --- Join ----------------------------------------------------------------
 
 export type JoinResult =
-  | { ok: true; memberId: string; codename: string; token: string }
+  | { ok: true; memberId: string; groupId: string; codename: string; token: string }
   | { ok: false; reason: "NOT_FOUND" | "CLOSED" | "FULL" | "NAME_TAKEN"; message: string };
 
 function isUniqueViolation(error: unknown, constraint: string): boolean {
@@ -212,7 +212,7 @@ export async function joinGroup(slug: string, rawName: string, pin: string): Pro
         .values({ groupId: group.id, displayName, codename, tokenHash: hashToken(token), pinHash })
         .returning({ id: members.id });
 
-      return { ok: true, memberId: member.id, codename, token };
+      return { ok: true, memberId: member.id, groupId: group.id, codename, token };
     });
   } catch (error) {
     // Backstop for the DB index (the lock above should make this unreachable).
@@ -285,7 +285,7 @@ class Abort extends Error {
  *   If the patch would pair an excluded couple, it's refused with
  *   NEEDS_REDRAW; pass `{ redraw: true }` to remove and redraw everyone.
  * - Never after the draw when only 3 remain (2 can't make a loop), and
- *   never after the reveal.
+ *   never once the reveal has started (the loop on screen must not change).
  */
 export async function removeMember(
   groupId: string,
@@ -301,7 +301,7 @@ export async function removeMember(
         .for("update")
         .limit(1);
       if (!group) return { ok: false, reason: "NOT_FOUND", message: "Hindi mahanap ang group." };
-      if (group.status === "REVEALED") {
+      if (group.status === "REVEALING" || group.status === "REVEALED") {
         return { ok: false, reason: "LOCKED", message: "Reveal na, kaya hindi na puwedeng magtanggal." };
       }
 
