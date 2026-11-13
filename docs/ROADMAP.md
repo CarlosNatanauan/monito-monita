@@ -52,9 +52,12 @@ Goal: everything a member needs between the draw and the party, plus the most im
 Goal: the moments strangers see first, then launch.
 
 - [ ] **Signature moment: the bowl** on the group page (fills with slips as people join, your slip drops in)
-- [ ] **Signature moment: landing page "Try a bunutan"** (draw a demo slip from the bowl)
-- [ ] Landing page copy: how it works in 3 steps, "Create your group"
-- [ ] Share previews (Open Graph image + title for Messenger/FB links)
+- [x] **Signature moment: landing page "Try a bunutan"** (draw a demo slip from the bowl)
+- [x] Landing page copy: how it works in 3 steps, "Create your group"
+- [x] Share previews (Open Graph image + title for Messenger/FB links)
+- [x] Joining: your slip folds and drops into the bowl before /me
+- [x] Personal link shown masked on /me (screenshots); progress lights scale to 150 members
+- [x] Landing analytics: `landing_viewed` with the referrer domain only
 - [ ] Performance pass: Lighthouse mobile 90+, test on a budget Android
 - [x] Basic rate limiting + input limits (Upstash per-IP on create, join, come-back)
 - [x] Name + PIN: come back on any device (join with PIN, come-back form, lockout, organizer unlock / reset PIN, "send this link to yourself")

@@ -146,6 +146,7 @@ One wire, a row of bulbs. Bulb: 12×16 ellipse on light screens, 28×28 circle o
 Where they appear:
 - **Header string** (landing, join, /me): 7 bulbs under a 2px `ube-line` wire. All on; one in three glows, shifting every ~1.1s. Static under reduced motion.
 - **Progress** (organizer): one bulb per member. Join progress: on per member, newest glows. After the draw: on = opened, off = not yet, most recent glows. Always next to the text count ("8 of 12 have opened their slip").
+- **Big groups:** at most 24 bulbs, in balanced rows of up to 12, each row on its own wire (13 → 7 + 6). Above 24 members each bulb stands for a share (40 → 20 bulbs of 2, 150 → 22 of 7) with a small legend "Bawat ilaw: 7 tao"; a share's bulb lights proportionally, never all until everyone. The text count stays exact. See `/lab/lights`.
 - **Reveal ring:** see below.
 
 Lights are never decoration inside cards and never a loading spinner.
@@ -161,7 +162,7 @@ Lights are never decoration inside cards and never a loading spinner.
 ### The bowl
 - Glass: translucent white gradient, 1.5px white outline, an elliptical rim, one vertical highlight streak. Slips inside at mixed angles, two poking over the rim.
 - Sits on a `bilao` ellipse.
-- **Landing only:** inside a `dahon` arch (radius 160 on top, 24 at the bottom) with an inset 2px `margarine` line. Tapping the bowl draws a sample slip above it.
+- **Landing only:** inside a `dahon` arch (radius 160 on top, 24 at the bottom) with an inset 2px `margarine` line. Tapping the bowl draws a sample slip above it. Before the first tap, "Try a bunutan!" (Instrument Serif, white) sits where the slip will appear; after it, the caption reads "Tap ulit para bumunot ng iba".
 - The arch is not used anywhere else.
 
 ### Segmented control (My slip / Manage group)
@@ -170,7 +171,7 @@ White pill track, 4px padding. Active segment: `ube` fill, white text. Inactive:
 ## The 4 signature moments
 
 1. **Landing:** tap the bowl in the arch, a slip rises and unfolds with a sample name. Then "Create your group".
-2. **Joining:** the name you type is already handwriting. On submit the slip folds and drops into the bowl; a new bulb lights on the organizer's string.
+2. **Joining:** the name you type is already handwriting. On submit the slip folds and drops into the bowl; a new bulb lights on the organizer's string. The bowl appears on a full-screen overlay: a green panel ("Kasali ka na!") with the bowl on the bilao, no arch. About 1.5s, a tap skips it, then /me. Reduced motion: the slip fades in already in the bowl.
 3. **Your monito:** folded slip on the green panel. Tap, it unfolds in 3D, the name is drawn like pen strokes, the gold halo fades in, short buzz on Android.
 4. **Party reveal:** below.
 

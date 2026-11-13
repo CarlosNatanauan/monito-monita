@@ -52,6 +52,9 @@ Keep this list updated as scripts are added.
 - `npm run db:migrate:prod`: apply migrations to PRODUCTION, using only `.env.production.local`; shows host and pending migrations and asks for confirmation. The human runs this, never the AI assistant.
 - `npm run db:studio`: browse the database in Drizzle Studio
 - `node scripts/perf/slip-perf.mjs http://localhost:3100`: slip unfold frame rate at 4x CPU throttling, lazy-GSAP, reduced-motion, and noindex checks on `/lab/slip`. Run against a production build (`npm run build && npx next start -p 3100`), not `next dev`
+- `node scripts/perf/landing-perf.mjs http://localhost:3100`: landing bowl draw frame rate at 4x CPU throttling, GSAP not in the first load, reduced motion, static page. Production build, like slip-perf
+- Lighthouse (mobile) on the landing: `CHROME_PATH=<playwright chromium> npx -y lighthouse@12 http://localhost:3100/ --only-categories=performance,accessibility,best-practices,seo --quiet --chrome-flags="--headless=new"` against the production build
+- `/lab/lights`: progress lights at 3–150 members (no database)
 - `node scripts/perf/slip-frames.mjs [baseUrl] [outDir]`: screenshots of the slip unfold at fixed timeline points (`TIMES=0.3,1.5` to pick), into `test-results/slip-frames/` by default
 
 Database notes: use `db()` from `server/db` for everything (node-postgres pool, attached with `attachDatabasePool` for Vercel); use `db().transaction(...)` when writes must succeed or fail together. Exclusion pairs must be stored sorted (`member_a_id < member_b_id`).
