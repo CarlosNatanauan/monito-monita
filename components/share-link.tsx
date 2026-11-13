@@ -25,12 +25,15 @@ export function ShareLink({
   path,
   shareText,
   prominent = false,
+  masked = false,
 }: {
   path: string;
   /** Text that goes with the link in the share sheet. */
   shareText: string;
   /** Right after joining: the share button is the main action. */
   prominent?: boolean;
+  /** Show the link with its token as dots (Copy and Share still use the full link). */
+  masked?: boolean;
 }) {
   const origin = useOrigin();
   const url = origin ? `${origin}${path}` : "";
@@ -49,7 +52,7 @@ export function ShareLink({
 
   return (
     <div className="flex flex-col gap-3">
-      <LinkBox url={url || path} />
+      <LinkBox url={url || path} masked={masked} />
       {canShare && (
         <Button type="button" variant={prominent ? "default" : "secondary"} onClick={share} disabled={!url}>
           <Send />

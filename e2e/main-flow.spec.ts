@@ -21,6 +21,7 @@ import { formatPartyDate } from "../lib/format";
 import { addDays, formatShortDate, todayIn } from "../lib/theme-weeks";
 import { closeDb } from "../server/db";
 import { deleteGroups, E2E_PREFIX } from "./db-cleanup";
+import { readMyLink } from "./links";
 import {
   capturePage,
   expectJoinPageClean,
@@ -252,7 +253,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     // Member only: no role switch.
     await expect(page.getByRole("navigation", { name: "Switch view" })).toHaveCount(0);
     await expect(page.getByText("Waiting for the bunutan…")).toBeVisible();
-    joyLink = await readLink(page, /\/me\?t=/);
+    joyLink = await readMyLink(page);
     await shot(page, "joy-me-welcome");
   });
 
@@ -277,7 +278,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await page.getByLabel("4-digit PIN").fill("5678");
     await page.getByRole("button", { name: "Join the group" }).click();
     await expect(page.getByRole("heading", { name: "Hi, Joy M!" })).toBeVisible();
-    joyMLink = await readLink(page, /\/me\?t=/);
+    joyMLink = await readMyLink(page);
   });
 
   await test.step("someone else's link on a logged-in phone asks before switching", async () => {
@@ -314,7 +315,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
   await test.step("Marco joins, closes the browser, comes back with his link", async () => {
     await join(marco.page, shareUrl, "Marco");
     await expect(marco.page.getByRole("heading", { name: "Hi, Marco!" })).toBeVisible();
-    marcoLink = await readLink(marco.page, /\/me\?t=/);
+    marcoLink = await readMyLink(marco.page);
     await marco.context.close();
 
     marco = await newPerson(browser, testInfo, "Marco (new phone)");
@@ -416,7 +417,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
   await test.step("Ben joins (4 active members: Joy, Joy M, Tita Org, Ben)", async () => {
     await join(ben.page, shareUrl, "Ben");
     await expect(ben.page.getByRole("heading", { name: "Hi, Ben!" })).toBeVisible();
-    benLink = await readLink(ben.page, /\/me\?t=/);
+    benLink = await readMyLink(ben.page);
   });
 
   // Wishlists. Titles are unique and contain no member names (leak checks).

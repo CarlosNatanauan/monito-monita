@@ -156,6 +156,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         path={personalLinkPath("member", slug, token)}
         shareText={`Personal link ko sa ${group.name} (huwag i-share)`}
         prominent={welcome}
+        masked
       />
     </Card>
   );

@@ -3,6 +3,7 @@
 import { Check } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
+import { maskLink } from "@/lib/mask-link";
 
 const noopSubscribe = () => () => {};
 
@@ -11,8 +12,24 @@ export function useOrigin(): string {
   return useSyncExternalStore(noopSubscribe, () => window.location.origin, () => "");
 }
 
-/** Shows a link (path or absolute URL) as selectable text. */
-export function LinkBox({ url }: { url: string }) {
+/**
+ * Shows a link (path or absolute URL) as selectable text. `masked` shows
+ * the link with its token as dots instead (personal links: people
+ * screenshot their page); the real link is then only in Copy / Share.
+ */
+export function LinkBox({ url, masked = false }: { url: string; masked?: boolean }) {
+  if (masked) {
+    return (
+      <p
+        data-masked-link
+        className="rounded-2xl bg-leaf-wash px-5 py-4 font-medium break-all"
+        translate="no"
+      >
+        <span aria-hidden>{maskLink(url)}</span>
+        <span className="sr-only">Personal link (nakatago). Gamitin ang Copy o Send.</span>
+      </p>
+    );
+  }
   return (
     <p className="rounded-2xl bg-leaf-wash px-5 py-4 font-medium break-all select-all" translate="no">
       {url}

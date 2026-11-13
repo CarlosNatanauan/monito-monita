@@ -15,6 +15,7 @@ import { addDays, todayIn } from "../lib/theme-weeks";
 import { closeDb, db } from "../server/db";
 import { members } from "../server/db/schema";
 import { deleteGroups, E2E_PREFIX } from "./db-cleanup";
+import { readMyLink } from "./links";
 import { capturePage, expectJoinPageClean, getTruth } from "./leak";
 
 const createdSlugs: string[] = [];
@@ -153,7 +154,7 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     const share = page.getByRole("button", { name: "I-send sa sarili mo" });
     await expect(share).toHaveAttribute("data-variant", "default");
     await expect(page.getByRole("button", { name: "Copy my link" })).toHaveAttribute("data-variant", "secondary");
-    anaLink = await readLink(page, /\/me\?t=/);
+    anaLink = await readMyLink(page);
     await share.click();
     await expect
       .poll(() => page.evaluate(() => (window as unknown as { __shared: { url: string }[] }).__shared))
