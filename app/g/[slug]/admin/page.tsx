@@ -115,7 +115,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
   // Before the draw: the join count with one bulb per member (newest glows).
   const shareLink = isOpen ? (
     <Card>
-      <Lights states={joinStates(memberCount)} label={<CardTitle>{joinedCount(memberCount)}</CardTitle>} />
+      <Lights plan={joinStates(memberCount)} label={<CardTitle>{joinedCount(memberCount)}</CardTitle>} />
       <p>I-paste sa GC para makasali ang lahat.</p>
       <CopyLink path={`/g/${slug}`} label="Copy link" variant="secondary" />
     </Card>

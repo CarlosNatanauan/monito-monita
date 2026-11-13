@@ -1,5 +1,8 @@
 import type { CSSProperties, ReactNode } from "react";
+import { bulbRows, type BulbState, type LightsPlan } from "@/lib/lights";
 import { cn } from "@/lib/utils";
+
+export { joinStates, openedStates, type BulbState, type LightsPlan } from "@/lib/lights";
 
 /**
  * The lights (docs/DESIGN.md, "The lights"): one wire, a row of bulbs.
@@ -7,7 +10,6 @@ import { cn } from "@/lib/utils";
  * progress row comes with its text count (the required `label`).
  */
 
-export type BulbState = "off" | "on" | "glow";
 export type LightsVariant = "light" | "dark";
 
 const SHAPE: Record<LightsVariant, string> = {
@@ -53,69 +55,57 @@ const WIRE: Record<LightsVariant, string> = {
   light: "before:bg-ube-line",
   dark: "before:bg-gabi-line",
 };
-// Bulbs sit in an auto-filling grid: at least this much room each, stretched
-// to fill the wire's width; more bulbs than fit wrap onto another wire.
-const GRID: Record<LightsVariant, string> = {
-  light: "grid-cols-[repeat(auto-fill,minmax(24px,1fr))]",
-  dark: "grid-cols-[repeat(auto-fill,minmax(48px,1fr))]",
-};
+// Room per bulb on the wire. Columns shrink below this on narrow screens,
+// so a full row of 12 still fits a 320px phone.
+const PITCH: Record<LightsVariant, number> = { light: 22, dark: 48 };
+const LEGEND: Record<LightsVariant, string> = { light: "text-ube-soft", dark: "text-gabi-mist" };
 
 /**
- * A progress string: one bulb per item, wrapping onto more wires if needed.
- * `label` is the text count that always goes with it ("8 of 12 have
- * opened their slip"); it renders above the wire.
+ * A progress string. Up to 24 bulbs, in balanced rows of at most 12, each
+ * row on its own full-width wire; bigger groups get one bulb per share of
+ * members (see lib/lights.ts) and a small legend. `label` is the exact text
+ * count that always goes with it ("8 of 12 have opened their slip"); it
+ * renders above the wire.
  */
 export function Lights({
-  states,
+  plan,
   label,
   variant = "light",
   className,
 }: {
-  states: BulbState[];
+  plan: LightsPlan;
   label: ReactNode;
   variant?: LightsVariant;
   className?: string;
 }) {
+  const rows = bulbRows(plan.states);
+  const columns = rows[0]?.length ?? 0;
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       {label}
-      {states.length > 0 && (
-        <div
-          aria-hidden
-          className={cn(
-            "relative grid gap-y-3",
-            GRID[variant],
-            // Full-width wire on the first row; each slot carries its own piece
-            // so wrapped rows hang on a wire too.
-            "before:absolute before:inset-x-0 before:top-0 before:h-0.5",
-            WIRE[variant],
-          )}
-        >
-          {states.map((state, i) => (
-            <span
-              key={i}
-              className={cn(
-                "relative flex justify-center pt-0.5 before:absolute before:inset-x-0 before:top-0 before:h-0.5",
-                WIRE[variant],
-              )}
+      {rows.length > 0 && (
+        <div aria-hidden data-lights={plan.states.length} className="flex flex-col gap-3">
+          {rows.map((row, r) => (
+            <div
+              key={r}
+              data-lights-row
+              className={cn("relative grid pt-0.5 before:absolute before:inset-x-0 before:top-0 before:h-0.5", WIRE[variant])}
+              style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, ${PITCH[variant]}px))` }}
             >
-              <Bulb state={state} variant={variant} />
-            </span>
+              {row.map((state, i) => (
+                <span key={i} className="flex justify-center">
+                  <Bulb state={state} variant={variant} />
+                </span>
+              ))}
+            </div>
           ))}
         </div>
       )}
+      {plan.perBulb > 1 && (
+        <p className={cn("text-small font-medium", LEGEND[variant])}>Bawat ilaw: {plan.perBulb} tao</p>
+      )}
     </div>
   );
-}
-
-/** Join progress: on per member, the newest one glows. */
-export function joinStates(count: number): BulbState[] {
-  return Array.from({ length: count }, (_, i) => (i === count - 1 ? "glow" : "on"));
-}
-
-/** After the draw: on = opened, off = not yet, the most recent opened glows. */
-export function openedStates(opened: number, total: number): BulbState[] {
-  return Array.from({ length: total }, (_, i) => (i < opened ? (i === opened - 1 ? "glow" : "on") : "off"));
 }
 
 const HEADER_BULBS = 7;

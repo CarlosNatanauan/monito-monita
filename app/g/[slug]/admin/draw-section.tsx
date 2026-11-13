@@ -84,7 +84,7 @@ export function DrawSection({
       <p>{drawnCount} na ang may monito. Walang makakakita kung sino ang nakabunot kanino, kahit ikaw.</p>
       {status === "DRAWN" && slipsOpened.total > 0 && (
         <Lights
-          states={openedStates(slipsOpened.opened, slipsOpened.total)}
+          plan={openedStates(slipsOpened.opened, slipsOpened.total)}
           label={
             <p className="font-bold">
               {slipsOpened.opened} of {slipsOpened.total} have opened their slip
