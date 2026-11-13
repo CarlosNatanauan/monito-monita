@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getCurrentOrganizer, isValidSlug } from "@/server/auth";
 import { getRevealView } from "@/server/reveal";
 import { PageFallback } from "../group-facts";
+import { RevealAutoRefresh } from "./auto-refresh";
 import { RevealControls, StartReveal } from "./reveal-controls";
 
 export const metadata: Metadata = {
@@ -16,7 +17,9 @@ export const metadata: Metadata = {
 /**
  * The party reveal (organizer only), plain version: one pair at a time
  * along the loop. The step is stored on the server, so refreshing or
- * opening this on another device resumes at the same pair.
+ * opening this on another device resumes at the same pair. Until the
+ * reveal is done, the screen re-fetches every 2 seconds, so a laptop on
+ * the projector follows Next taps from the organizer's phone.
  * The animated parol version comes after the redesign.
  */
 export default function RevealPage({ params }: PageProps<"/g/[slug]/reveal">) {
@@ -69,6 +72,7 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
   if (view.status === "DRAWN") {
     return (
       <>
+        <RevealAutoRefresh />
         {back}
         <h1 className="text-heading">Party reveal</h1>
         <p className="text-title">{view.total} slips. Handa na?</p>
@@ -85,6 +89,7 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
     const { pair, step, total } = view;
     return (
       <>
+        <RevealAutoRefresh />
         {back}
         <section aria-label="Reveal" className="flex flex-col gap-6 py-6">
           <p className="text-caption font-semibold text-muted-foreground">

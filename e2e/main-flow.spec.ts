@@ -7,7 +7,16 @@
  * deleted afterwards.
  */
 import { mkdirSync, rmSync } from "node:fs";
-import { expect, test, type Browser, type BrowserContext, type Page, type Response, type TestInfo } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Browser,
+  type BrowserContext,
+  type Page,
+  type Request,
+  type Response,
+  type TestInfo,
+} from "@playwright/test";
 import { formatPartyDate } from "../lib/format";
 import { addDays, todayIn } from "../lib/theme-weeks";
 import { closeDb } from "../server/db";
@@ -45,6 +54,10 @@ function watch(page: Page, label: string) {
     if (msg.type() === "error") problems.push(`[${label}] console.error on ${page.url()}: ${msg.text()}`);
   });
   page.on("pageerror", (error) => {
+    // WebKit reports a refresh fetch cancelled by leaving the page (the
+    // reveal screen's auto-refresh, mid-flight during a navigation) as an
+    // "access control" error. Harmless: the page is already unloading.
+    if (/\?_rsc=\S+ due to access control checks/.test(error.message)) return;
     problems.push(`[${label}] uncaught error on ${page.url()}: ${error.message}`);
   });
 }
@@ -992,6 +1005,35 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     }
   });
 
+  /**
+   * Counts the reveal screen's auto-refreshes (RSC fetches that aren't
+   * prefetches or Server Action posts) while `during` runs.
+   */
+  async function countRefreshes(page: Page, during: () => Promise<void>): Promise<number> {
+    let n = 0;
+    const onRequest = (r: Request) => {
+      const h = r.headers();
+      if (r.method() === "GET" && h["rsc"] === "1" && !h["next-router-prefetch"]) n += 1;
+    };
+    page.on("request", onRequest);
+    try {
+      await during();
+    } finally {
+      page.off("request", onRequest);
+    }
+    return n;
+  }
+
+  /** Pretends the tab is hidden (or shown again), like switching tabs. */
+  async function setTabVisible(page: Page, visible: boolean) {
+    await page.evaluate((visible) => {
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => (visible ? "visible" : "hidden") });
+      document.dispatchEvent(new Event("visibilitychange"));
+    }, visible);
+  }
+
+  let laptop: Person;
+
   await test.step("Next / Previous; refreshing and another device resume at the same pair", async () => {
     const { page } = organizer;
     await page.goto(revealUrl);
@@ -1005,19 +1047,57 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await expectPair(page, 2, order[1]);
 
-    // The organizer link on a laptop (projector): same pair; arrow keys work.
-    const laptop = await newPerson(browser, testInfo, "Organizer laptop");
+    // The organizer link on a laptop (projector) opens at the same pair.
+    laptop = await newPerson(browser, testInfo, "Organizer laptop");
     await laptop.page.goto(organizerUrl);
     await laptop.page.goto(revealUrl);
     await expectPair(laptop.page, 2, order[1]);
-    await laptop.page.keyboard.press("ArrowRight");
-    await expectPair(laptop.page, 3, order[2]);
-    await expect(laptop.page.getByRole("button", { name: "Tapusin ang reveal" })).toBeVisible();
-    await shot(laptop.page, "reveal-step-3-laptop");
-    await laptop.context.close();
+  });
 
-    // The phone still shows step 2: its Next catches up instead of skipping to the end.
+  await test.step("phone as remote: the laptop follows Next and Previous taps, without reloading", async () => {
+    const { page } = organizer;
+    // A marker that a full page load would wipe.
+    await laptop.page.evaluate(() => ((window as unknown as { stayed: boolean }).stayed = true));
+
+    // Phone taps Next → the laptop follows within a refresh or two.
     await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expectPair(page, 3, order[2]);
+    await expect(laptop.page.getByText("3 of 3", { exact: true })).toBeVisible({ timeout: 6_000 });
+    await expectPair(laptop.page, 3, order[2]);
+    await shot(laptop.page, "reveal-step-3-laptop-follows");
+
+    // Arrow keys on the laptop move it; the phone follows too.
+    await laptop.page.keyboard.press("ArrowLeft");
+    await expectPair(laptop.page, 2, order[1]);
+    await expect(page.getByText("2 of 3", { exact: true })).toBeVisible({ timeout: 6_000 });
+    await page.getByRole("button", { name: "Next", exact: true }).click();
+    await expect(laptop.page.getByText("3 of 3", { exact: true })).toBeVisible({ timeout: 6_000 });
+    expect(await laptop.page.evaluate(() => (window as unknown as { stayed?: boolean }).stayed)).toBe(true);
+    expectRevealPageClean(await capturePage(laptop.page, revealUrl), await getTruth(slug), order[2]);
+  });
+
+  await test.step("auto-refresh: every ~2s only while visible, never on the organizer page", async () => {
+    // Visible: about one refresh every 2 seconds.
+    const visible = await countRefreshes(laptop.page, () => laptop.page.waitForTimeout(5_000));
+    expect(visible, "refreshes in 5s while visible").toBeGreaterThanOrEqual(1);
+    expect(visible, "refreshes in 5s while visible").toBeLessThanOrEqual(4);
+
+    // Hidden tab: none. Shown again: catches up right away.
+    await setTabVisible(laptop.page, false);
+    await laptop.page.waitForTimeout(500);
+    expect(await countRefreshes(laptop.page, () => laptop.page.waitForTimeout(5_000)), "refreshes while hidden").toBe(0);
+    const shown = await countRefreshes(laptop.page, async () => {
+      await setTabVisible(laptop.page, true);
+      await laptop.page.waitForTimeout(800);
+    });
+    expect(shown, "refresh right after the tab is shown").toBeGreaterThanOrEqual(1);
+
+    // Only the reveal screen polls.
+    const { page } = organizer;
+    await page.goto(`/g/${slug}/admin`);
+    await page.waitForLoadState("networkidle");
+    expect(await countRefreshes(page, () => page.waitForTimeout(5_000)), "refreshes on the organizer page").toBe(0);
+    await page.goto(revealUrl);
     await expectPair(page, 3, order[2]);
   });
 
@@ -1031,6 +1111,12 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
       await expect(all.getByRole("listitem").nth(i)).toHaveText(`${pair.giver} → ${pair.receiver}`);
     }
     await shot(page, "reveal-done");
+
+    // The laptop follows to the end, then stops refreshing.
+    await expect(laptop.page.getByRole("heading", { name: "Tapos na ang reveal! 🎉" })).toBeVisible({ timeout: 6_000 });
+    await laptop.page.waitForTimeout(500);
+    expect(await countRefreshes(laptop.page, () => laptop.page.waitForTimeout(5_000)), "refreshes after the end").toBe(0);
+    await laptop.context.close();
 
     await page.goto(`/g/${slug}/admin`);
     await expect(page.getByText("Reveal na!")).toBeVisible();
