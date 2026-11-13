@@ -17,7 +17,9 @@ export type JoinState =
       displayName: string;
     }
   // The name is in the group already: show the come-back form (PIN only).
-  | { status: "taken"; message: string; displayName: string };
+  | { status: "taken"; message: string; displayName: string }
+  // Joined: the form plays the slip drop (signature moment 2), then goes to `href`.
+  | { status: "joined"; displayName: string; href: string };
 
 /** Echoed back so the form keeps what was typed (capped; it's only display). */
 function echoName(raw: FormDataEntryValue | null): string {
@@ -59,8 +61,10 @@ export async function joinAction(_previous: JoinState, formData: FormData): Prom
 
   await setAuthCookie("member", slug, result.token);
   track("member_joined", result.groupId, {});
-  // /me shows the personal link with "Send this link to yourself".
-  redirect(`/g/${slug}/me?welcome=1`);
+  // The slip drops into the bowl first; then /me shows the personal link
+  // with "Send this link to yourself". The overlay is a plain link to
+  // `href` too, so it works before hydration.
+  return { status: "joined", displayName: parsed.data.displayName, href: `/g/${slug}/me?welcome=1` };
 }
 
 /** The come-back form only ever shows one message. */

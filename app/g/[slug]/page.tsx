@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { HeaderLights } from "@/components/lights";
@@ -30,6 +31,17 @@ export default function JoinPage({ params, searchParams }: PageProps<"/g/[slug]"
   );
 }
 
+/**
+ * True when this render answers a Server Action: from the client router
+ * (`next-action` header) or a form posted before hydration (form body).
+ * Page loads are GETs and never carry either.
+ */
+function isActionRender(h: Headers): boolean {
+  if (h.has("next-action")) return true;
+  const type = h.get("content-type") ?? "";
+  return type.startsWith("multipart/form-data") || type.startsWith("application/x-www-form-urlencoded");
+}
+
 /** Opens the come-back form (name + PIN). A plain link, so it works before hydration. */
 function ComeBackLink({ slug, className }: { slug: string; className?: string }) {
   return (
@@ -47,10 +59,16 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
   const [{ slug }, query] = await Promise.all([params, searchParams]);
   if (!isValidSlug(slug)) notFound();
 
-  const [group, session] = await Promise.all([getGroupSummary(slug), getMemberSession(slug)]);
+  const [group, session, requestHeaders] = await Promise.all([
+    getGroupSummary(slug),
+    getMemberSession(slug),
+    headers(),
+  ]);
   if (!group) notFound();
-  // Already joined on this device: go straight to their page.
-  if (session.kind === "member") redirect(`/g/${slug}/me`);
+  // Already joined on this device: go straight to their page. Except while
+  // rendering the join action's result (the cookie it sets re-renders this
+  // page): then the form plays the slip drop and moves on by itself.
+  if (session.kind === "member" && !isActionRender(requestHeaders)) redirect(`/g/${slug}/me`);
 
   const isOpen = group.status === "OPEN";
   const isFull = group.memberCount >= MAX_MEMBERS;

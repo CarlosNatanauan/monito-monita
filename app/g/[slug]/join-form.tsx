@@ -1,6 +1,7 @@
 "use client";
 
 import { useActionState, useState, type ReactNode } from "react";
+import { JoinDrop, preloadDrop } from "@/components/bowl/join-drop";
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { Input } from "@/components/ui/input";
@@ -34,6 +35,9 @@ export function JoinForm({
   // "Bago ka?" on the come-back form: back to joining, for this result.
   const [newAfter, setNewAfter] = useState<JoinState | null>(null);
 
+  // Joined: the slip drops into the bowl, then /me (signature moment 2).
+  if (state.status === "joined") return <JoinDrop name={state.displayName} href={state.href} />;
+
   if (state.status === "taken" && newAfter !== state) {
     return (
       <ComeBackForm
@@ -54,7 +58,14 @@ export function JoinForm({
 
   return (
     <div className="flex flex-col gap-4">
-      <form action={formAction} className="flex flex-col gap-6" aria-label="Sumali" noValidate>
+      <form
+        action={formAction}
+        className="flex flex-col gap-6"
+        aria-label="Sumali"
+        noValidate
+        // Fetch the drop animation while they type, so it's ready on submit.
+        onFocus={() => void preloadDrop()}
+      >
         <input type="hidden" name="slug" value={slug} />
         <div className="flex flex-col gap-2">
           <label htmlFor="displayName" className="px-1.5 font-bold">
