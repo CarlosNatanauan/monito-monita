@@ -3,7 +3,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { BowlBack, BowlFront } from "@/components/bowl/bowl-art";
 import { SlipArt } from "@/components/slip/slip-art";
-import { nextSample } from "@/lib/sample-names";
+import { FIRST_SAMPLE, nextSample } from "@/lib/sample-names";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import type { Drawer } from "./draw-timeline";
@@ -13,7 +13,9 @@ import type { Drawer } from "./draw-timeline";
 // next/dynamic would preload the chunk with the page.
 const loadDrawer = () => import("./draw-timeline").then((m) => m.createDrawer());
 
-type Phase = "idle" | "drawing" | "shown";
+// idle: nothing loaded yet. ready: the first slip waits, hidden in the
+// bowl, with its timeline built. drawing / shown: after a tap.
+type Phase = "idle" | "ready" | "drawing" | "shown";
 
 /**
  * Signature moment #1 (docs/DESIGN.md): the bowl on the bilao inside the
@@ -31,10 +33,23 @@ export function TryBunutan() {
   const drawerRef = useRef<Drawer | null>(null);
   const loading = useRef<Promise<Drawer> | null>(null);
   const busy = useRef(false);
+  const phaseRef = useRef<Phase>("idle");
+  useEffect(() => {
+    phaseRef.current = phase;
+  });
 
   const load = () => {
     if (reduced) return null;
-    loading.current ??= loadDrawer().then((d) => (drawerRef.current = d));
+    loading.current ??= loadDrawer().then((d) => {
+      drawerRef.current = d;
+      // Put the first slip in the bowl now, so the first tap only plays.
+      if (phaseRef.current === "idle" && !busy.current) {
+        setName(FIRST_SAMPLE);
+        setDraw((n) => n + 1);
+        setPhase("ready");
+      }
+      return d;
+    });
     return loading.current;
   };
 
@@ -59,6 +74,23 @@ export function TryBunutan() {
 
   useEffect(() => () => drawerRef.current?.dispose(), []);
 
+  // The sparkle's setup waits for the first interaction anywhere on the
+  // page (scrolling, touching), so it stays out of the page load.
+  useEffect(() => {
+    if (reduced) return;
+    const events = ["pointerdown", "touchstart", "scroll", "keydown"] as const;
+    const warm = () => {
+      events.forEach((e) => window.removeEventListener(e, warm));
+      // Already loaded (the usual case after idle): set up right now, so a
+      // first touch on the bowl does it before its click starts the draw.
+      if (drawerRef.current) drawerRef.current.warmSparkle();
+      else void load()?.then((d) => d.warmSparkle());
+    };
+    events.forEach((e) => window.addEventListener(e, warm, { passive: true }));
+    return () => events.forEach((e) => window.removeEventListener(e, warm));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- load() only reads refs and `reduced`
+  }, [reduced]);
+
   async function tap() {
     if (busy.current) return;
     const next = nextSample(name);
@@ -69,6 +101,11 @@ export function TryBunutan() {
       return;
     }
     busy.current = true;
+    if (phase === "ready" && drawerRef.current) {
+      setPhase("drawing");
+      drawerRef.current.play();
+      return;
+    }
     const drawer = await load()!;
     if (phase === "shown" && stageRef.current) await drawer.putBack(stageRef.current);
     setName(next);
@@ -76,13 +113,17 @@ export function TryBunutan() {
     setPhase("drawing");
   }
 
-  // A new slip is on the page (folded, invisible): play the rise + unfold.
+  // A new slip is on the page (folded, invisible): build its rise + unfold,
+  // and play it right away unless it's the waiting first slip.
   useLayoutEffect(() => {
-    if (phase !== "drawing" || !stageRef.current || !drawerRef.current) return;
-    drawerRef.current.draw(stageRef.current, () => {
+    const drawer = drawerRef.current;
+    if ((phase !== "drawing" && phase !== "ready") || !stageRef.current || !drawer) return;
+    const done = () => {
       busy.current = false;
       setPhase("shown");
-    });
+    };
+    if (phase === "ready") drawer.prepare(stageRef.current, done);
+    else drawer.draw(stageRef.current, done);
     // Only when a new draw starts.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [draw]);
@@ -97,6 +138,7 @@ export function TryBunutan() {
   }, [draw, reduced]);
 
   const shown = phase === "shown";
+  const tapped = phase === "drawing" || phase === "shown";
 
   return (
     <section
@@ -112,7 +154,7 @@ export function TryBunutan() {
           aria-hidden
           className={cn(
             "pointer-events-none absolute inset-x-0 top-[72px] text-center font-display text-heading text-white transition-opacity duration-200",
-            name && "opacity-0",
+            tapped && "opacity-0",
           )}
         >
           Try a bunutan!
@@ -127,7 +169,7 @@ export function TryBunutan() {
 
         <div
           ref={stageRef}
-          data-sample-slip={name ?? undefined}
+          data-sample-slip={tapped && name ? name : undefined}
           className="pointer-events-none absolute top-10 left-1/2 h-[160px] w-[300px] origin-top -translate-x-1/2 scale-[0.6] max-[359px]:scale-[0.52]"
         >
           {name && (
@@ -144,7 +186,7 @@ export function TryBunutan() {
         <button
           type="button"
           onClick={tap}
-          onPointerEnter={() => void load()}
+          onPointerEnter={() => void load()?.then((d) => d.warmSparkle())}
           onPointerDown={() => void load()}
           onFocus={() => void load()}
           className={cn(
