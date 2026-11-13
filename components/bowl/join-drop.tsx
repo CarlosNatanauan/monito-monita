@@ -2,13 +2,21 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { BowlBack, BowlFront } from "@/components/bowl/bowl-art";
 import { SlipArt } from "@/components/slip/slip-art";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 
-/** Starts fetching the drop timeline (GSAP). Call when someone starts filling in the join form. */
-export const preloadDrop = () => import("./drop-timeline");
+const loadDrop = () => import("./drop-timeline");
+
+/**
+ * Starts fetching the drop timeline (GSAP) while someone fills in the join
+ * form. Not with reduced motion: then GSAP is never needed.
+ */
+export function preloadDrop(): void {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  void loadDrop();
+}
 
 /** Reduced motion: how long the slip rests in the bowl before moving on. */
 const REDUCED_HOLD_MS = 900;
@@ -26,6 +34,17 @@ export function JoinDrop({ name, href }: { name: string; href: string }) {
   const reduced = usePrefersReducedMotion();
   const rootRef = useRef<HTMLAnchorElement>(null);
   const left = useRef(false);
+  const [done, setDone] = useState(false);
+
+  // Next keeps the join page alive but hidden after the navigation (React
+  // Activity), which runs effect cleanups. Once we've left, drop the
+  // overlay so it never shows again if that page is revealed later.
+  useEffect(
+    () => () => {
+      if (left.current) setDone(true);
+    },
+    [],
+  );
 
   useEffect(() => {
     const root = rootRef.current;
@@ -51,7 +70,7 @@ export function JoinDrop({ name, href }: { name: string; href: string }) {
 
     let tl: { kill: () => void } | null = null;
     let alive = true;
-    preloadDrop().then(({ buildDropTimeline }) => {
+    loadDrop().then(({ buildDropTimeline }) => {
       if (alive) tl = buildDropTimeline(root, go);
     });
     return () => {
@@ -60,6 +79,8 @@ export function JoinDrop({ name, href }: { name: string; href: string }) {
       window.clearTimeout(fallback);
     };
   }, [href, reduced, router]);
+
+  if (done) return null;
 
   return (
     <Link

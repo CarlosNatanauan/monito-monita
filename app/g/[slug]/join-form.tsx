@@ -64,7 +64,7 @@ export function JoinForm({
         aria-label="Sumali"
         noValidate
         // Fetch the drop animation while they type, so it's ready on submit.
-        onFocus={() => void preloadDrop()}
+        onFocus={preloadDrop}
       >
         <input type="hidden" name="slug" value={slug} />
         <div className="flex flex-col gap-2">
