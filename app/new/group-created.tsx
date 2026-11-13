@@ -49,22 +49,22 @@ export function GroupCreated({
       <RememberGroup slug={slug} name={groupName} role="organizer" />
       <header className="flex flex-col gap-2">
         <h1 className="text-heading">Ready na ang group mo!</h1>
-        <p className="text-muted-foreground">
-          <span className="font-semibold text-foreground">{groupName}</span> is set. Dalawang link ang kailangan mo:
+        <p className="text-ube-soft">
+          <span className="font-semibold text-ube">{groupName}</span> is set. Dalawang link ang kailangan mo:
         </p>
       </header>
 
       <Card>
         <CardHeader>
           <CardTitle>Share link (para sa GC)</CardTitle>
-          <p className="text-caption text-muted-foreground">I-paste sa group chat para makasali ang lahat.</p>
+          <p className="text-small text-ube-soft">I-paste sa group chat para makasali ang lahat.</p>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
           <LinkBox url={shareUrl} />
           <div className="flex gap-2">
             <CopyButton text={shareUrl} label="Copy link" className="flex-1" />
             {canShare && (
-              <Button type="button" variant="outline" onClick={share} className="flex-1">
+              <Button type="button" variant="secondary" onClick={share} className="flex-1">
                 <Share2 /> Share
               </Button>
             )}
@@ -72,25 +72,25 @@ export function GroupCreated({
         </CardContent>
       </Card>
 
-      <Card className="ring-2 ring-parol-gold">
+      <Card className="ring-2 ring-margarine">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <KeyRound className="size-5 shrink-0" aria-hidden />
             Ito ang susi mo bilang organizer.
           </CardTitle>
-          <p className="text-caption text-muted-foreground">This is your key as the organizer.</p>
+          <p className="text-small text-ube-soft">This is your key as the organizer.</p>
         </CardHeader>
         <CardContent className="flex flex-col gap-3">
-          <p className="text-caption">
+          <p className="text-small">
             I-save mo &apos;to (bookmark o send sa sarili mo). <strong>Huwag i-share sa GC:</strong> kung sino ang may
             hawak nito, siya ang organizer.
           </p>
           <LinkBox url={organizerUrl} />
-          <CopyButton text={organizerUrl} label="Copy organizer link" variant="outline" />
+          <CopyButton text={organizerUrl} label="Copy organizer link" variant="secondary" />
         </CardContent>
       </Card>
 
-      <p className="text-caption text-muted-foreground">
+      <p className="text-small text-ube-soft">
         Naka-remember na rin ang device na &apos;to bilang organizer ng group.
       </p>
     </>

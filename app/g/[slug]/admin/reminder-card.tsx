@@ -29,7 +29,7 @@ export function ReminderCard({
   return (
     <div className="flex flex-col gap-3">
       {drawn && (
-        <div role="group" aria-label="Reminder type" className="flex self-start rounded-full bg-muted p-1 text-caption font-semibold">
+        <div role="group" aria-label="Reminder type" className="flex self-start rounded-full bg-leaf-wash p-1 text-small font-semibold">
           {KINDS.map((k) => (
             <button
               key={k.kind}
@@ -38,7 +38,7 @@ export function ReminderCard({
               onClick={() => setKind(k.kind)}
               className={cn(
                 "cursor-pointer rounded-full px-4 py-2 outline-none focus-visible:ring-3 focus-visible:ring-ring",
-                kind === k.kind ? "bg-slip text-foreground shadow-[0_1px_2px_rgb(31_27_77/0.10)]" : "text-muted-foreground",
+                kind === k.kind ? "bg-niyog text-ube shadow-[0_1px_2px_rgb(31_27_77/0.10)]" : "text-ube-soft",
               )}
             >
               {k.label}
@@ -48,7 +48,7 @@ export function ReminderCard({
       )}
       <pre
         aria-label="Reminder preview"
-        className="rounded-xl bg-slip p-4 font-sans text-caption whitespace-pre-wrap break-words ring-1 ring-border"
+        className="rounded-xl bg-niyog p-4 font-sans text-small whitespace-pre-wrap break-words ring-1 ring-border"
         translate="no"
       >
         {message}
@@ -56,7 +56,7 @@ export function ReminderCard({
       <CopyButton
         text={origin ? message : ""}
         label="Copy reminder"
-        variant="outline"
+        variant="secondary"
         onCopied={() => void reminderCopiedAction({ slug, kind: drawn ? kind : "invite" }).catch(() => {})}
       />
     </div>

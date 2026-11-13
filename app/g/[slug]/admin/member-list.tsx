@@ -46,7 +46,7 @@ export function MemberList({
   const [pending, startTransition] = useTransition();
 
   if (members.length === 0) {
-    return <p className="text-muted-foreground">Wala pang sumali. I-share ang link sa GC!</p>;
+    return <p className="text-ube-soft">Wala pang sumali. I-share ang link sa GC!</p>;
   }
 
   const close = () => {
@@ -93,7 +93,7 @@ export function MemberList({
   return (
     <div className="flex flex-col gap-3">
       {error && (
-        <p role="alert" className="rounded-xl bg-destructive/8 px-4 py-3 text-caption font-semibold text-destructive">
+        <p role="alert" className="rounded-xl bg-sili-wash px-4 py-3 text-small font-semibold text-sili">
           {error}
         </p>
       )}
@@ -105,9 +105,9 @@ export function MemberList({
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate font-semibold">{member.displayName}</p>
-                  <p className="text-caption text-muted-foreground">Joined {member.joinedLabel}</p>
+                  <p className="text-small text-ube-soft">Joined {member.joinedLabel}</p>
                   {member.linkStatus !== "none" && (
-                    <p className="text-caption font-semibold">{LINK_STATUS[member.linkStatus]}</p>
+                    <p className="text-small font-semibold">{LINK_STATUS[member.linkStatus]}</p>
                   )}
                 </div>
                 {!isConfirming && (
@@ -138,14 +138,14 @@ export function MemberList({
 
               {member.pinLocked && (
                 <div
-                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-destructive/8 px-3 py-2"
+                  className="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-sili-wash px-3 py-2"
                   role="group"
                   aria-label={`PIN lock for ${member.displayName}`}
                 >
-                  <p className="text-caption font-semibold text-destructive">
+                  <p className="text-small font-semibold text-sili">
                     Na-lock ang PIN ni {member.displayName}
                   </p>
-                  <Button type="button" variant="outline" size="sm" disabled={pending} onClick={() => unlock(member.id)}>
+                  <Button type="button" variant="secondary" size="sm" disabled={pending} onClick={() => unlock(member.id)}>
                     Unlock
                   </Button>
                 </div>
@@ -153,20 +153,20 @@ export function MemberList({
 
               {isConfirming && confirming.kind === "link" && (
                 <div
-                  className="flex flex-col gap-2 rounded-xl bg-muted p-3"
+                  className="flex flex-col gap-2 rounded-xl bg-leaf-wash p-3"
                   role="group"
                   aria-label={`Confirm new link for ${member.displayName}`}
                 >
-                  <p className="text-caption">
+                  <p className="text-small">
                     Gawan ng bagong personal link si <strong>{member.displayName}</strong>? Hindi na gagana ang luma
                     niyang link, pati sa phone niya.
                   </p>
-                  <label className="flex items-start gap-2 text-caption">
+                  <label className="flex items-start gap-2 text-small">
                     <input
                       type="checkbox"
                       checked={resetPin}
                       onChange={(event) => setResetPin(event.target.checked)}
-                      className="mt-0.5 size-4 accent-simbang-gabi"
+                      className="mt-0.5 size-4 accent-ube"
                     />
                     <span>
                       <strong>Reset PIN</strong> din (kung nakalimutan niya). Magse-set siya ng bago pagbukas ng link.
@@ -185,26 +185,26 @@ export function MemberList({
 
               {newLink?.id === member.id && (
                 <div
-                  className="flex flex-col gap-2 rounded-xl bg-muted p-3"
+                  className="flex flex-col gap-2 rounded-xl bg-leaf-wash p-3"
                   role="group"
                   aria-label={`New link for ${member.displayName}`}
                 >
-                  <p className="text-caption">
+                  <p className="text-small">
                     Bagong link ni <strong>{member.displayName}</strong>. I-send sa kanya nang private (huwag sa GC, at
                     huwag buksan sa phone mo).
                     {newLink.pinReset && " Na-reset ang PIN niya: magse-set siya ng bago pagbukas ng link."}
                   </p>
-                  <CopyLink path={newLink.path} label="Copy link" variant="outline" />
+                  <CopyLink path={newLink.path} label="Copy link" variant="secondary" />
                 </div>
               )}
 
               {isConfirming && confirming.kind === "remove" && needsRedrawId !== member.id && (
                 <div
-                  className="flex flex-col gap-2 rounded-xl bg-muted p-3"
+                  className="flex flex-col gap-2 rounded-xl bg-leaf-wash p-3"
                   role="group"
                   aria-label={`Confirm removing ${member.displayName}`}
                 >
-                  <p className="text-caption">
+                  <p className="text-small">
                     Tanggalin si <strong>{member.displayName}</strong> sa group?{" "}
                     {drawn
                       ? "Ang nakabunot sa kanya ay bibigyan ng bagong monito; walang ibang magbabago."
@@ -213,7 +213,7 @@ export function MemberList({
                   <div className="flex gap-2">
                     <Button
                       type="button"
-                      variant="destructive"
+                      variant="secondary"
                       size="sm"
                       disabled={pending}
                       onClick={() => remove(member.id)}
@@ -229,19 +229,19 @@ export function MemberList({
 
               {needsRedrawId === member.id && (
                 <div
-                  className="flex flex-col gap-2 rounded-xl bg-destructive/8 p-3"
+                  className="flex flex-col gap-2 rounded-xl bg-sili-wash p-3"
                   role="group"
                   aria-label={`Remove ${member.displayName} and redraw`}
                 >
-                  <p className="text-caption font-semibold text-destructive">Magbabago ang monito ng lahat.</p>
-                  <p className="text-caption">
+                  <p className="text-small font-semibold text-sili">Magbabago ang monito ng lahat.</p>
+                  <p className="text-small">
                     Puwede mong tanggalin si <strong>{member.displayName}</strong> at i-redraw ang lahat. Everyone&apos;s
                     monito will change.
                   </p>
                   <div className="flex gap-2">
                     <Button
                       type="button"
-                      variant="destructive"
+                      variant="secondary"
                       size="sm"
                       disabled={pending}
                       onClick={() => remove(member.id, true)}

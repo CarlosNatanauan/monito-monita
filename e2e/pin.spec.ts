@@ -152,7 +152,7 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     expect(titles[0]).toBe("Save this link!");
     const share = page.getByRole("button", { name: "I-send sa sarili mo" });
     await expect(share).toHaveAttribute("data-variant", "default");
-    await expect(page.getByRole("button", { name: "Copy my link" })).toHaveAttribute("data-variant", "outline");
+    await expect(page.getByRole("button", { name: "Copy my link" })).toHaveAttribute("data-variant", "secondary");
     anaLink = await readLink(page, /\/me\?t=/);
     await share.click();
     await expect

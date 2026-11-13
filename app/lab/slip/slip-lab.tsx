@@ -35,7 +35,7 @@ export function SlipLab() {
   return (
     <>
       <header className="flex flex-col gap-2">
-        <p className="text-caption font-semibold text-muted-foreground">Christmas Party 2026</p>
+        <p className="text-small font-semibold text-ube-soft">Christmas Party 2026</p>
         <h1 className="text-heading">Hi, Carlo!</h1>
       </header>
 
@@ -54,7 +54,7 @@ export function SlipLab() {
       <Card>
         <CardHeader>
           <CardTitle>Prototype controls</CardTitle>
-          <p className="text-caption text-muted-foreground">
+          <p className="text-small text-ube-soft">
             {duration
               ? `Full run: ${duration.toFixed(2)}s at 1×, ${(duration / speed).toFixed(2)}s at ${speed.toFixed(2)}×`
               : "Tap the slip to measure the run."}
@@ -62,12 +62,12 @@ export function SlipLab() {
           </p>
         </CardHeader>
         <CardContent className="flex flex-col gap-5">
-          <Button onClick={replay} variant="outline" className="self-start">
+          <Button onClick={replay} variant="secondary" className="self-start">
             Replay
           </Button>
 
           <label className="flex flex-col gap-2">
-            <span className="text-caption font-semibold">Speed: {speed.toFixed(2)}×</span>
+            <span className="text-small font-semibold">Speed: {speed.toFixed(2)}×</span>
             <input
               type="range"
               min={0.25}
@@ -75,7 +75,7 @@ export function SlipLab() {
               step={0.05}
               value={speed}
               onChange={(e) => setSpeed(Number(e.target.value))}
-              className="accent-simbang-gabi"
+              className="accent-ube"
             />
           </label>
 
@@ -84,15 +84,15 @@ export function SlipLab() {
               type="checkbox"
               checked={reducedOn}
               onChange={(e) => setReduced(e.target.checked)}
-              className="size-5 accent-simbang-gabi"
+              className="size-5 accent-ube"
             />
-            <span className="text-caption font-semibold">
+            <span className="text-small font-semibold">
               Reduced motion {reduced === undefined ? "(following your phone)" : "(overridden)"}
             </span>
           </label>
 
           <label className="flex flex-col gap-2">
-            <span className="text-caption font-semibold">Name on the slip</span>
+            <span className="text-small font-semibold">Name on the slip</span>
             <Input value={name} maxLength={40} onChange={(e) => setName(e.target.value)} />
           </label>
         </CardContent>

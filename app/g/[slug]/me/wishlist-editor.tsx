@@ -23,7 +23,7 @@ export function WishlistEditor({ slug, items }: { slug: string; items: WishItemD
   return (
     <div className="flex flex-col gap-4">
       {items.length === 0 && !adding && (
-        <p className="text-muted-foreground">
+        <p className="text-ube-soft">
           Wala pang wishlist. Add something para hindi mahirapan ang monito mo.
         </p>
       )}
@@ -69,7 +69,7 @@ export function WishlistEditor({ slug, items }: { slug: string; items: WishItemD
       ) : items.length < WISHLIST_MAX_ITEMS ? (
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           className="self-start"
           onClick={() => {
             setEditingId(null);
@@ -79,7 +79,7 @@ export function WishlistEditor({ slug, items }: { slug: string; items: WishItemD
           <Plus /> Add an item
         </Button>
       ) : (
-        <p className="text-caption text-muted-foreground">Hanggang {WISHLIST_MAX_ITEMS} items lang ang wishlist.</p>
+        <p className="text-small text-ube-soft">Hanggang {WISHLIST_MAX_ITEMS} items lang ang wishlist.</p>
       )}
     </div>
   );
@@ -110,7 +110,7 @@ function ItemButtons({ slug, item, onEdit }: { slug: string; item: WishItemData;
           Delete
         </Button>
       </div>
-      {error && <p className="text-caption text-destructive">{error}</p>}
+      {error && <p className="text-small text-sili">{error}</p>}
     </div>
   );
 }
@@ -153,9 +153,9 @@ function WishForm({
   };
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3 rounded-xl bg-muted p-3" noValidate>
+    <form onSubmit={submit} className="flex flex-col gap-3 rounded-xl bg-leaf-wash p-3" noValidate>
       {message && (
-        <p role="alert" className="text-caption font-semibold text-destructive">
+        <p role="alert" className="text-small font-semibold text-sili">
           {message}
         </p>
       )}
@@ -201,9 +201,9 @@ function WishForm({
 function TextField({ label, error, children }: { label: string; error?: string; children: React.ReactElement }) {
   return (
     <label className="flex flex-col gap-1">
-      <span className="text-caption font-semibold">{label}</span>
+      <span className="text-small font-semibold">{label}</span>
       {children}
-      {error && <span className="text-caption font-semibold text-destructive">{error}</span>}
+      {error && <span className="text-small font-semibold text-sili">{error}</span>}
     </label>
   );
 }

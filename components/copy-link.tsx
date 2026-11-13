@@ -1,6 +1,6 @@
 "use client";
 
-import { Check, Copy } from "lucide-react";
+import { Check } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 
@@ -14,7 +14,7 @@ export function useOrigin(): string {
 /** Shows a link (path or absolute URL) as selectable text. */
 export function LinkBox({ url }: { url: string }) {
   return (
-    <p className="min-h-10 rounded-lg bg-muted px-3 py-2 text-caption break-all select-all" translate="no">
+    <p className="rounded-2xl bg-leaf-wash px-5 py-4 font-medium break-all select-all" translate="no">
       {url}
     </p>
   );
@@ -29,7 +29,7 @@ export function CopyButton({
 }: {
   text: string;
   label: string;
-  variant?: "default" | "outline";
+  variant?: "default" | "secondary";
   className?: string;
   /** Called after a successful copy. */
   onCopied?: () => void;
@@ -49,7 +49,7 @@ export function CopyButton({
 
   return (
     <Button type="button" variant={variant} onClick={copy} className={className} aria-live="polite" disabled={!text}>
-      {copied ? <Check /> : <Copy />}
+      {copied && <Check />}
       {copied ? "Copied!" : label}
     </Button>
   );
@@ -63,7 +63,7 @@ export function CopyLink({
 }: {
   path: string;
   label: string;
-  variant?: "default" | "outline";
+  variant?: "default" | "secondary";
 }) {
   const origin = useOrigin();
   const url = origin ? `${origin}${path}` : "";

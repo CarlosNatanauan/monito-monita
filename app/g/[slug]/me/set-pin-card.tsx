@@ -29,10 +29,10 @@ export function SetPinCard({ slug }: { slug: string }) {
 
   return (
     <section aria-label="Mag-set ng PIN">
-      <Card className="ring-2 ring-parol-gold">
+      <Card className="ring-2 ring-margarine">
         <CardHeader>
           <CardTitle>{saved ? "Na-save ang PIN mo!" : "Mag-set ng PIN"}</CardTitle>
-          <p className="text-caption text-muted-foreground">
+          <p className="text-small text-ube-soft">
             {saved
               ? "Sa ibang phone o browser: buksan ang share link, i-tap ang “Kasali ka na? Bumalik dito”, at ilagay ang pangalan at PIN mo."
               : "Para makabalik ka kahit sa ibang phone, gamit ang pangalan mo at 4-digit PIN."}
@@ -50,7 +50,7 @@ export function SetPinCard({ slug }: { slug: string }) {
                 onChange={() => setError(null)}
               />
               {error && (
-                <p id="set-pin-error" role="alert" className="text-caption font-semibold text-destructive">
+                <p id="set-pin-error" role="alert" className="text-small font-semibold text-sili">
                   {error}
                 </p>
               )}

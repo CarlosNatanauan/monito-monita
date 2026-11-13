@@ -72,11 +72,11 @@ export function JoinForm({
             required
           />
           {error?.field === "displayName" ? (
-            <p id="join-error" role="alert" className="text-caption font-semibold text-destructive">
+            <p id="join-error" role="alert" className="text-small font-semibold text-sili">
               {error.message}
             </p>
           ) : (
-            <p id="join-hint" className="text-caption text-muted-foreground">
+            <p id="join-hint" className="text-small text-ube-soft">
               Ito ang makikita ng ibang members.
             </p>
           )}
@@ -87,7 +87,7 @@ export function JoinForm({
             label={
               <>
                 PIN (4 digits){" "}
-                <span className="font-normal text-muted-foreground">— para makabalik ka kahit sa ibang phone</span>
+                <span className="font-normal text-ube-soft">— para makabalik ka kahit sa ibang phone</span>
               </>
             }
             autoComplete="new-password"
@@ -96,17 +96,17 @@ export function JoinForm({
             onChange={edited}
           />
           {error?.field === "pin" && (
-            <p id="pin-error" role="alert" className="text-caption font-semibold text-destructive">
+            <p id="pin-error" role="alert" className="text-small font-semibold text-sili">
               {error.message}
             </p>
           )}
         </div>
         {error && error.field === null && (
-          <p role="alert" className="text-caption font-semibold text-destructive">
+          <p role="alert" className="text-small font-semibold text-sili">
             {error.message}
           </p>
         )}
-        <Button type="submit" size="lg" className="w-full" disabled={pending}>
+        <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Sumasali…" : "Join the group"}
         </Button>
       </form>

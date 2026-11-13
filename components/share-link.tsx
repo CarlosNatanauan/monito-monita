@@ -51,7 +51,7 @@ export function ShareLink({
     <div className="flex flex-col gap-3">
       <LinkBox url={url || path} />
       {canShare && (
-        <Button type="button" variant={prominent ? "default" : "outline"} onClick={share} disabled={!url}>
+        <Button type="button" variant={prominent ? "default" : "secondary"} onClick={share} disabled={!url}>
           <Send />
           I-send sa sarili mo
         </Button>
@@ -59,10 +59,10 @@ export function ShareLink({
       <CopyButton
         text={url}
         label="Copy my link"
-        variant={canShare || !prominent ? "outline" : "default"}
+        variant={canShare || !prominent ? "secondary" : "default"}
       />
       {failed && (
-        <p role="status" className="text-caption text-muted-foreground">
+        <p role="status" className="text-small text-ube-soft">
           Hindi nabuksan ang share. I-copy na lang ang link.
         </p>
       )}

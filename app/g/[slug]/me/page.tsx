@@ -81,14 +81,14 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
           <CardHeader>
             <CardTitle>Hindi ka pa namin kilala sa device na &apos;to.</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-muted-foreground">
+          <CardContent className="flex flex-col gap-4 text-ube-soft">
             <p>Kung kasali ka na, bumalik gamit ang pangalan at PIN mo, o buksan ang personal link mo.</p>
             <div className="flex flex-wrap gap-3">
               <Button asChild className="self-start">
                 <Link href={`/g/${slug}?bumalik=1`}>Bumalik gamit ang PIN</Link>
               </Button>
               {group.status === "OPEN" && (
-                <Button asChild variant="outline" className="self-start">
+                <Button asChild variant="secondary" className="self-start">
                   <Link href={`/g/${slug}`}>Join the group</Link>
                 </Button>
               )}
@@ -135,10 +135,10 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   // page, with "Send to yourself" as the main button; later it sits at the
   // bottom.
   const personalLink = token && (
-    <Card className={cn(welcome && "ring-2 ring-parol-gold")}>
+    <Card className={cn(welcome && "ring-2 ring-margarine")}>
       <CardHeader>
         <CardTitle>{welcome ? "Save this link!" : "Your personal link"}</CardTitle>
-        <p className="text-caption text-muted-foreground">
+        <p className="text-small text-ube-soft">
           Ito ang susi mo para makabalik dito. I-send sa sarili mo (Messenger o Notes), o gamitin ang pangalan at PIN
           mo. Huwag i-share sa GC.
         </p>
@@ -159,7 +159,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
       {welcome && <CleanWelcomeParam />}
       {organizer && <RoleSwitch slug={slug} current="member" />}
       <header className="flex flex-col gap-2">
-        <p className="text-caption font-semibold text-muted-foreground">{group.name}</p>
+        <p className="text-small font-semibold text-ube-soft">{group.name}</p>
         <h1 className="text-heading">Hi, {member.displayName}!</h1>
       </header>
 
@@ -187,16 +187,16 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
           ) : (
             <>
               <p className="text-title font-extrabold">Ang monito mo ay…</p>
-              <p className="text-muted-foreground">Inaayos pa ng organizer ang bunutan. Balik ka in a bit.</p>
+              <p className="text-ube-soft">Inaayos pa ng organizer ang bunutan. Balik ka in a bit.</p>
             </>
           )}
-          <p className="text-caption text-muted-foreground">
-            Codename mo: <span className="font-hand text-body text-foreground">{member.codename}</span>
+          <p className="text-small text-ube-soft">
+            Codename mo: <span className="font-hand text-body text-ube">{member.codename}</span>
           </p>
         </div>
       ) : (
         <section className="flex flex-col items-center gap-3" aria-label="Your codename">
-          <p className="text-caption text-muted-foreground">Ang codename mo:</p>
+          <p className="text-small text-ube-soft">Ang codename mo:</p>
           <Slip>{member.codename}</Slip>
         </section>
       )}
@@ -208,8 +208,8 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
           </CardHeader>
           <CardContent className="flex flex-col gap-1">
             <p className="text-heading">{giver.displayName}!</p>
-            <p className="text-caption text-muted-foreground">
-              Siya pala si <span className="font-hand text-body text-foreground">{giver.codename}</span>.
+            <p className="text-small text-ube-soft">
+              Siya pala si <span className="font-hand text-body text-ube">{giver.codename}</span>.
             </p>
           </CardContent>
         </Card>
@@ -222,7 +222,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
           <CardTitle>
             {group.status === "OPEN" ? "Waiting for the bunutan…" : "Na-draw na ang names!"}
           </CardTitle>
-          <p className="text-caption text-muted-foreground">
+          <p className="text-small text-ube-soft">
             {group.status === "OPEN"
               ? `Hintayin si organizer na mag-draw ng names. ${joinedCount(group.memberCount)}.`
               : "Sikreto lang 'to. Simulan mo nang mag-isip ng regalo!"}
@@ -237,7 +237,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         <Card>
           <CardHeader>
             <CardTitle>{theme.headline}</CardTitle>
-            <p className="text-caption text-muted-foreground">{theme.english}</p>
+            <p className="text-small text-ube-soft">{theme.english}</p>
           </CardHeader>
           <CardContent>
             <p>{theme.detail}</p>
@@ -248,7 +248,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
       <Card>
         <CardHeader>
           <CardTitle>Wishlist mo</CardTitle>
-          <p className="text-caption text-muted-foreground">Makikita ito ng nakabunot sa&apos;yo, at wala nang iba.</p>
+          <p className="text-small text-ube-soft">Makikita ito ng nakabunot sa&apos;yo, at wala nang iba.</p>
         </CardHeader>
         <CardContent>
           <WishlistEditor slug={slug} items={myWishlist} />

@@ -108,12 +108,12 @@ function CreateGroupForm({
     <>
       <header className="flex flex-col gap-2">
         <h1 className="text-heading">Create your group</h1>
-        <p className="text-muted-foreground">Ilang details lang, tapos share mo na sa GC.</p>
+        <p className="text-ube-soft">Ilang details lang, tapos share mo na sa GC.</p>
       </header>
 
       <form onSubmit={submitWithoutReset(formAction)} className="flex flex-col gap-6" noValidate>
         {showBanner && state.status === "error" && (
-          <p role="alert" className="rounded-xl bg-destructive/8 px-4 py-3 text-caption font-semibold text-destructive">
+          <p role="alert" className="rounded-xl bg-sili-wash px-4 py-3 text-small font-semibold text-sili">
             {state.message}
           </p>
         )}
@@ -139,7 +139,7 @@ function CreateGroupForm({
         <Field label="Budget per gift" error={errors.budget}>
           {(props) => (
             <div className="relative">
-              <span aria-hidden className="pointer-events-none absolute inset-y-0 left-4 flex items-center font-semibold text-muted-foreground">
+              <span aria-hidden className="pointer-events-none absolute inset-y-0 left-4 flex items-center font-semibold text-ube-soft">
                 ₱
               </span>
               <Input
@@ -178,7 +178,7 @@ function CreateGroupForm({
 
         <fieldset className="flex flex-col gap-3">
           <legend className="mb-1 font-bold">Theme weeks</legend>
-          <p className="-mt-1 text-caption text-muted-foreground">
+          <p className="-mt-1 text-small text-ube-soft">
             Isang theme kada linggo bago ang party. Palitan o tanggalin as you like.
           </p>
 
@@ -209,11 +209,11 @@ function CreateGroupForm({
                       <X />
                     </Button>
                   </div>
-                  <p className="pl-1 text-caption text-muted-foreground">
+                  <p className="pl-1 text-small text-ube-soft">
                     {startDates[index] ? `Starts ${formatShortDate(startDates[index])}` : "Starts once you pick the party date"}
                   </p>
                   {error && (
-                    <p id={errorId} className="pl-1 text-caption font-semibold text-destructive">
+                    <p id={errorId} className="pl-1 text-small font-semibold text-sili">
                       {error}
                     </p>
                   )}
@@ -223,9 +223,9 @@ function CreateGroupForm({
           </ol>
 
           {themes.length === 0 && (
-            <p className="text-caption text-muted-foreground">Walang theme? Okay lang, puwede rin.</p>
+            <p className="text-small text-ube-soft">Walang theme? Okay lang, puwede rin.</p>
           )}
-          {errors.themes && <p className="text-caption font-semibold text-destructive">{errors.themes}</p>}
+          {errors.themes && <p className="text-small font-semibold text-sili">{errors.themes}</p>}
 
           {themes.length < MAX_THEMES && (
             <Button type="button" variant="ghost" size="sm" className="self-start" onClick={addTheme}>
@@ -234,7 +234,7 @@ function CreateGroupForm({
           )}
         </fieldset>
 
-        <Button type="submit" size="lg" className="w-full" disabled={pending || !hydrated}>
+        <Button type="submit" className="w-full" disabled={pending || !hydrated}>
           {pending ? "Ginagawa na…" : "Create group"}
         </Button>
       </form>
@@ -266,7 +266,7 @@ function Field({
       </label>
       {children({ id, "aria-invalid": error ? true : undefined, "aria-describedby": error ? errorId : undefined })}
       {error && (
-        <p id={errorId} className={cn("text-caption font-semibold text-destructive")}>
+        <p id={errorId} className={cn("text-small font-semibold text-sili")}>
           {error}
         </p>
       )}

@@ -12,7 +12,7 @@ export function GroupFacts({
   memberCount?: number;
 }) {
   return (
-    <ul className="flex flex-col gap-2 text-muted-foreground">
+    <ul className="flex flex-col gap-2 text-ube-soft">
       <li className="flex items-center gap-2">
         <CalendarDays className="size-5 shrink-0" aria-hidden />
         <span>Party: {formatPartyDate(partyDate)}</span>
@@ -35,14 +35,14 @@ export function GroupFacts({
 export function RemovedNotice() {
   return (
     <div className="rounded-2xl bg-card p-5 shadow-[0_1px_2px_rgb(31_27_77/0.06),0_4px_16px_rgb(31_27_77/0.06)]">
-      <p className="font-heading text-title font-extrabold">
+      <p className="text-title font-extrabold">
         Tinanggal ka ng organizer sa group na &apos;to.
       </p>
-      <p className="mt-2 text-muted-foreground">Kung mali ito, kausapin ang organizer.</p>
+      <p className="mt-2 text-ube-soft">Kung mali ito, kausapin ang organizer.</p>
     </div>
   );
 }
 
 export function PageFallback() {
-  return <p className="text-muted-foreground">Sandali lang…</p>;
+  return <p className="text-ube-soft">Sandali lang…</p>;
 }

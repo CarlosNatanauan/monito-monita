@@ -1,104 +1,68 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-// Restyled for Monito Monita: a white paper card on the capiz background,
-// with a soft indigo shadow instead of a hard outline.
-function Card({
-  className,
-  size = "default",
-  ...props
-}: React.ComponentProps<"div"> & { size?: "default" | "sm" }) {
+// Restyled for Monito Monita (docs/DESIGN.md, "Cards"): flat white, radius
+// 24, padding 20, no border, no shadow. The page texture shows around it.
+function Card({ className, ...props }: React.ComponentProps<"div">) {
   return (
     <div
       data-slot="card"
-      data-size={size}
-      className={cn(
-        "group/card flex flex-col gap-(--card-spacing) overflow-hidden rounded-2xl bg-card py-(--card-spacing) text-body text-card-foreground shadow-[0_1px_2px_rgb(31_27_77/0.06),0_4px_16px_rgb(31_27_77/0.06)] [--card-spacing:--spacing(5)] has-data-[slot=card-footer]:pb-0 has-[>img:first-child]:pt-0 data-[size=sm]:[--card-spacing:--spacing(4)] data-[size=sm]:has-data-[slot=card-footer]:pb-0 *:[img:first-child]:rounded-t-2xl *:[img:last-child]:rounded-b-2xl",
-        className
-      )}
+      className={cn("flex flex-col gap-4 rounded-3xl bg-niyog p-5 text-body text-ube", className)}
       {...props}
     />
   )
 }
 
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-header"
-      className={cn(
-        "group/card-header @container/card-header grid auto-rows-min items-start gap-1 px-(--card-spacing) has-data-[slot=card-action]:grid-cols-[1fr_auto] has-data-[slot=card-description]:grid-rows-[auto_auto] [.border-b]:pb-(--card-spacing)",
-        className
-      )}
-      {...props}
-    />
-  )
+  return <div data-slot="card-header" className={cn("flex flex-col gap-1", className)} {...props} />
 }
 
+/** Manrope 20/800. */
 function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
   return (
-    <div
-      data-slot="card-title"
-      className={cn(
-        "font-heading text-title font-extrabold group-data-[size=sm]/card:text-body",
-        className
-      )}
-      {...props}
-    />
+    <div data-slot="card-title" className={cn("text-title font-extrabold text-ube", className)} {...props} />
   )
 }
 
-function CardDescription({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-description"
-      className={cn("text-caption text-muted-foreground", className)}
-      {...props}
-    />
-  )
-}
-
-function CardAction({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-action"
-      className={cn(
-        "col-start-2 row-span-2 row-start-1 self-start justify-self-end",
-        className
-      )}
-      {...props}
-    />
-  )
+function CardDescription({ className, ...props }: React.ComponentProps<"p">) {
+  return <p data-slot="card-description" className={cn("text-body text-ube-soft", className)} {...props} />
 }
 
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
+  return <div data-slot="card-content" className={cn("flex flex-col gap-4", className)} {...props} />
+}
+
+/** Detail rows (party, budget): label, a dotted leader, the value in bold. */
+function DetailRows({ className, ...props }: React.ComponentProps<"dl">) {
+  return <dl className={cn("flex flex-col gap-4", className)} {...props} />
+}
+
+function DetailRow({ label, children }: { label: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div
-      data-slot="card-content"
-      className={cn("px-(--card-spacing)", className)}
+    <div className="flex items-baseline gap-2">
+      <dt className="shrink-0 text-ube-soft">{label}</dt>
+      <span aria-hidden className="min-w-4 flex-1 border-b-2 border-dotted border-ube-line/60" />
+      <dd className="min-w-0 text-right font-bold text-ube">{children}</dd>
+    </div>
+  )
+}
+
+/**
+ * Empty state inside a card: a dashed ube-line box with one sentence that
+ * says what to do next.
+ */
+function EmptyState({ className, ...props }: React.ComponentProps<"p">) {
+  return (
+    <p
+      className={cn("rounded-2xl border-[1.5px] border-dashed border-ube-line p-4 text-ube-soft", className)}
       {...props}
     />
   )
 }
 
-function CardFooter({ className, ...props }: React.ComponentProps<"div">) {
-  return (
-    <div
-      data-slot="card-footer"
-      className={cn(
-        "flex items-center border-t bg-muted/50 p-(--card-spacing)",
-        className
-      )}
-      {...props}
-    />
-  )
+/** An inset field on a card: a link, a reminder preview, an exclusion pair. */
+function Inset({ className, ...props }: React.ComponentProps<"div">) {
+  return <div className={cn("rounded-2xl bg-leaf-wash px-5 py-4", className)} {...props} />
 }
 
-export {
-  Card,
-  CardHeader,
-  CardFooter,
-  CardTitle,
-  CardAction,
-  CardDescription,
-  CardContent,
-}
+export { Card, CardHeader, CardTitle, CardDescription, CardContent, DetailRows, DetailRow, EmptyState, Inset }

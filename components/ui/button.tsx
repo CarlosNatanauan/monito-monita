@@ -3,34 +3,37 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 import { Slot } from "radix-ui"
 
-// Restyled for Monito Monita (docs/DESIGN.md):
-// - Red (default) is for the one main action on a screen.
-// - 48px tall by default for thumbs on phones.
-// - Only transform animates (press feedback); colors change instantly.
+// Restyled for Monito Monita (docs/DESIGN.md, "Buttons"):
+// - default: the one filled ube button per screen (the main action).
+// - secondary: white with an ube outline.
+// - link: underlined text, still a 44px tap target.
+// - ghost: quiet text buttons for small row actions (Edit, Alisin).
+// Disabled is ube-mist with ube-soft text (pair it with a line saying why).
+// Only transform animates (press scale); colors change instantly.
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-xl border border-transparent font-sans font-bold whitespace-nowrap outline-none select-none transition-transform duration-100 ease-out focus-visible:ring-3 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background active:not-aria-[haspopup]:scale-[0.97] disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5",
+  "group/button inline-flex shrink-0 cursor-pointer items-center justify-center gap-2 rounded-full font-sans font-bold whitespace-nowrap select-none focus-ring transition-transform duration-100 ease-out active:not-disabled:scale-[0.98] disabled:cursor-not-allowed [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-5 [-webkit-tap-highlight-color:transparent]",
   {
     variants: {
       variant: {
-        default:
-          "bg-primary text-primary-foreground shadow-[0_2px_0_0_var(--color-parol-red-dark)] hover:bg-parol-red-dark",
-        outline:
-          "border-simbang-gabi/20 bg-slip text-foreground hover:border-simbang-gabi/40 aria-expanded:bg-muted",
+        default: "bg-ube text-white disabled:bg-ube-mist disabled:text-ube-soft",
         secondary:
-          "bg-secondary text-secondary-foreground hover:bg-simbang-gabi/15 aria-expanded:bg-secondary",
-        ghost: "text-foreground hover:bg-simbang-gabi/8 aria-expanded:bg-muted",
-        destructive:
-          "border-destructive/30 bg-slip text-destructive hover:bg-destructive/8",
-        link: "text-foreground underline underline-offset-4 decoration-simbang-gabi/40 hover:decoration-simbang-gabi",
+          "border-[1.5px] border-ube bg-niyog text-ube disabled:border-ube-mist disabled:bg-ube-mist disabled:text-ube-soft",
+        ghost: "text-ube underline-offset-4 hover:underline disabled:text-ube-soft",
+        link: "min-h-11 text-ube underline decoration-[1.5px] underline-offset-4 disabled:text-ube-soft",
       },
       size: {
-        default: "h-12 px-5 text-body",
-        sm: "h-10 rounded-lg px-4 text-caption",
-        lg: "h-14 px-6 text-title",
-        icon: "size-12",
-        "icon-sm": "size-10 rounded-lg",
+        default: "h-[58px] px-7 text-button",
+        md: "h-[52px] px-6 text-body",
+        sm: "h-12 px-5 text-body",
+        xs: "h-11 px-3 text-small",
+        icon: "size-11",
+        inline: "h-auto px-0 text-body",
       },
     },
+    compoundVariants: [
+      // Secondary buttons are 48–52px; a secondary at the default size is 52.
+      { variant: "secondary", size: "default", className: "h-[52px] text-body" },
+    ],
     defaultVariants: {
       variant: "default",
       size: "default",

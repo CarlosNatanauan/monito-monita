@@ -43,7 +43,7 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
         <CardHeader>
           <CardTitle>Para sa organizer lang ang page na &apos;to.</CardTitle>
         </CardHeader>
-        <CardContent className="text-muted-foreground">
+        <CardContent className="text-ube-soft">
           Ang organizer ang magpapakita ng reveal sa party. Abangan mo na lang!
         </CardContent>
       </Card>
@@ -54,7 +54,7 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
   if (!view) notFound();
 
   const back = (
-    <Link href={`/g/${slug}/admin`} className="self-start text-caption font-semibold text-muted-foreground underline">
+    <Link href={`/g/${slug}/admin`} className="self-start text-small font-semibold text-ube-soft underline">
       Back to organizer page
     </Link>
   );
@@ -64,7 +64,7 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
       <>
         {back}
         <h1 className="text-heading">Party reveal</h1>
-        <p className="text-muted-foreground">Mag-draw muna ng names bago ang reveal.</p>
+        <p className="text-ube-soft">Mag-draw muna ng names bago ang reveal.</p>
       </>
     );
   }
@@ -76,7 +76,7 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
         {back}
         <h1 className="text-heading">Party reveal</h1>
         <p className="text-title">{view.total} slips. Handa na?</p>
-        <p className="text-muted-foreground">
+        <p className="text-ube-soft">
           Isa-isa nating ipapakita kung sino ang nagbigay kanino, sunod-sunod sa bunutan. I-project mo &apos;to sa
           party.
         </p>
@@ -92,13 +92,13 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
         <RevealAutoRefresh />
         {back}
         <section aria-label="Reveal" className="flex flex-col gap-6 py-6">
-          <p className="text-caption font-semibold text-muted-foreground">
+          <p className="text-small font-semibold text-ube-soft">
             {step} of {total}
           </p>
           <p className="text-heading">
             <span className="font-hand">{pair.giverCodename}</span> ay si…
           </p>
-          <p className="text-display font-extrabold">{pair.giverName}!</p>
+          <p className="text-heading-lg font-extrabold">{pair.giverName}!</p>
           <p className="text-heading">→ para kay {pair.receiverName}</p>
         </section>
         <RevealControls slug={slug} step={step} total={total} />
@@ -110,11 +110,11 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
     <>
       {back}
       <h1 className="text-heading">Tapos na ang reveal! 🎉</h1>
-      <p className="text-muted-foreground">Makikita na ng lahat kung sino ang nagbigay sa kanila.</p>
+      <p className="text-ube-soft">Makikita na ng lahat kung sino ang nagbigay sa kanila.</p>
       <ol aria-label="All pairs" className="flex flex-col gap-3">
         {view.pairs.map((p) => (
           <li key={`${p.giverName}-${p.receiverName}`} className="text-title">
-            {p.giverName} <span className="text-muted-foreground">→</span> {p.receiverName}
+            {p.giverName} <span className="text-ube-soft">→</span> {p.receiverName}
           </li>
         ))}
       </ol>

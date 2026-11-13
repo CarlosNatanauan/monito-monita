@@ -58,7 +58,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
         <CardHeader>
           <CardTitle>Para sa organizer lang ang page na &apos;to.</CardTitle>
         </CardHeader>
-        <CardContent className="text-muted-foreground">
+        <CardContent className="text-ube-soft">
           Kung ikaw ang organizer, buksan ang organizer link mo (yung binigay nang ginawa mo ang group). Kung member
           ka, gamitin ang personal link mo.
           </CardContent>
@@ -103,10 +103,10 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     <Card>
       <CardHeader>
         <CardTitle>Kasali ka rin ba?</CardTitle>
-        <p className="text-caption text-muted-foreground">Are you joining too? Sali ka rin para makabunot ka.</p>
+        <p className="text-small text-ube-soft">Are you joining too? Sali ka rin para makabunot ka.</p>
       </CardHeader>
       <CardContent>
-        <Button asChild variant="outline">
+        <Button asChild variant="secondary">
           <Link href={`/g/${slug}`}>Join as a member</Link>
         </Button>
       </CardContent>
@@ -117,7 +117,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     <Card>
       <CardHeader>
         <CardTitle>Share link (para sa GC)</CardTitle>
-        <p className="text-caption text-muted-foreground">
+        <p className="text-small text-ube-soft">
           {isOpen
             ? "I-paste sa group chat para makasali ang lahat."
             : "Sarado na ang sali, pero dadalhin nito ang members sa slip nila."}
@@ -125,7 +125,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         {isOpen && <p className="text-title font-extrabold">{joinedCount(memberCount)}</p>}
-        <CopyLink path={`/g/${slug}`} label="Copy link" variant={isOpen ? "default" : "outline"} />
+        <CopyLink path={`/g/${slug}`} label="Copy link" variant={isOpen ? "default" : "secondary"} />
       </CardContent>
     </Card>
   );
@@ -154,10 +154,10 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
   );
 
   const nextSteps = justDrawn && (
-    <Card className="ring-2 ring-parol-gold">
+    <Card className="ring-2 ring-margarine">
       <CardHeader>
         <CardTitle>Na-draw na! I-announce sa GC</CardTitle>
-        <p className="text-caption text-muted-foreground">I-copy at i-paste sa group chat para buksan ng lahat ang slip nila.</p>
+        <p className="text-small text-ube-soft">I-copy at i-paste sa group chat para buksan ng lahat ang slip nila.</p>
       </CardHeader>
       <CardContent className="flex flex-col gap-5">
         <ReminderCard {...reminderData} defaultKind="drawn" />
@@ -177,7 +177,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     <Card>
       <CardHeader>
         <CardTitle>Reminder para sa GC</CardTitle>
-        <p className="text-caption text-muted-foreground">I-copy at i-paste sa group chat.</p>
+        <p className="text-small text-ube-soft">I-copy at i-paste sa group chat.</p>
       </CardHeader>
       <CardContent>
         <ReminderCard {...reminderData} defaultKind="theme" />
@@ -189,7 +189,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     <Card>
       <CardHeader>
         <CardTitle>Members</CardTitle>
-        <p className="text-caption text-muted-foreground">{joinedCount(memberCount)}</p>
+        <p className="text-small text-ube-soft">{joinedCount(memberCount)}</p>
       </CardHeader>
       <CardContent>
         <MemberList
@@ -212,7 +212,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     <Card>
       <CardHeader>
         <CardTitle>Bawal magkabunot</CardTitle>
-        <p className="text-caption text-muted-foreground">Can&apos;t draw each other, halimbawa mag-asawa o magkapatid.</p>
+        <p className="text-small text-ube-soft">Can&apos;t draw each other, halimbawa mag-asawa o magkapatid.</p>
       </CardHeader>
       <CardContent>
         <ExclusionsSection
@@ -231,7 +231,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     <Card>
       <CardHeader>
         <CardTitle>Party reveal</CardTitle>
-        <p className="text-caption text-muted-foreground">
+        <p className="text-small text-ube-soft">
           {group.status === "DRAWN" &&
             "Sa party: buksan sa laptop o TV at isa-isang ipakita kung sino ang nagbigay kanino."}
           {group.status === "REVEALING" && "Ongoing ang reveal. Ituloy kung saan ka huminto."}
@@ -239,7 +239,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
         </p>
       </CardHeader>
       <CardContent>
-        <Button asChild variant={group.status === "REVEALING" ? "default" : "outline"}>
+        <Button asChild variant={group.status === "REVEALING" ? "default" : "secondary"}>
           <Link href={`/g/${slug}/reveal`}>
             {group.status === "DRAWN" && "Open the reveal screen"}
             {group.status === "REVEALING" && "Continue the reveal"}
@@ -260,7 +260,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
           {themes.map((theme) => (
             <li key={`${theme.startDate}-${theme.title}`} className="flex justify-between gap-3">
               <span>{theme.title}</span>
-              <span className="shrink-0 text-caption text-muted-foreground">{formatShortDate(theme.startDate)}</span>
+              <span className="shrink-0 text-small text-ube-soft">{formatShortDate(theme.startDate)}</span>
             </li>
           ))}
         </ol>
@@ -273,10 +273,10 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
       <RememberGroup slug={slug} name={group.name} role="organizer" />
       {member && <RoleSwitch slug={slug} current="organizer" />}
       <header className="flex flex-col gap-4">
-        <p className="text-caption font-semibold text-muted-foreground">Organizer</p>
+        <p className="text-small font-semibold text-ube-soft">Organizer</p>
         <h1 className="text-heading">{group.name}</h1>
         <GroupFacts partyDate={group.partyDate} budget={group.budget} memberCount={memberCount} />
-        <p className="text-caption font-semibold">{STATUS_LABEL[group.status]}</p>
+        <p className="text-small font-semibold">{STATUS_LABEL[group.status]}</p>
       </header>
 
       {isOpen ? (

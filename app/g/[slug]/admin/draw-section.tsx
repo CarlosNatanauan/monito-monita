@@ -39,7 +39,7 @@ export function DrawSection({
   };
 
   const errorBox = error && (
-    <p role="alert" className="rounded-xl bg-destructive/8 px-4 py-3 text-caption font-semibold text-destructive">
+    <p role="alert" className="rounded-xl bg-sili-wash px-4 py-3 text-small font-semibold text-sili">
       {error}
     </p>
   );
@@ -48,15 +48,15 @@ export function DrawSection({
     return (
       <div className="flex flex-col gap-3">
         {errorBox}
-        {blockedReason && <p className="text-caption text-muted-foreground">{blockedReason}</p>}
+        {blockedReason && <p className="text-small text-ube-soft">{blockedReason}</p>}
         {!confirming ? (
-          <Button type="button" size="lg" className="w-full" disabled={Boolean(blockedReason)} onClick={() => setConfirming(true)}>
+          <Button type="button" className="w-full" disabled={Boolean(blockedReason)} onClick={() => setConfirming(true)}>
             Draw names
           </Button>
         ) : (
-          <div className="flex flex-col gap-3 rounded-xl bg-muted p-4" role="group" aria-label="Confirm draw">
+          <div className="flex flex-col gap-3 rounded-xl bg-leaf-wash p-4" role="group" aria-label="Confirm draw">
             <p className="font-semibold">Pag na-draw na, sarado na ang sali. Sure na?</p>
-            <p className="text-caption text-muted-foreground">Once names are drawn, joining closes.</p>
+            <p className="text-small text-ube-soft">Once names are drawn, joining closes.</p>
             <div className="flex gap-2">
               <Button type="button" disabled={pending} onClick={() => run("draw")}>
                 {pending ? "Nagdi-draw…" : "Oo, i-draw na"}
@@ -73,11 +73,11 @@ export function DrawSection({
 
   return (
     <div className="flex flex-col gap-3">
-      <p className="flex items-center gap-2 text-title font-extrabold text-success">
+      <p className="flex items-center gap-2 text-title font-extrabold text-dahon">
         <Check className="size-6 shrink-0" aria-hidden />
         Names drawn
       </p>
-      <p className="text-muted-foreground">
+      <p className="text-ube-soft">
         {drawnCount} na ang may monito. Walang makakakita kung sino ang nakabunot kanino, kahit ikaw.
       </p>
       {status === "DRAWN" && slipsOpened.total > 0 && (
@@ -88,17 +88,17 @@ export function DrawSection({
       {errorBox}
       {status === "DRAWN" &&
         (!confirming ? (
-          <Button type="button" variant="outline" className="self-start" onClick={() => setConfirming(true)}>
+          <Button type="button" variant="secondary" className="self-start" onClick={() => setConfirming(true)}>
             Redraw
           </Button>
         ) : (
-          <div className="flex flex-col gap-3 rounded-xl bg-destructive/8 p-4" role="group" aria-label="Confirm redraw">
-            <p className="font-semibold text-destructive">Magbabago ang monito ng lahat.</p>
-            <p className="text-caption">
+          <div className="flex flex-col gap-3 rounded-xl bg-sili-wash p-4" role="group" aria-label="Confirm redraw">
+            <p className="font-semibold text-sili">Magbabago ang monito ng lahat.</p>
+            <p className="text-small">
               Everyone&apos;s monito will change. Kung may nakakita na ng monito nila, sabihan mo silang tingnan ulit.
             </p>
             <div className="flex gap-2">
-              <Button type="button" variant="destructive" disabled={pending} onClick={() => run("redraw")}>
+              <Button type="button" variant="secondary" disabled={pending} onClick={() => run("redraw")}>
                 {pending ? "Nagre-redraw…" : "Oo, i-redraw"}
               </Button>
               <Button type="button" variant="ghost" disabled={pending} onClick={() => setConfirming(false)}>

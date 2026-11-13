@@ -13,6 +13,9 @@ const loadMotionFeatures = () => import("@/lib/motion-features").then((mod) => m
 
 type Phase = "folded" | "opening" | "opened";
 
+/** How far the open slip hangs below the green panel (docs/DESIGN.md). */
+const HANG = 44;
+
 export type BunutanSlipProps = {
   /** The receiver's name, written on the slip. */
   name: string;
@@ -104,67 +107,102 @@ export function BunutanSlip({
 
   return (
     <LazyMotion features={loadMotionFeatures} strict>
+      {/*
+        The green panel is two layers in a 3-row grid (heading, slip, pill):
+        the top layer spans the first two rows and stops 44px above the
+        open slip's bottom edge, so the open slip hangs over it; the skirt
+        spans all three rows behind it and fades out as the slip opens.
+        Same texture origin, so while both show they read as one panel.
+      */}
       <section
         ref={rootRef}
         aria-label="Your monito"
-        className="relative flex w-full flex-col items-center gap-4 overflow-x-clip [overflow-clip-margin:16px]"
+        className="relative isolate grid w-full grid-cols-1 overflow-x-clip [overflow-clip-margin:20px]"
       >
         <div
-          ref={resultRef}
-          tabIndex={-1}
-          data-part="heading"
-          className="text-title font-extrabold outline-none"
-          style={{ opacity: static_ ? 1 : 0 }}
-        >
-          Ang monito mo ay…
-          {phase === "opened" && <span className="sr-only"> {name}</span>}
+          aria-hidden
+          data-part="panel-skirt"
+          className="leaf-panel -z-10 col-start-1 row-start-1 row-end-4 rounded-3xl"
+          style={{ opacity: static_ ? 0 : 1 }}
+        />
+        <div
+          aria-hidden
+          data-part="panel"
+          className="leaf-panel -z-10 col-start-1 row-start-1 row-end-3 rounded-3xl"
+          style={{ marginBottom: HANG }}
+        />
+
+        <div className="col-start-1 row-start-1 grid px-5 pt-7 text-center text-white">
+          <p
+            data-part="heading-folded"
+            aria-hidden={phase !== "folded"}
+            className="col-start-1 row-start-1 font-display text-heading"
+            style={{ opacity: static_ ? 0 : 1 }}
+          >
+            May nabunot ka na!
+          </p>
+          <div
+            ref={resultRef}
+            tabIndex={-1}
+            data-part="heading"
+            className="col-start-1 row-start-1 font-display text-heading outline-none"
+            style={{ opacity: static_ ? 1 : 0 }}
+          >
+            Ang monito mo ay…
+            {phase === "opened" && <span className="sr-only"> {name}</span>}
+          </div>
         </div>
 
-        {static_ ? (
-          <m.div
-            key="open"
-            initial={initiallyOpened ? false : { opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.35, ease: "easeOut" }}
-            className="py-6"
-          >
-            <SlipArt name={name} state="open" />
-          </m.div>
-        ) : (
-          <m.div
-            key="folded"
-            animate={{ scale: pressed ? 0.95 : 1 }}
-            transition={{ type: "spring", stiffness: 600, damping: 30 }}
-            className="py-6"
-          >
-            <SlipArt name={name} state="folded" />
-          </m.div>
-        )}
-
-        {/* Reserve the caption's space so nothing below jumps when it goes. */}
-        <div className="flex min-h-12 items-center">
-          {phase !== "opened" && (
-            <button
-              type="button"
-              data-part="caption"
-              onClick={open}
-              onPointerDown={() => setPressed(true)}
-              onPointerUp={() => setPressed(false)}
-              onPointerLeave={() => setPressed(false)}
-              onPointerCancel={() => setPressed(false)}
-              disabled={phase === "opening"}
-              className={cn(
-                // Stretched button: the whole slip is the tap target.
-                "rounded-xl px-4 py-3 text-body font-semibold text-muted-foreground outline-none select-none",
-                "after:absolute after:inset-0 after:rounded-2xl after:content-['']",
-                "focus-visible:after:ring-3 focus-visible:after:ring-ring",
-                "cursor-pointer disabled:cursor-default [-webkit-tap-highlight-color:transparent]",
-              )}
+        <div className="col-start-1 row-start-2 mt-6 flex justify-center max-[359px]:scale-90">
+          {static_ ? (
+            <m.div
+              key="open"
+              initial={initiallyOpened ? false : { opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
             >
-              Tap to open your bunutan
-            </button>
+              <SlipArt name={name} state="open" />
+            </m.div>
+          ) : (
+            <m.div
+              key="folded"
+              animate={{ scale: pressed ? 0.95 : 1 }}
+              transition={{ type: "spring", stiffness: 600, damping: 30 }}
+            >
+              <SlipArt name={name} state="folded" />
+            </m.div>
           )}
         </div>
+
+        {initiallyOpened ? (
+          // Room for the slip's tilt and halo before whatever comes next.
+          <div className="col-start-1 row-start-3 h-4" />
+        ) : (
+          // Reserve the pill's space so nothing below jumps when it goes.
+          <div className="col-start-1 row-start-3 flex min-h-12 items-center justify-center pt-5 pb-7 box-content">
+            {phase !== "opened" && (
+              <button
+                type="button"
+                data-part="caption"
+                onClick={open}
+                onPointerDown={() => setPressed(true)}
+                onPointerUp={() => setPressed(false)}
+                onPointerLeave={() => setPressed(false)}
+                onPointerCancel={() => setPressed(false)}
+                disabled={phase === "opening"}
+                className={cn(
+                  "flex h-12 items-center rounded-full border-[1.5px] border-white px-10 text-body font-bold text-white outline-none select-none",
+                  // Stretched button: the whole panel is the tap target.
+                  "after:absolute after:inset-0 after:rounded-3xl after:content-['']",
+                  "focus-visible:after:shadow-[0_0_0_2px_var(--color-ube),0_0_0_6px_rgb(244_197_66/0.8)]",
+                  "cursor-pointer disabled:cursor-default [-webkit-tap-highlight-color:transparent]",
+                )}
+              >
+                Tap to open your bunutan
+              </button>
+            )}
+          </div>
+        )}
 
         {wantController && UnfoldController && (
           <UnfoldController

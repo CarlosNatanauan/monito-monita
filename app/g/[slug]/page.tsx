@@ -28,7 +28,7 @@ function ComeBackLink({ slug }: { slug: string }) {
   return (
     <Link
       href={`/g/${slug}?bumalik=1`}
-      className="self-start font-semibold text-foreground underline underline-offset-4"
+      className="self-start font-semibold text-ube underline underline-offset-4"
     >
       Kasali ka na? Bumalik dito
     </Link>
@@ -55,7 +55,7 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
   return (
     <>
       <header className="flex flex-col gap-4">
-        <p className="text-caption font-semibold text-muted-foreground">Exchange gift</p>
+        <p className="text-small font-semibold text-ube-soft">Exchange gift</p>
         <h1 className="text-heading">{group.name}</h1>
         <GroupFacts partyDate={group.partyDate} budget={group.budget} memberCount={group.memberCount} />
       </header>
@@ -66,7 +66,7 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
         <Card>
           <CardHeader>
             <CardTitle>Bumalik sa group</CardTitle>
-            <p className="text-caption text-muted-foreground">Ilagay ang pangalan at PIN na ginamit mo nang sumali.</p>
+            <p className="text-small text-ube-soft">Ilagay ang pangalan at PIN na ginamit mo nang sumali.</p>
           </CardHeader>
           <CardContent>
             <ComeBackForm slug={slug} newHref={isOpen && !isFull ? `/g/${slug}` : undefined} />
@@ -77,7 +77,7 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
           <CardHeader>
             <CardTitle>Sarado na ang sali.</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-muted-foreground">
+          <CardContent className="flex flex-col gap-4 text-ube-soft">
             <p>Na-draw na ang names para sa group na &apos;to. Kung kasali ka, bumalik gamit ang pangalan at PIN mo.</p>
             <ComeBackLink slug={slug} />
           </CardContent>
@@ -87,7 +87,7 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
           <CardHeader>
             <CardTitle>Puno na ang group.</CardTitle>
           </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-muted-foreground">
+          <CardContent className="flex flex-col gap-4 text-ube-soft">
             <p>Umabot na sa {MAX_MEMBERS} members. Kausapin ang organizer kung may dapat tanggalin.</p>
             <ComeBackLink slug={slug} />
           </CardContent>
@@ -96,7 +96,7 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
         <Card>
           <CardHeader>
             <CardTitle>Sali ka!</CardTitle>
-            <p className="text-caption text-muted-foreground">Walang sign-up. Pangalan at PIN lang.</p>
+            <p className="text-small text-ube-soft">Walang sign-up. Pangalan at PIN lang.</p>
           </CardHeader>
           <CardContent>
             <JoinForm slug={slug} footer={<ComeBackLink slug={slug} />} />

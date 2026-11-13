@@ -45,7 +45,7 @@ export function ComeBackForm({
 
   return (
     <div className="flex flex-col gap-4">
-      {intro && <p className="text-muted-foreground">{intro}</p>}
+      {intro && <p className="text-ube-soft">{intro}</p>}
       <form
         action={formAction}
         onSubmit={submitWithoutReset(formAction)}
@@ -84,25 +84,25 @@ export function ComeBackForm({
           onChange={edited}
         />
         {error ? (
-          <p id="comeback-error" role="alert" className="text-caption font-semibold text-destructive">
+          <p id="comeback-error" role="alert" className="text-small font-semibold text-sili">
             {error.message}
           </p>
         ) : (
-          <p id="comeback-hint" className="text-caption text-muted-foreground">
+          <p id="comeback-hint" className="text-small text-ube-soft">
             Nakalimutan ang PIN? Hingin sa organizer ang bagong link mo.
           </p>
         )}
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" size="lg" disabled={pending}>
+          <Button type="submit" disabled={pending}>
             {pending ? "Sandali…" : "Bumalik"}
           </Button>
           {onNew && (
-            <Button type="button" variant="ghost" size="lg" onClick={onNew} disabled={pending}>
+            <Button type="button" variant="ghost" onClick={onNew} disabled={pending}>
               Bago ako
             </Button>
           )}
           {newHref && (
-            <Button asChild variant="ghost" size="lg">
+            <Button asChild variant="ghost">
               <Link href={newHref}>Bago ako</Link>
             </Button>
           )}

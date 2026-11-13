@@ -47,10 +47,10 @@ export function YourGroups() {
           <li key={g.slug}>
             <Link
               href={g.roles.includes("organizer") ? `/g/${g.slug}/admin` : `/g/${g.slug}/me`}
-              className="flex flex-col rounded-xl bg-slip px-4 py-3 shadow-[0_1px_2px_rgb(31_27_77/0.06)] outline-none focus-visible:ring-3 focus-visible:ring-ring"
+              className="flex flex-col rounded-xl bg-niyog px-4 py-3 shadow-[0_1px_2px_rgb(31_27_77/0.06)] outline-none focus-visible:ring-3 focus-visible:ring-ring"
             >
               <span className="font-semibold">Continue: {g.name}</span>
-              <span className="text-caption text-muted-foreground">{g.roles.join(", ")}</span>
+              <span className="text-small text-ube-soft">{g.roles.join(", ")}</span>
             </Link>
           </li>
         ))}

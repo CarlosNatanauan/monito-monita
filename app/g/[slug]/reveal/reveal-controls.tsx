@@ -7,7 +7,7 @@ import { moveRevealFormAction, startRevealAction } from "./actions";
 function ErrorBox({ message }: { message: string | null }) {
   if (!message) return null;
   return (
-    <p role="alert" className="rounded-xl bg-destructive/8 px-4 py-3 text-caption font-semibold text-destructive">
+    <p role="alert" className="rounded-xl bg-sili-wash px-4 py-3 text-small font-semibold text-sili">
       {message}
     </p>
   );
@@ -31,11 +31,11 @@ export function StartReveal({ slug }: { slug: string }) {
     <div className="flex flex-col gap-3">
       <ErrorBox message={error} />
       {!confirming ? (
-        <Button type="button" size="lg" className="self-start" onClick={() => setConfirming(true)}>
+        <Button type="button" className="self-start" onClick={() => setConfirming(true)}>
           Start the reveal
         </Button>
       ) : (
-        <div className="flex flex-col gap-3 rounded-xl bg-muted p-4" role="group" aria-label="Confirm reveal">
+        <div className="flex flex-col gap-3 rounded-xl bg-leaf-wash p-4" role="group" aria-label="Confirm reveal">
           <p className="font-semibold">Pag sinimulan na, hindi na puwedeng mag-redraw o magtanggal ng member. Go?</p>
           <div className="flex gap-2">
             <Button type="button" disabled={pending} onClick={start}>
@@ -86,13 +86,13 @@ export function RevealControls({ slug, step, total }: { slug: string; step: numb
           type="submit"
           name="move"
           value="previous"
-          variant="outline"
-          size="lg"
+          variant="secondary"
+         
           disabled={pending || step <= 1}
         >
           Previous
         </Button>
-        <Button ref={nextRef} type="submit" name="move" value="next" size="lg" disabled={pending}>
+        <Button ref={nextRef} type="submit" name="move" value="next" disabled={pending}>
           {last ? "Tapusin ang reveal" : "Next"}
         </Button>
       </div>

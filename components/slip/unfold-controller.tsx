@@ -89,6 +89,8 @@ export default function UnfoldController({ scope, playing, speed, onDone, onTime
 
       // Lift: the slip comes up to meet the finger.
       tl.to(one("caption"), { opacity: 0, y: 4, duration: 0.18, ease: "power1.out" }, 0)
+        .to(one("heading-folded"), { opacity: 0, duration: 0.18, ease: "power1.out" }, 0)
+        .to(q('[data-part="under-sheet"], [data-part="fold-glow"]'), { opacity: 0, duration: 0.2, ease: "power1.out" }, 0)
         .to(placers, { scale: SLIP.FOLD_SCALE * 1.06, rotation: -3, duration: 0.22, ease: "power2.out" }, 0)
         .to(one("shadow-lift"), { opacity: 1, duration: 0.25, ease: "power1.out" }, 0)
         .to(one("shadow-contact"), { opacity: 0.35, duration: 0.25, ease: "power1.out" }, 0);
@@ -105,7 +107,10 @@ export default function UnfoldController({ scope, playing, speed, onDone, onTime
         .fromTo(one("heading"), { opacity: 0, y: 8 }, { opacity: 1, y: 0, duration: 0.4, ease: "power2.out" }, 0.3);
 
       // Fold 2: the right half opens like a book.
-      tl.to(turners, { rotationY: 0, z: 0, duration: STEP2 }, STEP2_AT)
+      // The panel's lower part (behind the pill) fades, so the open slip
+      // ends up hanging over the panel's bottom edge.
+      tl.to(one("panel-skirt"), { opacity: 0, duration: STEP2, ease: "power1.inOut" }, STEP2_AT)
+        .to(turners, { rotationY: 0, z: 0, duration: STEP2 }, STEP2_AT)
         .to(one("centerer"), { x: 0, duration: STEP2 }, STEP2_AT)
         .to(footprints, { scaleX: 1, duration: STEP2 }, STEP2_AT)
         .to(placers, { scale: 1, rotation: SLIP.OPEN_ROT, duration: STEP2 + 0.06 }, STEP2_AT)
@@ -126,10 +131,11 @@ export default function UnfoldController({ scope, playing, speed, onDone, onTime
       // Finish: gold glow, star sparkle, a short buzz.
       tl.fromTo(one("glow"), { opacity: 0, scale: 0.7 }, { opacity: 1, scale: 1.05, duration: 0.45, ease: "power2.out" }, writeEnd - 0.2)
         .fromTo(one("rim"), { opacity: 0 }, { opacity: 1, duration: 0.35, ease: "power2.out" }, writeEnd - 0.2)
+        .fromTo(one("diamonds"), { opacity: 0, scale: 0.8 }, { opacity: 1, scale: 1, duration: 0.4, ease: "back.out(2)" }, writeEnd - 0.1)
         .call(() => burst(root, sparkleRef.current), undefined, writeEnd - 0.08)
         .call(() => onDoneRef.current(), undefined, writeEnd + 0.15)
-        .to(one("glow"), { opacity: 0.55, scale: 1, duration: 0.5, ease: "sine.inOut" }, writeEnd + 0.25)
-        .to(one("rim"), { opacity: 0.6, duration: 0.5, ease: "sine.inOut" }, writeEnd + 0.25);
+        .to(one("glow"), { opacity: 0.3, scale: 1, duration: 0.5, ease: "sine.inOut" }, writeEnd + 0.25)
+        .to(one("rim"), { opacity: 1, duration: 0.5, ease: "sine.inOut" }, writeEnd + 0.25);
 
       tl.eventCallback("onComplete", () => gsap.set(moved, { willChange: "auto" }));
       tlRef.current = tl;

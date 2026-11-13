@@ -18,22 +18,22 @@ export function SwitchConfirm({ slug, current, other }: { slug: string; current:
     });
 
   return (
-    <Card className="ring-2 ring-parol-gold">
+    <Card className="ring-2 ring-margarine">
       <CardHeader>
         <CardTitle>
           Naka-login ka bilang {current} sa device na &apos;to. Ikaw ba talaga si {other}?
         </CardTitle>
-        <p className="text-caption text-muted-foreground">
+        <p className="text-small text-ube-soft">
           Personal link ni {other} ang binuksan mo. Kung hindi ikaw si {other}, manatili ka lang.
         </p>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
-        <Button type="button" size="lg" className="w-full" disabled={pending} onClick={() => run(staySwitchAction)}>
+        <Button type="button" className="w-full" disabled={pending} onClick={() => run(staySwitchAction)}>
           Stay as {current}
         </Button>
         <Button
           type="button"
-          variant="outline"
+          variant="secondary"
           className="w-full"
           disabled={pending}
           onClick={() => run(confirmSwitchAction)}
