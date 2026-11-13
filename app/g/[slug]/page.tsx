@@ -9,14 +9,33 @@ import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/c
 import { cn } from "@/lib/utils";
 import { getMemberSession, isValidSlug } from "@/server/auth";
 import { getGroupSummary, MAX_MEMBERS } from "@/server/members";
+import { getGroupPreview } from "@/server/groups";
+import { formatPartyDate } from "@/lib/format";
+import { OG_SIZE } from "@/components/og/share-card";
 import { ComeBackForm } from "./come-back-form";
 import { Eyebrow, pageClass } from "@/components/page";
 import { GroupFacts, PageFallback, RemovedNotice } from "./group-facts";
 import { JoinForm } from "./join-form";
 
-export const metadata: Metadata = {
-  title: "Sali ka! · Monito Monita",
-};
+/**
+ * The join link's share preview (Messenger, Facebook): the group's name and
+ * party date only. Personal links (/me) and the organizer page keep the
+ * generic preview from the root layout.
+ */
+export async function generateMetadata({ params }: PageProps<"/g/[slug]">): Promise<Metadata> {
+  const { slug } = await params;
+  const group = await getGroupPreview(slug).catch(() => null);
+  if (!group) return { title: "Sali ka! · Monito Monita" };
+  const title = `Sali na sa bunutan ng ${group.name}`;
+  const description = `Party: ${formatPartyDate(group.partyDate)}. Bunutan, wishlists, and the big reveal. Isang link lang.`;
+  const image = { url: `/g/${slug}/og`, width: OG_SIZE.width, height: OG_SIZE.height, alt: title };
+  return {
+    title,
+    description,
+    openGraph: { title, description, images: [image], siteName: "Monito Monita", type: "website" },
+    twitter: { card: "summary_large_image", title, description, images: [image] },
+  };
+}
 
 export default function JoinPage({ params, searchParams }: PageProps<"/g/[slug]">) {
   return (

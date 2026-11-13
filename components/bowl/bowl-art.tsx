@@ -82,3 +82,25 @@ export function BowlFront({ className, style }: LayerProps) {
     </svg>
   );
 }
+
+/**
+ * Both layers as one SVG string (share images, where React SVG can't be
+ * used directly).
+ */
+export function bowlSvgMarkup(): string {
+  const slips = SLIPS.map(
+    (s) =>
+      `<rect x="${s.x}" y="${s.y}" width="56" height="26" rx="4" fill="${s.fill}" transform="rotate(${s.r} ${s.x + 28} ${s.y + 13})"/>`,
+  ).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BOWL.W} ${BOWL.H}">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.38"/><stop offset="0.55" stop-color="#fff" stop-opacity="0.16"/><stop offset="1" stop-color="#fff" stop-opacity="0.3"/></linearGradient></defs>
+<ellipse cx="130" cy="158" rx="126" ry="17" fill="#8c6a35"/><ellipse cx="130" cy="156" rx="124" ry="15" fill="#c9a56b"/>
+<ellipse cx="130" cy="156" rx="100" ry="10" fill="none" stroke="#8c6a35" stroke-opacity="0.35" stroke-width="1.5"/>
+<path d="${BODY}" fill="#fff" fill-opacity="0.1"/>
+<path d="M28 44 A102 11 0 0 1 232 44" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="1.5"/>
+${slips}
+<path d="${BODY}" fill="url(#g)" stroke="#fff" stroke-opacity="0.9" stroke-width="1.5"/>
+<path d="M28 44 A102 11 0 0 0 232 44" fill="none" stroke="#fff" stroke-width="1.5"/>
+<path d="M44 62 C44 92 52 112 64 126" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="5" stroke-linecap="round"/>
+</svg>`;
+}

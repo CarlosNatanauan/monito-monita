@@ -28,9 +28,27 @@ const gochi = Gochi_Hand({
   variable: "--font-gochi",
 });
 
+// Absolute URLs for share images. Production: NEXT_PUBLIC_SITE_URL, or
+// Vercel's production domain; preview deploys use their own URL.
+function siteUrl(): URL {
+  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
+  if (explicit) return new URL(explicit);
+  const vercel =
+    process.env.VERCEL_ENV === "production" ? process.env.VERCEL_PROJECT_PRODUCTION_URL : process.env.VERCEL_URL;
+  return new URL(vercel ? `https://${vercel}` : "http://localhost:3000");
+}
+
+const SHARE_TITLE = "Monito Monita — Bunutan, wishlists, and the big reveal.";
+const DESCRIPTION = "Bunutan, wishlists, and the big reveal. Isang link lang.";
+
 export const metadata: Metadata = {
+  metadataBase: siteUrl(),
   title: "Monito Monita",
-  description: "Bunutan, wishlists, and the big reveal. Isang link lang.",
+  description: DESCRIPTION,
+  // The generic preview: home, and every page without its own (including
+  // /me and the organizer page, which never get a group-specific one).
+  openGraph: { title: SHARE_TITLE, description: DESCRIPTION, siteName: "Monito Monita", type: "website" },
+  twitter: { card: "summary_large_image", title: SHARE_TITLE, description: DESCRIPTION },
 };
 
 export const viewport: Viewport = {

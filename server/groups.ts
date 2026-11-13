@@ -5,7 +5,7 @@ import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { asc, eq, inArray } from "drizzle-orm";
 import { addDays, DEFAULT_TIMEZONE, isIsoDate, MAX_THEMES, themeStartDates, todayIn } from "@/lib/theme-weeks";
-import { createToken, hashToken } from "./auth";
+import { createToken, hashToken, isValidSlug } from "./auth";
 import { db } from "./db";
 import { groups, themeWeeks } from "./db/schema";
 
@@ -177,4 +177,21 @@ export async function getGroupNames(slugs: string[]): Promise<{ slug: string; na
     .select({ slug: groups.slug, name: groups.name })
     .from(groups)
     .where(inArray(groups.slug, slugs.slice(0, MAX_REMEMBERED_GROUPS)));
+}
+
+// --- Share previews --------------------------------------------------------
+
+/**
+ * What a share preview (Open Graph) of a join link may show: the group's
+ * name and party date. Nothing else: no members, counts, codenames, or
+ * status. Null for an unknown slug.
+ */
+export async function getGroupPreview(slug: string): Promise<{ name: string; partyDate: string } | null> {
+  if (!isValidSlug(slug)) return null;
+  const [row] = await db()
+    .select({ name: groups.name, partyDate: groups.partyDate })
+    .from(groups)
+    .where(eq(groups.slug, slug))
+    .limit(1);
+  return row ?? null;
 }
