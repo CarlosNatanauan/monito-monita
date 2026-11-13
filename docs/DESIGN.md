@@ -34,6 +34,11 @@ The look is the **puto bumbong stall outside the church**: ube purple, banana le
 | `sili-wash` | `#FDECEA` | Error message background |
 | `gabi` | `#0D2B1F` | Reveal screen background |
 | `gabi-leaf` | `#1F4A36` | Unrevealed slips and off bulbs on reveal |
+| `gabi-mist` | `#DCEBDD` | Text on `gabi` and `gabi-leaf` |
+| `gabi-line` | `#7FA08C` | Off bulb outline on reveal |
+| `ube-night` | `#2A1245` | Text on the margarine reveal button |
+
+In code: `bilao` is split into `bilao` and `bilao-edge`. The reveal centre glow is `#18432F`.
 
 ### Contrast (WCAG AA, all pass)
 
@@ -54,6 +59,14 @@ The look is the **puto bumbong stall outside the church**: ube purple, banana le
 | `#DCEBDD` | `gabi-leaf` | 8.0 |
 | `margarine` | `gabi` | 9.5 |
 | `#2A1245` | `margarine` (reveal button) | 9.8 |
+| white | `sili` ("!" in the error circle) | 6.5 |
+| `gabi-mist` | `gabi` | 12.3 |
+| `gabi-mist` | `#18432F` (reveal centre) | 9.0 |
+| white | `gabi` | 15.2 |
+| white | `#18432F` (reveal centre) | 11.2 |
+| white | `gabi-leaf` | 10.0 |
+| `margarine` | `#18432F` (reveal centre) | 6.9 |
+| `gabi-line` | `gabi` (disabled button on reveal) | 5.3 |
 
 Non-text: `ube-line` on white is 3.8:1, `margarine-edge` on white is 4.7:1. Bulb state never carries meaning alone; a text count always sits next to it.
 
@@ -174,6 +187,18 @@ White pill track, 4px padding. Active segment: `ube` fill, white text. Inactive:
 - **Finale:** after the 12th, the button reads "Ilawan ang parol". Every bulb goes to glowing in a sweep around the ring, every slip gets its halo, a gold radial glow fades in behind, and the centre reads "Maligayang Pasko!". Gold star confetti only.
 - Minimum text size on this screen: 24px at 1080p. Nothing important in the outer 5% of the frame.
 - Reduced motion: no flip or travel; slips and bulbs cross-fade.
+
+### Large groups (planned for Phase 3, not built yet)
+
+The ring is drawn for 12 slips. Groups of up to 16 keep every slip on the ring. **Above 16:**
+
+- The ring shows a **moving window of 12 slips centred on the current pair**: the giver on screen sits in the same spot on the ring, with the 5–6 slips before and after it in loop order around it.
+- **Next** rotates the window by one slip (transform only: the ring turns, the slip leaving the window fades out and the one entering fades in), then the usual flip and bulb travel play. **Previous** turns it back.
+- Slips in the window keep their state: earlier pairs show revealed, later ones show codenames. The loop still reads person to person.
+- A small count stays in the corner ("23 of 40") so the room knows how far along it is.
+- After the last pair, the finale plays on the window, then the screen shows the **full list of pairs** (giver → receiver, in loop order), in columns that fit 1080p at 24px minimum.
+- Reduced motion: the window swaps slips with a cross-fade, no rotation.
+- Same rule as now: the screen only ever receives the pair on screen until `REVEALED`.
 
 ## Everything else: quiet
 
