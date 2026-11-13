@@ -8,7 +8,8 @@ import { expect, type Page } from "@playwright/test";
  */
 export async function readMyLink(page: Page): Promise<string> {
   const box = page.locator("[data-masked-link]");
-  await expect(box).toHaveText(/^https?:\/\/[^/]+\/…\/me\?t=•{6}/);
+  // Host, then dots, once the origin is known ("localhost:3000/…/me?t=••••••").
+  await expect(box).toHaveText(/^[a-z0-9.-]+(:\d+)?\/…\/me\?t=•{6}/);
 
   await page.evaluate(() => {
     const w = window as unknown as { __copied?: string };

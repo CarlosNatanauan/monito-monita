@@ -178,6 +178,17 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Monito Monita" })).toBeVisible();
     await shot(page, "home");
+
+    // "Try a bunutan": the first draw is the mockup's sample, then a random other.
+    const sample = page.locator("[data-sample-slip]");
+    await page.getByRole("button", { name: "Tap the bowl para bumunot" }).click();
+    await expect(sample).toHaveAttribute("data-sample-slip", "Ate Joy");
+    await expect(page.getByRole("button", { name: "Tap ulit para bumunot ng iba" })).toBeVisible({ timeout: 15_000 });
+    await expect(sample.locator('[data-part="name-inner"]')).toHaveText(/Ate\s+Joy/);
+    await shot(page, "home-sample-slip");
+    await page.getByRole("button", { name: "Tap ulit para bumunot ng iba" }).click();
+    await expect(sample).not.toHaveAttribute("data-sample-slip", "Ate Joy");
+    await expect(page.getByRole("button", { name: "Tap ulit para bumunot ng iba" })).toBeVisible({ timeout: 15_000 });
     await page.getByRole("link", { name: "Create your group" }).click();
     await expect(page).toHaveURL(/\/new$/);
     await expect(page.getByRole("heading", { name: "Create your group" })).toBeVisible();
@@ -230,6 +241,30 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await shot(page, "group-created");
   });
 
+  await test.step("share previews: the join link names the group and date; personal pages stay generic", async () => {
+    const { page } = organizer;
+    const asPreviewBot = { headers: { "user-agent": "facebookexternalhit/1.1" } };
+    const meta = (html: string, property: string) =>
+      new RegExp(`<meta property="${property}" content="([^"]*)"`).exec(html)?.[1] ?? null;
+    const decode = (s: string | null) => s?.replace(/&amp;/g, "&").replace(/&#x27;|&#39;/g, "'") ?? null;
+
+    const join = await (await page.request.get(shareUrl, asPreviewBot)).text();
+    expect(decode(meta(join, "og:title"))).toBe(`Sali na sa bunutan ng ${groupName}`);
+    expect(meta(join, "og:description")).toContain(formatPartyDate(partyDate));
+    const image = meta(join, "og:image")!;
+    expect(new URL(image).pathname).toBe(`/g/${slug}/og`);
+    const png = await page.request.get(new URL(image).pathname);
+    expect(png.status()).toBe(200);
+    expect(png.headers()["content-type"]).toBe("image/png");
+
+    // The organizer link (token stripped by the proxy) and /me: the generic preview only.
+    for (const path of [`/g/${slug}/admin`, `/g/${slug}/me`]) {
+      const html = await (await page.request.get(path, asPreviewBot)).text();
+      expect(meta(html, "og:title"), path).toBe("Monito Monita — Bunutan, wishlists, and the big reveal.");
+      expect(html, path).not.toContain(`/g/${slug}/og`);
+    }
+  });
+
   const joy = await newPerson(browser, testInfo, "Joy");
   await test.step("Joy joins via the share link and lands on /me", async () => {
     const { page } = joy;
@@ -245,7 +280,14 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await expect(page.getByLabel("4-digit PIN")).toHaveAttribute("inputmode", "numeric");
     await page.getByLabel("4-digit PIN").fill("1234");
     await page.getByRole("button", { name: "Join the group" }).click();
+    // Signature moment 2: her slip folds and drops into the bowl, then /me.
+    const drop = page.locator("[data-join-drop]");
+    await expect(drop).toBeVisible();
+    await expect(drop.locator('[data-part="name-inner"]')).toHaveText(/Joy/);
+    await shot(page, "joy-join-drop");
     await expect(page.getByRole("heading", { name: "Hi, Joy!" })).toBeVisible();
+    // The join page may stay alive but hidden after the navigation (Activity).
+    await expect(drop).toBeHidden();
     await expect(page.getByText("Save this link!")).toBeVisible();
     // The welcome highlight stays, but ?welcome=1 is replaced away (no reload).
     await expect(page).toHaveURL(new RegExp(`/g/${slug}/me$`));
@@ -277,6 +319,8 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await page.getByLabel("Pangalan mo").fill("Joy M");
     await page.getByLabel("4-digit PIN").fill("5678");
     await page.getByRole("button", { name: "Join the group" }).click();
+    // A tap skips the drop.
+    await page.locator("[data-join-drop]").click();
     await expect(page.getByRole("heading", { name: "Hi, Joy M!" })).toBeVisible();
     joyMLink = await readMyLink(page);
   });
