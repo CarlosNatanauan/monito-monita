@@ -2,7 +2,7 @@
 
 People use this once a year, a few times each. So every visit has to feel special. "Premium" here means **a few unforgettable moments, and everything else fast, calm, and obvious.**
 
-Visual reference: `Monito Monita Reference.html` (static, tokens as CSS variables).
+Visual reference: the screen mockups in `docs/design/*.png` (`01-landing` to `09-party-reveal`, plus `10-components`).
 
 ## The concept: bunutan, after Simbang Gabi
 
