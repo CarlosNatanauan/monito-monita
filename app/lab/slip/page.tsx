@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function SlipLabPage() {
   return (
-    <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col gap-8 px-4 py-10">
+    <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col gap-4 px-5 pt-8 pb-14">
       <SlipLab />
     </main>
   );

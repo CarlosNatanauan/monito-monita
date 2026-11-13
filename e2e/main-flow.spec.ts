@@ -18,7 +18,7 @@ import {
   type TestInfo,
 } from "@playwright/test";
 import { formatPartyDate } from "../lib/format";
-import { addDays, todayIn } from "../lib/theme-weeks";
+import { addDays, formatShortDate, todayIn } from "../lib/theme-weeks";
 import { closeDb } from "../server/db";
 import { deleteGroups, E2E_PREFIX } from "./db-cleanup";
 import {
@@ -92,7 +92,9 @@ function screenshotter(testInfo: TestInfo) {
   let n = 0;
   return async (page: Page, name: string) => {
     n += 1;
-    await page.screenshot({ path: `${dir}/${String(n).padStart(2, "0")}-${name}.png`, fullPage: true });
+    // caret: "initial" so a screenshot taken before hydration never edits the DOM
+    // (the default hides the caret with an inline style React then flags).
+    await page.screenshot({ path: `${dir}/${String(n).padStart(2, "0")}-${name}.png`, fullPage: true, caret: "initial" });
   };
 }
 
@@ -139,9 +141,12 @@ function watchForGsap(page: Page) {
 }
 
 /** The organizer page's cards appear in exactly this order (by card title). */
-async function expectCardOrder(page: Page, titles: string[]) {
+async function expectCardOrder(page: Page, titles: (string | RegExp)[]) {
   const all = await page.locator('[data-slot="card-title"]').allTextContents();
-  const positions = titles.map((t) => all.findIndex((text) => text.trim() === t));
+  // A title matches exactly, as "Title (n)", or by RegExp.
+  const matches = (text: string, t: string | RegExp) =>
+    typeof t === "string" ? text === t || text.startsWith(`${t} (`) : t.test(text);
+  const positions = titles.map((t) => all.findIndex((text) => matches(text.trim(), t)));
   for (const [i, t] of titles.entries()) expect(positions[i], `card "${t}" is on the page`).toBeGreaterThanOrEqual(0);
   expect(positions, `cards in order: ${titles.join(" → ")}`).toEqual([...positions].sort((a, b) => a - b));
 }
@@ -149,7 +154,7 @@ async function expectCardOrder(page: Page, titles: string[]) {
 async function join(page: Page, shareUrl: string, name: string, pin = "1234") {
   await page.goto(shareUrl);
   await page.getByLabel("Pangalan mo").fill(name);
-  await page.getByLabel("PIN (4 digits)").fill(pin);
+  await page.getByLabel("4-digit PIN").fill(pin);
   await page.getByRole("button", { name: "Join the group" }).click();
 }
 
@@ -236,8 +241,8 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     // The PIN is required, on a numeric keypad.
     await page.getByRole("button", { name: "Join the group" }).click();
     await expect(page.locator("main").getByRole("alert")).toHaveText("Pakilagay ang 4-digit PIN.");
-    await expect(page.getByLabel("PIN (4 digits)")).toHaveAttribute("inputmode", "numeric");
-    await page.getByLabel("PIN (4 digits)").fill("1234");
+    await expect(page.getByLabel("4-digit PIN")).toHaveAttribute("inputmode", "numeric");
+    await page.getByLabel("4-digit PIN").fill("1234");
     await page.getByRole("button", { name: "Join the group" }).click();
     await expect(page.getByRole("heading", { name: "Hi, Joy!" })).toBeVisible();
     await expect(page.getByText("Save this link!")).toBeVisible();
@@ -252,7 +257,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
   });
 
   const joyM = await newPerson(browser, testInfo, "Joy M");
-  await test.step("'joy' is taken: the come-back form, then 'Bago ako' → joins as 'Joy M'", async () => {
+  await test.step("'joy' is taken: the come-back form, then 'Bago ka?' → joins as 'Joy M'", async () => {
     const { page } = joyM;
     await join(page, shareUrl, "joy", "5678");
     // Nothing created; neutral wording that doesn't repeat the name.
@@ -266,10 +271,10 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await expect(page.getByText(/joy/i)).toHaveCount(0);
     await shot(page, "name-taken-come-back");
 
-    await page.getByRole("button", { name: "Bago ako" }).click();
+    await page.getByRole("button", { name: "Bago ka? Sumali dito" }).click();
     await expect(page.getByLabel("Pangalan mo")).toHaveValue("joy");
     await page.getByLabel("Pangalan mo").fill("Joy M");
-    await page.getByLabel("PIN (4 digits)").fill("5678");
+    await page.getByLabel("4-digit PIN").fill("5678");
     await page.getByRole("button", { name: "Join the group" }).click();
     await expect(page.getByRole("heading", { name: "Hi, Joy M!" })).toBeVisible();
     joyMLink = await readLink(page, /\/me\?t=/);
@@ -337,7 +342,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await page.getByRole("link", { name: "Join as a member" }).click();
     await expect(page).toHaveURL(new RegExp(`/g/${slug}$`));
     await page.getByLabel("Pangalan mo").fill("Tita Org");
-    await page.getByLabel("PIN (4 digits)").fill("2580");
+    await page.getByLabel("4-digit PIN").fill("2580");
     await page.getByRole("button", { name: "Join the group" }).click();
     await expect(page.getByRole("heading", { name: "Hi, Tita Org!" })).toBeVisible();
 
@@ -363,6 +368,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
 
   await test.step("organizer removes Marco; his link stops working", async () => {
     const { page } = organizer;
+    await page.getByRole("button", { name: "Manage Marco" }).click();
     await page.getByRole("button", { name: "Remove Marco" }).click();
     await expect(page.getByText("Tanggalin si Marco sa group?")).toBeVisible();
     await shot(page, "remove-confirm");
@@ -422,11 +428,11 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
   };
 
   async function addWish(page: Page, title: string, url = "", note = "") {
-    await page.getByRole("button", { name: "Add an item" }).click();
     await page.getByLabel("Ano ang gusto mo?").fill(title);
+    if (url || note) await page.getByRole("button", { name: "Lagyan ng link o note" }).click();
     if (url) await page.getByLabel("Link (optional)").fill(url);
     if (note) await page.getByLabel("Note (optional)").fill(note);
-    await page.getByRole("button", { name: "Add to wishlist" }).click();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.getByRole("list", { name: "Wishlist mo" }).getByText(title, { exact: true })).toBeVisible();
   }
 
@@ -447,19 +453,21 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await expect(myList.getByText("Kahit anong kulay")).toBeVisible();
 
     await page.getByRole("button", { name: "Edit Mug na cute" }).click();
-    await page.getByLabel("Ano ang gusto mo?").fill("Mug na cute (blue)");
+    await page.getByRole("list", { name: "Wishlist mo" }).getByLabel("Ano ang gusto mo?").fill("Mug na cute (blue)");
     await page.getByRole("button", { name: "Save" }).click();
     await expect(myList.getByText("Mug na cute (blue)", { exact: true })).toBeVisible();
     await addWish(page, "Plant (small lang)");
     await shot(page, "joy-wishlist");
 
     // A bad link is rejected with a clear message.
-    await page.getByRole("button", { name: "Add an item" }).click();
     await page.getByLabel("Ano ang gusto mo?").fill("Sketchy");
+    await page.getByRole("button", { name: "Lagyan ng link o note" }).click();
     await page.getByLabel("Link (optional)").fill("javascript:alert(1)");
-    await page.getByRole("button", { name: "Add to wishlist" }).click();
+    await page.getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.getByText("Hindi valid ang link. Dapat http o https.")).toBeVisible();
-    await page.getByRole("button", { name: "Cancel" }).click();
+    await expect(page.getByRole("list", { name: "Wishlist mo" }).getByText("Sketchy")).toHaveCount(0);
+    // Leave the half-filled form behind.
+    await page.reload();
 
     await joyM.page.goto(`/g/${slug}/me`);
     await addWish(joyM.page, "Notebook");
@@ -488,11 +496,11 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await organizer.page.goto(`/g/${slug}/admin`);
     // Before the draw: share link and Draw near the top, the rest below.
     await expectCardOrder(organizer.page, [
-      "Share link (para sa GC)",
-      "Bunutan",
+      /^\d+ na ang sumali$/,
       "Bawal magkabunot",
+      "Bunutan",
       "Members",
-      "Reminder para sa GC",
+      "Paalala para sa GC",
     ]);
     await expect(organizer.page.getByRole("group", { name: "Reminder type" })).toHaveCount(0);
     await checkReminder([
@@ -509,9 +517,9 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     // Party in 40 days with 4 weekly themes → the first starts in 12 days.
     const firstStart = addDays(partyDate, -28);
     const card = joy.page.getByRole("region", { name: "Theme this week" });
-    await expect(card.getByText("Unang theme: Something soft")).toBeVisible();
-    await expect(card.getByText(`Magsisimula sa 12 araw, ${formatPartyDate(firstStart)}`)).toBeVisible();
-    await expect(card.getByText("First theme: Something soft · Budget ₱500")).toBeVisible();
+    await expect(card.getByText("Unang theme", { exact: true })).toBeVisible();
+    await expect(card.getByText("Something soft", { exact: true })).toBeVisible();
+    await expect(card.getByText(`Simula sa 12 araw, ${formatShortDate(firstStart)} · hanggang ₱500`)).toBeVisible();
   });
 
   const pairList = () => organizer.page.getByRole("list", { name: "Exclusion pairs" });
@@ -531,7 +539,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await expect(page.getByText("Wala pang bawal.")).toBeVisible();
     await addPair("Joy", "Joy M");
     await expect(pairList().getByRole("listitem")).toHaveCount(1);
-    await expect(pairList()).toContainText(/Joy & Joy M|Joy M & Joy/);
+    await expect(pairList()).toContainText(/Joy at Joy M|Joy M at Joy/);
     await expect(warning()).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Draw names" })).toBeEnabled();
     await shot(page, "exclusion-added");
@@ -543,7 +551,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await expect(pairList().getByRole("listitem")).toHaveCount(2);
     await expect(warning()).toHaveText("Masyadong maraming bawal kay Joy. Tanggalin ang isa sa mga pair niya.");
     await expect(page.getByRole("button", { name: "Draw names" })).toBeDisabled();
-    await expect(page.getByText("Ayusin muna ang mga bawal sa baba.")).toBeVisible();
+    await expect(page.getByText("Ayusin muna ang mga bawal sa itaas.")).toBeVisible();
     await shot(page, "exclusion-impossible");
 
     await page.getByRole("button", { name: /Remove pair (Joy and Tita Org|Tita Org and Joy)/ }).click();
@@ -564,8 +572,14 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
 
     // Right after the draw: next steps first, then the draw status, members lower.
     await expect(page.getByText("0 of 4 have opened their slip")).toBeVisible();
-    await expectCardOrder(page, ["Na-draw na! I-announce sa GC", "Bunutan", "Members", "Share link (para sa GC)"]);
-    await expect(page.getByText("Reminder para sa GC", { exact: true })).toHaveCount(0);
+    await expectCardOrder(page, [
+      "Names drawn",
+      "Paalala para sa GC",
+      "Kasali ka rin, kaya may slip ka.",
+      "Members",
+      "Share link (para sa GC)",
+    ]);
+    await expect(page.getByText("Paalala para sa GC", { exact: true })).toHaveCount(1);
     // The organizer is a member too, with an unopened slip.
     await expect(page.getByRole("link", { name: "Buksan ang slip mo" })).toHaveAttribute("href", `/g/${slug}/me`);
     // "Na-draw na!" is the default GC message…
@@ -671,9 +685,9 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await expect(organizer.page.getByText("4 of 4 have opened their slip")).toBeVisible();
     // Most have opened: the next steps give way to the usual layout, and the
     // theme reminder is the default again.
-    await expect(organizer.page.getByText("Na-draw na! I-announce sa GC")).toHaveCount(0);
+    await expect(organizer.page.getByText("Kasali ka rin, kaya may slip ka.")).toHaveCount(0);
     await expect(organizer.page.getByRole("link", { name: "Buksan ang slip mo" })).toHaveCount(0);
-    await expectCardOrder(organizer.page, ["Bunutan", "Reminder para sa GC", "Members", "Share link (para sa GC)"]);
+    await expectCardOrder(organizer.page, ["Names drawn", "Paalala para sa GC", "Members", "Share link (para sa GC)"]);
     await expect(
       organizer.page.getByRole("group", { name: "Reminder type" }).getByRole("button", { name: "Theme reminder" }),
     ).toHaveAttribute("aria-pressed", "true");
@@ -759,6 +773,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
   await test.step("lost link: organizer gets Ben a new one; the old link and cookie stop working", async () => {
     const { page } = organizer;
     await page.goto(`/g/${slug}/admin`);
+    await page.getByRole("button", { name: "Manage Ben", exact: true }).click();
     await page.getByRole("button", { name: "Get new link for Ben" }).click();
     await expect(page.getByText("Hindi na gagana ang luma niyang link", { exact: false })).toBeVisible();
     await shot(page, "new-link-confirm");
@@ -850,6 +865,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
   await test.step("remove after the draw: blocked when it would pair an excluded couple", async () => {
     const { page } = organizer;
     await page.goto(`/g/${slug}/admin`);
+    await page.getByRole("button", { name: "Manage Ben", exact: true }).click();
     await page.getByRole("button", { name: "Remove Ben", exact: true }).click();
     await expect(page.getByText("Ang nakabunot sa kanya ay bibigyan ng bagong monito", { exact: false })).toBeVisible();
     await page.getByRole("button", { name: "Oo, tanggalin" }).click();
@@ -871,6 +887,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     const newReceiver = nameOf.get(before.pairs.find((p) => p.giverId === joyId)!.receiverId)!;
 
     const { page } = organizer;
+    await page.getByRole("button", { name: "Manage Joy", exact: true }).click();
     await page.getByRole("button", { name: "Remove Joy", exact: true }).click();
     await page.getByRole("button", { name: "Oo, tanggalin" }).click();
     await expect(memberList().getByText("Joy", { exact: true })).toHaveCount(0);
@@ -924,6 +941,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
   await test.step("removing someone when only 3 remain is blocked", async () => {
     const { page } = organizer;
     await page.goto(`/g/${slug}/admin`);
+    await page.getByRole("button", { name: "Manage Ben", exact: true }).click();
     await page.getByRole("button", { name: "Remove Ben", exact: true }).click();
     await page.getByRole("button", { name: "Oo, tanggalin" }).click();
     await expect(page.locator("main").getByRole("alert")).toContainText("3 na lang kayo");
@@ -988,7 +1006,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await expect(page.getByText("Nagre-reveal na")).toBeVisible();
     await expect(page.getByRole("button", { name: "Redraw" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(0);
-    await expectCardOrder(page, ["Party reveal", "Bunutan", "Members"]);
+    await expectCardOrder(page, ["Party reveal", "Names drawn", "Members"]);
     await shot(page, "admin-revealing");
   });
 

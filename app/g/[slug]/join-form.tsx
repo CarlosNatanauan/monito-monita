@@ -2,6 +2,7 @@
 
 import { useActionState, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/button";
+import { ErrorMessage } from "@/components/ui/error-message";
 import { Input } from "@/components/ui/input";
 import { joinAction, type JoinState } from "./actions";
 import { ComeBackForm } from "./come-back-form";
@@ -12,7 +13,7 @@ const initialState: JoinState = { status: "idle" };
 /**
  * Name + PIN to join. If the name is already in the group, nothing is
  * created and the come-back form (PIN only) takes its place, with neutral
- * wording; "Bago ako" brings the join form back with the name kept.
+ * wording; "Bago ka? Sumali dito" brings the join form back with the name kept.
  *
  * Uncontrolled on purpose: `<form action>` works even before hydration
  * (slow phones opening links from Messenger), and the action returns the
@@ -30,7 +31,7 @@ export function JoinForm({
   const [state, formAction, pending] = useActionState(joinAction, initialState);
   // The error hides as soon as a field is edited, until the next submit.
   const [editedAfter, setEditedAfter] = useState<JoinState | null>(null);
-  // "Bago ako" on the come-back form: back to joining, for this result.
+  // "Bago ka?" on the come-back form: back to joining, for this result.
   const [newAfter, setNewAfter] = useState<JoinState | null>(null);
 
   if (state.status === "taken" && newAfter !== state) {
@@ -52,60 +53,46 @@ export function JoinForm({
   };
 
   return (
-    <div className="flex flex-col gap-6">
-      <form action={formAction} className="flex flex-col gap-4" aria-label="Sumali" noValidate>
+    <div className="flex flex-col gap-4">
+      <form action={formAction} className="flex flex-col gap-6" aria-label="Sumali" noValidate>
         <input type="hidden" name="slug" value={slug} />
         <div className="flex flex-col gap-2">
-          <label htmlFor="displayName" className="font-bold">
+          <label htmlFor="displayName" className="px-1.5 font-bold">
             Pangalan mo
           </label>
           <Input
             id="displayName"
             name="displayName"
+            hand
             defaultValue={submittedName}
             onChange={edited}
-            placeholder="Joy"
+            placeholder="Hal. Joy"
             maxLength={40}
             autoComplete="username"
             aria-invalid={error?.field === "displayName" ? true : undefined}
-            aria-describedby={error?.field === "displayName" ? "join-error" : "join-hint"}
+            aria-describedby={error?.field === "displayName" ? "join-error" : undefined}
             required
           />
-          {error?.field === "displayName" ? (
-            <p id="join-error" role="alert" className="text-small font-semibold text-sili">
-              {error.message}
-            </p>
-          ) : (
-            <p id="join-hint" className="text-small text-ube-soft">
-              Ito ang makikita ng ibang members.
-            </p>
-          )}
+          {error?.field === "displayName" && <ErrorMessage id="join-error">{error.message}</ErrorMessage>}
         </div>
         <div className="flex flex-col gap-2">
           <PinField
             id="pin"
-            label={
-              <>
-                PIN (4 digits){" "}
-                <span className="font-normal text-ube-soft">— para makabalik ka kahit sa ibang phone</span>
-              </>
-            }
+            label="4-digit PIN"
             autoComplete="new-password"
             invalid={error?.field === "pin"}
-            describedBy={error?.field === "pin" ? "pin-error" : undefined}
+            describedBy={error?.field === "pin" ? "pin-error" : "pin-hint"}
             onChange={edited}
           />
-          {error?.field === "pin" && (
-            <p id="pin-error" role="alert" className="text-small font-semibold text-sili">
-              {error.message}
+          {error?.field === "pin" ? (
+            <ErrorMessage id="pin-error">{error.message}</ErrorMessage>
+          ) : (
+            <p id="pin-hint" className="px-1.5 text-small font-medium text-ube-soft">
+              Tandaan mo &apos;to. Ito ang gamit mo pagbalik, kahit sa ibang phone.
             </p>
           )}
         </div>
-        {error && error.field === null && (
-          <p role="alert" className="text-small font-semibold text-sili">
-            {error.message}
-          </p>
-        )}
+        {error && error.field === null && <ErrorMessage>{error.message}</ErrorMessage>}
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Sumasali…" : "Join the group"}
         </Button>

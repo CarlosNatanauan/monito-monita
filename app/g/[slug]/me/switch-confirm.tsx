@@ -2,7 +2,7 @@
 
 import { useTransition } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { confirmSwitchAction, staySwitchAction } from "./actions";
 
 /**
@@ -18,14 +18,14 @@ export function SwitchConfirm({ slug, current, other }: { slug: string; current:
     });
 
   return (
-    <Card className="ring-2 ring-margarine">
+    <Card>
       <CardHeader>
         <CardTitle>
           Naka-login ka bilang {current} sa device na &apos;to. Ikaw ba talaga si {other}?
         </CardTitle>
-        <p className="text-small text-ube-soft">
+        <CardDescription>
           Personal link ni {other} ang binuksan mo. Kung hindi ikaw si {other}, manatili ka lang.
-        </p>
+        </CardDescription>
       </CardHeader>
       <CardContent className="flex flex-col gap-3">
         <Button type="button" className="w-full" disabled={pending} onClick={() => run(staySwitchAction)}>

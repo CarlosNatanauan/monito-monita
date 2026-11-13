@@ -1,7 +1,7 @@
 /**
  * Name + PIN, end to end on a phone: join with a PIN, come back in a fresh
  * browser, a taken name in the join form, wrong PIN, lockout, organizer
- * unlock, "Bago ako", reset PIN, coming back after the draw, the share
+ * unlock, "Bago ka?", reset PIN, coming back after the draw, the share
  * button, and leak checks (no names on the join page; come-back errors are
  * identical whether or not the name exists).
  *
@@ -73,7 +73,7 @@ const isAction = (r: { request(): { method(): string; headers(): Record<string, 
 async function joinWith(page: Page, shareUrl: string, name: string, pin: string) {
   await page.goto(shareUrl);
   await page.getByLabel("Pangalan mo").fill(name);
-  await page.getByLabel("PIN (4 digits)").fill(pin);
+  await page.getByLabel("4-digit PIN").fill(pin);
   await page.getByRole("button", { name: "Join the group" }).click();
 }
 
@@ -91,9 +91,9 @@ async function openComeBack(page: Page, shareUrl: string) {
 async function submitComeBack(page: Page, pin: string, name?: string): Promise<string> {
   const form = page.getByRole("form", { name: "Bumalik" });
   if (name !== undefined) await form.getByLabel("Pangalan mo").fill(name);
-  await form.getByLabel("PIN mo").fill(pin);
+  await form.getByLabel("4-digit PIN").fill(pin);
   const response = page.waitForResponse(isAction);
-  await form.getByRole("button", { name: "Bumalik" }).click();
+  await form.getByRole("button", { name: "Buksan ang slip ko" }).click();
   return (await response).text();
 }
 
@@ -140,10 +140,10 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
   await test.step("Ana joins with name + PIN; 'Send to yourself' leads /me", async () => {
     const { page } = anaA;
     await page.goto(shareUrl);
-    const pin = page.getByLabel("PIN (4 digits)");
+    const pin = page.getByLabel("4-digit PIN");
     await expect(pin).toHaveAttribute("inputmode", "numeric");
     await expect(pin).toHaveAttribute("type", "password");
-    await expect(page.getByText("para makabalik ka kahit sa ibang phone")).toBeVisible();
+    await expect(page.getByText("Ito ang gamit mo pagbalik", { exact: false })).toBeVisible();
     await joinWith(page, shareUrl, "Ana", "1234");
     await expect(page.getByRole("heading", { name: "Hi, Ana!" })).toBeVisible();
 
@@ -189,8 +189,8 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
   await test.step("Ana comes back in a fresh browser; phone A stays logged in", async () => {
     const anaB = await newPerson(browser, testInfo, "Ana (phone B)");
     await openComeBack(anaB.page, shareUrl);
-    // Open group: "Bago ako" goes to the join form.
-    await expect(anaB.page.getByRole("link", { name: "Bago ako" })).toHaveAttribute("href", `/g/${slug}`);
+    // Open group: "Bago ka?" goes to the join form.
+    await expect(anaB.page.getByRole("link", { name: "Bago ka? Sumali dito" })).toHaveAttribute("href", `/g/${slug}`);
     await submitComeBack(anaB.page, "1234", "  ana ");
     await expect(anaB.page).toHaveURL(new RegExp(`/g/${slug}/me$`));
     await expect(anaB.page.getByRole("heading", { name: "Hi, Ana!" })).toBeVisible();
@@ -200,7 +200,7 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     await expect(anaA.page.getByRole("heading", { name: "Hi, Ana!" })).toBeVisible();
   });
 
-  await test.step("a taken name in the join form → come-back form; wrong PIN; 'Bago ako'; right PIN", async () => {
+  await test.step("a taken name in the join form → come-back form; wrong PIN; 'Bago ka?'; right PIN", async () => {
     const anaC = await newPerson(browser, testInfo, "Ana (phone C)");
     const { page } = anaC;
     const responses: string[] = [];
@@ -211,17 +211,17 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     await expect(page.getByText(TAKEN)).toBeVisible();
     await expect(page.getByText(/ana/i)).toHaveCount(0);
     // The PIN isn't carried over: she types it on purpose.
-    await expect(page.getByRole("form", { name: "Bumalik" }).getByLabel("PIN mo")).toHaveValue("");
+    await expect(page.getByRole("form", { name: "Bumalik" }).getByLabel("4-digit PIN")).toHaveValue("");
 
     await submitComeBack(page, "9999");
     await expectWrong(page);
 
-    await page.getByRole("button", { name: "Bago ako" }).click();
+    await page.getByRole("button", { name: "Bago ka? Sumali dito" }).click();
     await expect(page.getByRole("form", { name: "Sumali" })).toBeVisible();
     await expect(page.getByLabel("Pangalan mo")).toHaveValue("ANA");
 
     // Back to the come-back form via the same name, then the right PIN.
-    await page.getByLabel("PIN (4 digits)").fill("1234");
+    await page.getByLabel("4-digit PIN").fill("1234");
     await page.getByRole("button", { name: "Join the group" }).click();
     await expect(page.getByText(TAKEN)).toBeVisible();
     await submitComeBack(page, "1234");
@@ -286,6 +286,7 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
   await test.step("Get new link + Reset PIN: Ana sets a new PIN on /me; old devices are out", async () => {
     const { page } = organizer;
     await page.goto(`/g/${slug}/admin`);
+    await page.getByRole("button", { name: "Manage Ana", exact: true }).click();
     await page.getByRole("button", { name: "Get new link for Ana" }).click();
     await page.getByRole("checkbox", { name: /Reset PIN/ }).check();
     await page.getByRole("button", { name: "Oo, gumawa ng bago" }).click();
@@ -300,7 +301,7 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     await expect(anaE.page.getByRole("heading", { name: "Hi, Ana!" })).toBeVisible();
     const card = anaE.page.getByRole("region", { name: "Mag-set ng PIN" });
     await expect(card.getByText("Mag-set ng PIN", { exact: true })).toBeVisible();
-    await card.getByLabel("PIN (4 digits)").fill("4321");
+    await card.getByLabel("4-digit PIN").fill("4321");
     await card.getByRole("button", { name: "I-save ang PIN" }).click();
     await expect(card.getByText("Na-save ang PIN mo!")).toBeVisible();
     await anaE.page.reload();
@@ -334,11 +335,11 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     const truth = await getTruth(slug);
     expectJoinPageClean(await capturePage(late.page, shareUrl), truth);
     await expect(late.page.getByText("Sarado na ang sali.")).toBeVisible();
-    await expect(late.page.getByLabel("PIN (4 digits)")).toHaveCount(0);
+    await expect(late.page.getByLabel("4-digit PIN")).toHaveCount(0);
     await late.page.getByRole("link", { name: "Kasali ka na? Bumalik dito" }).click();
     await expect(late.page.getByRole("form", { name: "Bumalik" })).toBeVisible();
-    // Closed: no "Bago ako".
-    await expect(late.page.getByText("Bago ako")).toHaveCount(0);
+    // Closed: no "Bago ka?".
+    await expect(late.page.getByText("Bago ka? Sumali dito")).toHaveCount(0);
     expectJoinPageClean(await late.page.content(), truth);
 
     const existing = await submitComeBack(late.page, "0000", "Ana");

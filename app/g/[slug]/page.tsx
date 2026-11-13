@@ -2,10 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HeaderLights } from "@/components/lights";
+import { buttonVariants } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { cn } from "@/lib/utils";
 import { getMemberSession, isValidSlug } from "@/server/auth";
 import { getGroupSummary, MAX_MEMBERS } from "@/server/members";
 import { ComeBackForm } from "./come-back-form";
+import { Eyebrow, pageClass } from "@/components/page";
 import { GroupFacts, PageFallback, RemovedNotice } from "./group-facts";
 import { JoinForm } from "./join-form";
 
@@ -15,21 +19,21 @@ export const metadata: Metadata = {
 
 export default function JoinPage({ params, searchParams }: PageProps<"/g/[slug]">) {
   return (
-    <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col gap-8 px-4 py-10">
-      <Suspense fallback={<PageFallback />}>
-        <JoinContent params={params} searchParams={searchParams} />
-      </Suspense>
-    </main>
+    <>
+      <HeaderLights />
+      <main className={cn(pageClass, "pt-4")}>
+        <Suspense fallback={<PageFallback />}>
+          <JoinContent params={params} searchParams={searchParams} />
+        </Suspense>
+      </main>
+    </>
   );
 }
 
 /** Opens the come-back form (name + PIN). A plain link, so it works before hydration. */
-function ComeBackLink({ slug }: { slug: string }) {
+function ComeBackLink({ slug, className }: { slug: string; className?: string }) {
   return (
-    <Link
-      href={`/g/${slug}?bumalik=1`}
-      className="self-start font-semibold text-ube underline underline-offset-4"
-    >
+    <Link href={`/g/${slug}?bumalik=1`} className={cn(buttonVariants({ variant: "link", size: "inline" }), className)}>
       Kasali ka na? Bumalik dito
     </Link>
   );
@@ -50,58 +54,59 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
 
   const isOpen = group.status === "OPEN";
   const isFull = group.memberCount >= MAX_MEMBERS;
-  const comingBack = query.bumalik !== undefined;
+  const comingBack = query.bumalik !== undefined && session.kind !== "removed";
+
+  if (comingBack) {
+    return (
+      <>
+        <header className="flex flex-col gap-2 pt-4">
+          <Eyebrow>{group.name}</Eyebrow>
+          <h1 className="font-display text-heading-lg">Welcome back!</h1>
+          <p className="mt-2">Ilagay ang pangalan at PIN mo para makita ang slip mo.</p>
+        </header>
+        <div className="pt-2">
+          <ComeBackForm slug={slug} newHref={isOpen && !isFull ? `/g/${slug}` : undefined} />
+        </div>
+      </>
+    );
+  }
 
   return (
     <>
-      <header className="flex flex-col gap-4">
-        <p className="text-small font-semibold text-ube-soft">Exchange gift</p>
-        <h1 className="text-heading">{group.name}</h1>
+      <Card className="gap-6 pt-7">
+        <header className="flex flex-col gap-3">
+          <p className="font-medium text-ube-soft">Inimbitahan ka sa bunutan ng</p>
+          <h1 className="font-display text-heading-lg break-words">{group.name}</h1>
+        </header>
         <GroupFacts partyDate={group.partyDate} budget={group.budget} memberCount={group.memberCount} />
-      </header>
+      </Card>
 
       {session.kind === "removed" ? (
         <RemovedNotice />
-      ) : comingBack ? (
-        <Card>
-          <CardHeader>
-            <CardTitle>Bumalik sa group</CardTitle>
-            <p className="text-small text-ube-soft">Ilagay ang pangalan at PIN na ginamit mo nang sumali.</p>
-          </CardHeader>
-          <CardContent>
-            <ComeBackForm slug={slug} newHref={isOpen && !isFull ? `/g/${slug}` : undefined} />
-          </CardContent>
-        </Card>
       ) : !isOpen ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Sarado na ang sali.</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-ube-soft">
-            <p>Na-draw na ang names para sa group na &apos;to. Kung kasali ka, bumalik gamit ang pangalan at PIN mo.</p>
-            <ComeBackLink slug={slug} />
+          <CardTitle>Sarado na ang sali.</CardTitle>
+          <CardContent>
+            <CardDescription>
+              Na-draw na ang names para sa group na &apos;to. Kung kasali ka, bumalik gamit ang pangalan at PIN mo.
+            </CardDescription>
+            <ComeBackLink slug={slug} className="self-start" />
           </CardContent>
         </Card>
       ) : isFull ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Puno na ang group.</CardTitle>
-          </CardHeader>
-          <CardContent className="flex flex-col gap-4 text-ube-soft">
-            <p>Umabot na sa {MAX_MEMBERS} members. Kausapin ang organizer kung may dapat tanggalin.</p>
-            <ComeBackLink slug={slug} />
+          <CardTitle>Puno na ang group.</CardTitle>
+          <CardContent>
+            <CardDescription>
+              Umabot na sa {MAX_MEMBERS} members. Kausapin ang organizer kung may dapat tanggalin.
+            </CardDescription>
+            <ComeBackLink slug={slug} className="self-start" />
           </CardContent>
         </Card>
       ) : (
-        <Card>
-          <CardHeader>
-            <CardTitle>Sali ka!</CardTitle>
-            <p className="text-small text-ube-soft">Walang sign-up. Pangalan at PIN lang.</p>
-          </CardHeader>
-          <CardContent>
-            <JoinForm slug={slug} footer={<ComeBackLink slug={slug} />} />
-          </CardContent>
-        </Card>
+        <div className="pt-4">
+          <JoinForm slug={slug} footer={<ComeBackLink slug={slug} className="self-center" />} />
+        </div>
       )}
     </>
   );

@@ -27,6 +27,7 @@
   --color-gabi-leaf: #1f4a36; /* unrevealed slips and off bulbs on reveal */
   --color-gabi-mist: #dcebdd; /* text on gabi-leaf */
   --color-gabi-line: #7fa08c; /* off bulb outline on reveal */
+  --color-ube-night: #2a1245; /* text on the margarine reveal button */
 
   /* Type scale. Manrope: 14 / 16 / 17 (buttons) / 20, line height 1.5 */
   --text-small: 0.875rem;

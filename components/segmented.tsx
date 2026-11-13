@@ -8,7 +8,7 @@ import { cn } from "@/lib/utils";
 const track = "flex w-full rounded-full bg-niyog p-1";
 const segment = (active: boolean) =>
   cn(
-    "flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-full px-4 text-body font-bold focus-ring [-webkit-tap-highlight-color:transparent]",
+    "flex min-h-11 flex-1 cursor-pointer items-center justify-center rounded-full px-2 text-center text-body font-bold whitespace-nowrap focus-ring [-webkit-tap-highlight-color:transparent]",
     active ? "bg-ube text-white" : "text-ube-soft",
   );
 

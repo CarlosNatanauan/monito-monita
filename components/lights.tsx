@@ -53,9 +53,11 @@ const WIRE: Record<LightsVariant, string> = {
   light: "before:bg-ube-line",
   dark: "before:bg-gabi-line",
 };
-const SLOT: Record<LightsVariant, string> = {
-  light: "w-[26px]",
-  dark: "w-12",
+// Bulbs sit in an auto-filling grid: at least this much room each, stretched
+// to fill the wire's width; more bulbs than fit wrap onto another wire.
+const GRID: Record<LightsVariant, string> = {
+  light: "grid-cols-[repeat(auto-fill,minmax(24px,1fr))]",
+  dark: "grid-cols-[repeat(auto-fill,minmax(48px,1fr))]",
 };
 
 /**
@@ -81,7 +83,8 @@ export function Lights({
         <div
           aria-hidden
           className={cn(
-            "relative flex flex-wrap gap-y-3",
+            "relative grid gap-y-3",
+            GRID[variant],
             // Full-width wire on the first row; each slot carries its own piece
             // so wrapped rows hang on a wire too.
             "before:absolute before:inset-x-0 before:top-0 before:h-0.5",
@@ -93,7 +96,6 @@ export function Lights({
               key={i}
               className={cn(
                 "relative flex justify-center pt-0.5 before:absolute before:inset-x-0 before:top-0 before:h-0.5",
-                SLOT[variant],
                 WIRE[variant],
               )}
             >

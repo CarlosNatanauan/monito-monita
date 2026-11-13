@@ -160,7 +160,8 @@ describe("getOrganizerView (dev DB)", () => {
     const view = await getOrganizerView(groupId);
     expect(view?.members.map((m) => m.displayName)).toEqual(["Joy", "Marco"]);
     for (const m of view!.members) {
-      expect(Object.keys(m).sort()).toEqual(["displayName", "id", "joinedAt", "linkStatus", "pinLocked"]);
+      expect(Object.keys(m).sort()).toEqual(["displayName", "id", "joinedAt", "linkStatus", "pinLocked", "slipOpened"]);
+      expect(m.slipOpened).toBe(false);
       expect(m.linkStatus).toBe("none");
       expect(m.pinLocked).toBe(false);
     }

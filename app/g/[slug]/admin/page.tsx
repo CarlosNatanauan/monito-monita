@@ -3,20 +3,23 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CopyLink } from "@/components/copy-link";
+import { joinStates, Lights } from "@/components/lights";
 import { RememberGroup } from "@/components/remember-group";
 import { RoleSwitch } from "@/components/role-switch";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { formatJoinedAt, joinedCount } from "@/lib/format";
 import { mostHaveOpened } from "@/lib/reminder";
 import { getThemeStatus } from "@/lib/theme-status";
 import { formatShortDate, todayIn } from "@/lib/theme-weeks";
+import { cn } from "@/lib/utils";
 import { getCurrentMember, getCurrentOrganizer, isValidSlug } from "@/server/auth";
 import type { GroupStatus } from "@/server/db/schema";
 import { checkDrawFeasibility } from "@/server/draw-check";
 import { countAssignments, countSlipsOpened, hasOpenedOwnSlip } from "@/server/draw-service";
 import { getDrawSetup, toExclusions } from "@/server/exclusions";
 import { getOrganizerView } from "@/server/members";
+import { Eyebrow, pageClass } from "@/components/page";
 import { GroupFacts, PageFallback } from "../group-facts";
 import { DrawSection } from "./draw-section";
 import { ExclusionsSection } from "./exclusions-section";
@@ -36,7 +39,7 @@ const STATUS_LABEL: Record<GroupStatus, string> = {
 
 export default function OrganizerPage({ params }: PageProps<"/g/[slug]/admin">) {
   return (
-    <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col gap-8 px-4 py-10 md:max-w-2xl">
+    <main className={cn(pageClass, "pt-5 md:max-w-2xl")}>
       <Suspense fallback={<PageFallback />}>
         <OrganizerContent params={params} />
       </Suspense>
@@ -54,14 +57,12 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
       <>
         {/* This device's organizer link no longer works: drop it from "Your groups". */}
         <RememberGroup slug={slug} name="" role="organizer" forget />
-        <Card>
-        <CardHeader>
+        <Card className="mt-6">
           <CardTitle>Para sa organizer lang ang page na &apos;to.</CardTitle>
-        </CardHeader>
-        <CardContent className="text-ube-soft">
-          Kung ikaw ang organizer, buksan ang organizer link mo (yung binigay nang ginawa mo ang group). Kung member
-          ka, gamitin ang personal link mo.
-          </CardContent>
+          <CardDescription>
+            Kung ikaw ang organizer, buksan ang organizer link mo (yung binigay nang ginawa mo ang group). Kung member
+            ka, gamitin ang personal link mo.
+          </CardDescription>
         </Card>
       </>
     );
@@ -77,8 +78,8 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
   if (!view) notFound();
   const { group, themes } = view;
   const isOpen = group.status === "OPEN";
-  // Right after the draw (until most have opened their slip), lead with
-  // "announce it in the GC" and the organizer's own slip.
+  // Right after the draw (until most have opened their slip), the GC
+  // reminder defaults to "Na-draw na!" and the organizer's own slip is offered.
   const justDrawn = group.status === "DRAWN" && !mostHaveOpened(slipsOpened);
   const ownSlipWaiting = Boolean(member) && justDrawn && !(await hasOpenedOwnSlip(member!.id));
   // Same algorithm as the real draw, so the warning always matches.
@@ -103,108 +104,89 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     <Card>
       <CardHeader>
         <CardTitle>Kasali ka rin ba?</CardTitle>
-        <p className="text-small text-ube-soft">Are you joining too? Sali ka rin para makabunot ka.</p>
+        <CardDescription>Are you joining too? Sali ka rin para makabunot ka.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <Button asChild variant="secondary">
-          <Link href={`/g/${slug}`}>Join as a member</Link>
-        </Button>
-      </CardContent>
+      <Button asChild variant="secondary">
+        <Link href={`/g/${slug}`}>Join as a member</Link>
+      </Button>
     </Card>
   );
 
-  const shareLink = (
+  // Before the draw: the join count with one bulb per member (newest glows).
+  const shareLink = isOpen ? (
+    <Card>
+      <Lights states={joinStates(memberCount)} label={<CardTitle>{joinedCount(memberCount)}</CardTitle>} />
+      <p>I-paste sa GC para makasali ang lahat.</p>
+      <CopyLink path={`/g/${slug}`} label="Copy link" variant="secondary" />
+    </Card>
+  ) : (
     <Card>
       <CardHeader>
         <CardTitle>Share link (para sa GC)</CardTitle>
-        <p className="text-small text-ube-soft">
-          {isOpen
-            ? "I-paste sa group chat para makasali ang lahat."
-            : "Sarado na ang sali, pero dadalhin nito ang members sa slip nila."}
-        </p>
+        <CardDescription>Sarado na ang sali, pero dadalhin nito ang members sa slip nila.</CardDescription>
       </CardHeader>
-      <CardContent className="flex flex-col gap-3">
-        {isOpen && <p className="text-title font-extrabold">{joinedCount(memberCount)}</p>}
-        <CopyLink path={`/g/${slug}`} label="Copy link" variant={isOpen ? "default" : "secondary"} />
-      </CardContent>
+      <CopyLink path={`/g/${slug}`} label="Copy link" variant="secondary" />
     </Card>
   );
 
   const bunutan = (
     <Card>
-      <CardHeader>
-        <CardTitle>Bunutan</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <DrawSection
-          slug={slug}
-          status={group.status}
-          drawnCount={drawnCount}
-          slipsOpened={slipsOpened}
-          blockedReason={
-            feasibility.status === "ok"
-              ? null
-              : feasibility.status === "too_few"
-                ? feasibility.message
-                : "Ayusin muna ang mga bawal sa baba."
-          }
-        />
-      </CardContent>
-    </Card>
-  );
-
-  const nextSteps = justDrawn && (
-    <Card className="ring-2 ring-margarine">
-      <CardHeader>
-        <CardTitle>Na-draw na! I-announce sa GC</CardTitle>
-        <p className="text-small text-ube-soft">I-copy at i-paste sa group chat para buksan ng lahat ang slip nila.</p>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-5">
-        <ReminderCard {...reminderData} defaultKind="drawn" />
-        {ownSlipWaiting && (
-          <div className="flex flex-col gap-2 border-t border-border pt-4">
-            <p className="font-semibold">Kasali ka rin, kaya may slip ka.</p>
-            <Button asChild className="self-start">
-              <Link href={`/g/${slug}/me`}>Buksan ang slip mo</Link>
-            </Button>
-          </div>
-        )}
-      </CardContent>
+      {isOpen && <CardTitle>Bunutan</CardTitle>}
+      <DrawSection
+        slug={slug}
+        status={group.status}
+        drawnCount={drawnCount}
+        slipsOpened={slipsOpened}
+        blockedReason={
+          feasibility.status === "ok"
+            ? null
+            : feasibility.status === "too_few"
+              ? feasibility.message
+              : "Ayusin muna ang mga bawal sa itaas."
+        }
+      />
     </Card>
   );
 
   const reminder = (
     <Card>
+      <CardTitle>Paalala para sa GC</CardTitle>
+      <ReminderCard
+        {...reminderData}
+        defaultKind={justDrawn ? "drawn" : "theme"}
+        prominent={group.status === "DRAWN"}
+      />
+    </Card>
+  );
+
+  const ownSlip = ownSlipWaiting && (
+    <Card>
       <CardHeader>
-        <CardTitle>Reminder para sa GC</CardTitle>
-        <p className="text-small text-ube-soft">I-copy at i-paste sa group chat.</p>
+        <CardTitle>Kasali ka rin, kaya may slip ka.</CardTitle>
+        <CardDescription>Buksan mo na rin ang sa&apos;yo.</CardDescription>
       </CardHeader>
-      <CardContent>
-        <ReminderCard {...reminderData} defaultKind="theme" />
-      </CardContent>
+      <Button asChild variant="secondary">
+        <Link href={`/g/${slug}/me`}>Buksan ang slip mo</Link>
+      </Button>
     </Card>
   );
 
   const membersCard = (
     <Card>
-      <CardHeader>
-        <CardTitle>Members</CardTitle>
-        <p className="text-small text-ube-soft">{joinedCount(memberCount)}</p>
-      </CardHeader>
-      <CardContent>
-        <MemberList
-          slug={slug}
-          canRemove={group.status === "OPEN" || group.status === "DRAWN"}
-          drawn={!isOpen}
-          members={view.members.map((m) => ({
-            id: m.id,
-            displayName: m.displayName,
-            joinedLabel: formatJoinedAt(m.joinedAt, group.timezone),
-            linkStatus: m.linkStatus,
-            pinLocked: m.pinLocked,
-          }))}
-        />
-      </CardContent>
+      <CardTitle>Members ({memberCount})</CardTitle>
+      <MemberList
+        slug={slug}
+        canRemove={group.status === "OPEN" || group.status === "DRAWN"}
+        drawn={!isOpen}
+        members={view.members.map((m) => ({
+          id: m.id,
+          displayName: m.displayName,
+          joinedLabel: formatJoinedAt(m.joinedAt, group.timezone),
+          linkStatus: m.linkStatus,
+          pinLocked: m.pinLocked,
+          slipOpened: m.slipOpened,
+        }))}
+      />
     </Card>
   );
 
@@ -212,17 +194,15 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     <Card>
       <CardHeader>
         <CardTitle>Bawal magkabunot</CardTitle>
-        <p className="text-small text-ube-soft">Can&apos;t draw each other, halimbawa mag-asawa o magkapatid.</p>
+        <p>Can&apos;t draw each other, halimbawa mag-asawa o magkapatid.</p>
       </CardHeader>
-      <CardContent>
-        <ExclusionsSection
-          slug={slug}
-          members={setup.members}
-          pairs={setup.pairs.map((p) => ({ id: p.id, memberAName: p.memberAName, memberBName: p.memberBName }))}
-          editable={isOpen}
-          warning={isOpen && feasibility.status === "impossible" ? feasibility.message : null}
-        />
-      </CardContent>
+      <ExclusionsSection
+        slug={slug}
+        members={setup.members}
+        pairs={setup.pairs.map((p) => ({ id: p.id, memberAName: p.memberAName, memberBName: p.memberBName }))}
+        editable={isOpen}
+        warning={isOpen && feasibility.status === "impossible" ? feasibility.message : null}
+      />
     </Card>
   );
 
@@ -231,40 +211,43 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     <Card>
       <CardHeader>
         <CardTitle>Party reveal</CardTitle>
-        <p className="text-small text-ube-soft">
+        <CardDescription>
           {group.status === "DRAWN" &&
             "Sa party: buksan sa laptop o TV at isa-isang ipakita kung sino ang nagbigay kanino."}
           {group.status === "REVEALING" && "Ongoing ang reveal. Ituloy kung saan ka huminto."}
           {group.status === "REVEALED" && "Tapos na! Makikita na ng lahat kung sino ang nagbigay sa kanila."}
-        </p>
+        </CardDescription>
       </CardHeader>
-      <CardContent>
-        <Button asChild variant={group.status === "REVEALING" ? "default" : "secondary"}>
-          <Link href={`/g/${slug}/reveal`}>
-            {group.status === "DRAWN" && "Open the reveal screen"}
-            {group.status === "REVEALING" && "Continue the reveal"}
-            {group.status === "REVEALED" && "See all pairs"}
-          </Link>
-        </Button>
-      </CardContent>
+      <Button asChild variant={group.status === "REVEALING" ? "default" : "secondary"}>
+        <Link href={`/g/${slug}/reveal`}>
+          {group.status === "DRAWN" && "Open the reveal screen"}
+          {group.status === "REVEALING" && "Continue the reveal"}
+          {group.status === "REVEALED" && "See all pairs"}
+        </Link>
+      </Button>
+    </Card>
+  );
+
+  const details = (
+    <Card>
+      <GroupFacts partyDate={group.partyDate} budget={group.budget} />
     </Card>
   );
 
   const themeWeeks = themes.length > 0 && (
     <Card>
-      <CardHeader>
-        <CardTitle>Theme weeks</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <ol className="flex flex-col gap-2">
-          {themes.map((theme) => (
-            <li key={`${theme.startDate}-${theme.title}`} className="flex justify-between gap-3">
-              <span>{theme.title}</span>
-              <span className="shrink-0 text-small text-ube-soft">{formatShortDate(theme.startDate)}</span>
-            </li>
-          ))}
-        </ol>
-      </CardContent>
+      <CardTitle>Theme weeks</CardTitle>
+      <ol className="flex flex-col rows-dashed">
+        {themes.map((theme) => (
+          <li
+            key={`${theme.startDate}-${theme.title}`}
+            className="flex justify-between gap-3 py-3 first:pt-0 last:pb-0"
+          >
+            <span>{theme.title}</span>
+            <span className="shrink-0 text-small font-medium text-ube-soft">{formatShortDate(theme.startDate)}</span>
+          </li>
+        ))}
+      </ol>
     </Card>
   );
 
@@ -272,36 +255,37 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     <>
       <RememberGroup slug={slug} name={group.name} role="organizer" />
       {member && <RoleSwitch slug={slug} current="organizer" />}
-      <header className="flex flex-col gap-4">
-        <p className="text-small font-semibold text-ube-soft">Organizer</p>
-        <h1 className="text-heading">{group.name}</h1>
-        <GroupFacts partyDate={group.partyDate} budget={group.budget} memberCount={memberCount} />
-        <p className="text-small font-semibold">{STATUS_LABEL[group.status]}</p>
+      <header className="flex flex-col gap-2 pt-5 pb-3">
+        <Eyebrow>Organizer</Eyebrow>
+        <h1 className="font-display text-heading-lg break-words">{group.name}</h1>
+        <p className="mt-2 font-bold text-dahon">{STATUS_LABEL[group.status]}</p>
       </header>
 
       {isOpen ? (
-        // Before the draw: get everyone in, then draw.
+        // Before the draw: get everyone in, set the bawal pairs, then draw.
         <>
-          {joinAsMember}
           {shareLink}
-          {bunutan}
+          {joinAsMember}
           {exclusions}
+          {bunutan}
           {membersCard}
           {reminder}
           {themeWeeks}
+          {details}
         </>
       ) : (
-        // After the draw: announce it, track slips, then the rest.
+        // After the draw: track slips, remind the GC, then the rest.
         <>
           {group.status === "REVEALING" && reveal}
-          {nextSteps}
           {bunutan}
-          {group.status !== "REVEALING" && reveal}
-          {!justDrawn && reminder}
+          {reminder}
+          {ownSlip}
           {membersCard}
+          {group.status !== "REVEALING" && reveal}
           {shareLink}
           {exclusions}
           {themeWeeks}
+          {details}
         </>
       )}
     </>

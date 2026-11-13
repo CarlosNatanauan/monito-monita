@@ -2,13 +2,17 @@
 
 import Link from "next/link";
 import { useActionState, useState } from "react";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { ErrorMessage } from "@/components/ui/error-message";
 import { Input } from "@/components/ui/input";
 import { submitWithoutReset } from "@/lib/forms";
+import { cn } from "@/lib/utils";
 import { comeBackAction, type ComeBackState } from "./actions";
 import { PinField } from "./pin-field";
 
 const initialState: ComeBackState = { status: "idle" };
+
+const NEW_LABEL = "Bago ka? Sumali dito";
 
 /**
  * Name + PIN, to come back on another device.
@@ -30,9 +34,9 @@ export function ComeBackForm({
   slug: string;
   presetName?: string;
   intro?: string;
-  /** "Bago ako": back to the join form (in place). */
+  /** "Bago ka?": back to the join form (in place). */
   onNew?: () => void;
-  /** "Bago ako": back to the join form (as a link). */
+  /** "Bago ka?": back to the join form (as a link). */
   newHref?: string;
 }) {
   const [state, formAction, pending] = useActionState(comeBackAction, initialState);
@@ -42,14 +46,15 @@ export function ComeBackForm({
   const edited = () => {
     if (editedAfter !== state) setEditedAfter(state);
   };
+  const linkClass = cn(buttonVariants({ variant: "link", size: "inline" }), "self-center");
 
   return (
     <div className="flex flex-col gap-4">
-      {intro && <p className="text-ube-soft">{intro}</p>}
+      {intro && <p>{intro}</p>}
       <form
         action={formAction}
         onSubmit={submitWithoutReset(formAction)}
-        className="flex flex-col gap-4"
+        className="flex flex-col gap-6"
         aria-label="Bumalik"
         noValidate
       >
@@ -58,13 +63,14 @@ export function ComeBackForm({
           <input type="hidden" name="displayName" value={presetName} />
         ) : (
           <div className="flex flex-col gap-2">
-            <label htmlFor="comeback-name" className="font-bold">
+            <label htmlFor="comeback-name" className="px-1.5 font-bold">
               Pangalan mo
             </label>
             <Input
               id="comeback-name"
               name="displayName"
-              placeholder="Joy"
+              hand
+              placeholder="Hal. Joy"
               maxLength={40}
               autoComplete="username"
               onChange={edited}
@@ -74,40 +80,38 @@ export function ComeBackForm({
             />
           </div>
         )}
-        <PinField
-          id="comeback-pin"
-          label="PIN mo"
-          autoComplete="current-password"
-          autoFocus={presetName !== undefined}
-          invalid={Boolean(error)}
-          describedBy={error ? "comeback-error" : "comeback-hint"}
-          onChange={edited}
-        />
-        {error ? (
-          <p id="comeback-error" role="alert" className="text-small font-semibold text-sili">
-            {error.message}
-          </p>
-        ) : (
-          <p id="comeback-hint" className="text-small text-ube-soft">
-            Nakalimutan ang PIN? Hingin sa organizer ang bagong link mo.
-          </p>
-        )}
-        <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" disabled={pending}>
-            {pending ? "Sandali…" : "Bumalik"}
-          </Button>
-          {onNew && (
-            <Button type="button" variant="ghost" onClick={onNew} disabled={pending}>
-              Bago ako
-            </Button>
-          )}
-          {newHref && (
-            <Button asChild variant="ghost">
-              <Link href={newHref}>Bago ako</Link>
-            </Button>
+        <div className="flex flex-col gap-2">
+          <PinField
+            id="comeback-pin"
+            label="4-digit PIN"
+            autoComplete="current-password"
+            autoFocus={presetName !== undefined}
+            invalid={Boolean(error)}
+            describedBy={error ? "comeback-error" : "comeback-hint"}
+            onChange={edited}
+          />
+          {error ? (
+            <ErrorMessage id="comeback-error">{error.message}</ErrorMessage>
+          ) : (
+            <p id="comeback-hint" className="px-1.5 text-small font-medium text-ube-soft">
+              Nakalimutan ang PIN? Hingin sa organizer ang bagong link mo.
+            </p>
           )}
         </div>
+        <Button type="submit" className="w-full" disabled={pending}>
+          {pending ? "Sandali…" : "Buksan ang slip ko"}
+        </Button>
       </form>
+      {onNew && (
+        <button type="button" onClick={onNew} disabled={pending} className={cn(linkClass, "cursor-pointer")}>
+          {NEW_LABEL}
+        </button>
+      )}
+      {newHref && (
+        <Link href={newHref} className={linkClass}>
+          {NEW_LABEL}
+        </Link>
+      )}
     </div>
   );
 }

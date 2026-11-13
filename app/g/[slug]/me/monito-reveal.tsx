@@ -8,7 +8,7 @@ import { markSlipOpenedAction } from "./actions";
 const loadMotionFeatures = () => import("@/lib/motion-features").then((mod) => mod.default);
 
 /**
- * Your monito on /me: the bunutan slip, then their wishlist (children)
+ * Your monito on /me: the bunutan slip, your codename, then their wishlist (children)
  * once it's open. First visit after the draw plays the full unfold; later
  * visits show the slip already open, and GSAP is never loaded.
  */
@@ -16,11 +16,14 @@ export function MonitoReveal({
   slug,
   receiverName,
   alreadyOpened,
+  codename,
   children,
 }: {
   slug: string;
   receiverName: string;
   alreadyOpened: boolean;
+  /** "Codename mo: …", right under the slip. */
+  codename: React.ReactNode;
   children: React.ReactNode;
 }) {
   const [opened, setOpened] = useState(alreadyOpened);
@@ -35,6 +38,7 @@ export function MonitoReveal({
     <LazyMotion features={loadMotionFeatures} strict>
       <MotionConfig reducedMotion="user">
         <BunutanSlip name={receiverName} initiallyOpened={alreadyOpened} onOpened={handleOpened} />
+        {codename}
         {opened && (
           <m.div
             className="w-full"

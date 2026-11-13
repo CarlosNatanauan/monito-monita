@@ -2,13 +2,16 @@
 
 import { Check } from "lucide-react";
 import { useState, useTransition } from "react";
+import { Lights, openedStates } from "@/components/lights";
 import { Button } from "@/components/ui/button";
+import { CardDescription, Inset } from "@/components/ui/card";
+import { ErrorMessage } from "@/components/ui/error-message";
 import type { GroupStatus } from "@/server/db/schema";
 import { drawNamesAction } from "./actions";
 
 /**
- * Draw names / Names drawn / Redraw. Shows counts only, never pairs or who
- * has opened their slip.
+ * Draw names / Names drawn / Redraw. Shows counts only, never pairs.
+ * After the draw, one bulb per slip: on = opened, off = not yet.
  */
 export function DrawSection({
   slug,
@@ -38,74 +41,78 @@ export function DrawSection({
     });
   };
 
-  const errorBox = error && (
-    <p role="alert" className="rounded-xl bg-sili-wash px-4 py-3 text-small font-semibold text-sili">
-      {error}
-    </p>
-  );
-
   if (status === "OPEN") {
     return (
-      <div className="flex flex-col gap-3">
-        {errorBox}
-        {blockedReason && <p className="text-small text-ube-soft">{blockedReason}</p>}
+      <div className="flex flex-col gap-4">
+        <CardDescription>
+          Kapag na-draw na, sarado na ang pagsali. Walang makakakita ng resulta, kahit ikaw.
+        </CardDescription>
+        <ErrorMessage>{error}</ErrorMessage>
         {!confirming ? (
-          <Button type="button" className="w-full" disabled={Boolean(blockedReason)} onClick={() => setConfirming(true)}>
-            Draw names
-          </Button>
+          <>
+            <Button type="button" className="w-full" disabled={Boolean(blockedReason)} onClick={() => setConfirming(true)}>
+              Draw names
+            </Button>
+            {blockedReason && <p className="text-small font-medium text-ube-soft">{blockedReason}</p>}
+          </>
         ) : (
-          <div className="flex flex-col gap-3 rounded-xl bg-leaf-wash p-4" role="group" aria-label="Confirm draw">
-            <p className="font-semibold">Pag na-draw na, sarado na ang sali. Sure na?</p>
-            <p className="text-small text-ube-soft">Once names are drawn, joining closes.</p>
-            <div className="flex gap-2">
-              <Button type="button" disabled={pending} onClick={() => run("draw")}>
+          <Inset className="flex flex-col gap-3" role="group" aria-label="Confirm draw">
+            <p className="font-bold">Pag na-draw na, sarado na ang sali. Sure na?</p>
+            <p className="text-small font-medium text-ube-soft">Once names are drawn, joining closes.</p>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" disabled={pending} onClick={() => run("draw")}>
                 {pending ? "Nagdi-draw…" : "Oo, i-draw na"}
               </Button>
-              <Button type="button" variant="ghost" disabled={pending} onClick={() => setConfirming(false)}>
+              <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={() => setConfirming(false)}>
                 Huwag muna
               </Button>
             </div>
-          </div>
+          </Inset>
         )}
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-3">
-      <p className="flex items-center gap-2 text-title font-extrabold text-dahon">
-        <Check className="size-6 shrink-0" aria-hidden />
-        Names drawn
-      </p>
-      <p className="text-ube-soft">
-        {drawnCount} na ang may monito. Walang makakakita kung sino ang nakabunot kanino, kahit ikaw.
-      </p>
+    <div className="flex flex-col gap-4">
+      <h2 data-slot="card-title" className="flex items-center gap-3 text-dahon">
+        <span className="flex size-10 shrink-0 items-center justify-center rounded-full bg-dahon text-white">
+          <Check className="size-5" strokeWidth={3} aria-hidden />
+        </span>
+        <span className="font-display text-heading">Names drawn</span>
+      </h2>
+      <p>{drawnCount} na ang may monito. Walang makakakita kung sino ang nakabunot kanino, kahit ikaw.</p>
       {status === "DRAWN" && slipsOpened.total > 0 && (
-        <p className="font-semibold">
-          {slipsOpened.opened} of {slipsOpened.total} have opened their slip
-        </p>
+        <Lights
+          states={openedStates(slipsOpened.opened, slipsOpened.total)}
+          label={
+            <p className="font-bold">
+              {slipsOpened.opened} of {slipsOpened.total} have opened their slip
+            </p>
+          }
+        />
       )}
-      {errorBox}
+      <ErrorMessage>{error}</ErrorMessage>
       {status === "DRAWN" &&
         (!confirming ? (
-          <Button type="button" variant="secondary" className="self-start" onClick={() => setConfirming(true)}>
+          <Button type="button" variant="secondary" size="sm" className="self-start px-8" onClick={() => setConfirming(true)}>
             Redraw
           </Button>
         ) : (
-          <div className="flex flex-col gap-3 rounded-xl bg-sili-wash p-4" role="group" aria-label="Confirm redraw">
-            <p className="font-semibold text-sili">Magbabago ang monito ng lahat.</p>
-            <p className="text-small">
+          <Inset className="flex flex-col gap-3" role="group" aria-label="Confirm redraw">
+            <p className="font-bold">Magbabago ang monito ng lahat.</p>
+            <p className="text-small font-medium">
               Everyone&apos;s monito will change. Kung may nakakita na ng monito nila, sabihan mo silang tingnan ulit.
             </p>
-            <div className="flex gap-2">
-              <Button type="button" variant="secondary" disabled={pending} onClick={() => run("redraw")}>
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="secondary" size="sm" disabled={pending} onClick={() => run("redraw")}>
                 {pending ? "Nagre-redraw…" : "Oo, i-redraw"}
               </Button>
-              <Button type="button" variant="ghost" disabled={pending} onClick={() => setConfirming(false)}>
+              <Button type="button" variant="ghost" size="sm" disabled={pending} onClick={() => setConfirming(false)}>
                 Huwag
               </Button>
             </div>
-          </div>
+          </Inset>
         ))}
     </div>
   );

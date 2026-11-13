@@ -3,6 +3,7 @@
 import { Plus, X } from "lucide-react";
 import { useActionState, useId, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
+import { ErrorMessage } from "@/components/ui/error-message";
 import { Input } from "@/components/ui/input";
 import { submitWithoutReset } from "@/lib/forms";
 import {
@@ -13,7 +14,6 @@ import {
   themeStartDates,
   todayIn,
 } from "@/lib/theme-weeks";
-import { cn } from "@/lib/utils";
 import { createGroupAction, type CreateGroupState } from "./actions";
 import { GroupCreated } from "./group-created";
 
@@ -106,17 +106,13 @@ function CreateGroupForm({
 
   return (
     <>
-      <header className="flex flex-col gap-2">
-        <h1 className="text-heading">Create your group</h1>
-        <p className="text-ube-soft">Ilang details lang, tapos share mo na sa GC.</p>
+      <header className="flex flex-col gap-3 pb-2">
+        <h1 className="font-display text-heading-lg">Create your group</h1>
+        <p>Ilang details lang, tapos share mo na sa GC.</p>
       </header>
 
       <form onSubmit={submitWithoutReset(formAction)} className="flex flex-col gap-6" noValidate>
-        {showBanner && state.status === "error" && (
-          <p role="alert" className="rounded-xl bg-sili-wash px-4 py-3 text-small font-semibold text-sili">
-            {state.message}
-          </p>
-        )}
+        {showBanner && state.status === "error" && <ErrorMessage>{state.message}</ErrorMessage>}
 
         <Field label="Group name" error={errors.name}>
           {(props) => (
@@ -139,7 +135,7 @@ function CreateGroupForm({
         <Field label="Budget per gift" error={errors.budget}>
           {(props) => (
             <div className="relative">
-              <span aria-hidden className="pointer-events-none absolute inset-y-0 left-4 flex items-center font-semibold text-ube-soft">
+              <span aria-hidden className="pointer-events-none absolute inset-y-0 left-[18px] flex items-center font-bold text-ube-soft">
                 ₱
               </span>
               <Input
@@ -152,7 +148,7 @@ function CreateGroupForm({
                 }}
                 inputMode="numeric"
                 placeholder="500"
-                className="pl-9"
+                className="pl-10"
                 required
               />
             </div>
@@ -177,8 +173,8 @@ function CreateGroupForm({
         </Field>
 
         <fieldset className="flex flex-col gap-3">
-          <legend className="mb-1 font-bold">Theme weeks</legend>
-          <p className="-mt-1 text-small text-ube-soft">
+          <legend className="mb-1 px-1.5 font-bold">Theme weeks</legend>
+          <p className="-mt-1 px-1.5 text-small font-medium text-ube-soft">
             Isang theme kada linggo bago ang party. Palitan o tanggalin as you like.
           </p>
 
@@ -209,26 +205,22 @@ function CreateGroupForm({
                       <X />
                     </Button>
                   </div>
-                  <p className="pl-1 text-small text-ube-soft">
+                  <p className="px-1.5 text-small font-medium text-ube-soft">
                     {startDates[index] ? `Starts ${formatShortDate(startDates[index])}` : "Starts once you pick the party date"}
                   </p>
-                  {error && (
-                    <p id={errorId} className="pl-1 text-small font-semibold text-sili">
-                      {error}
-                    </p>
-                  )}
+                  {error && <ErrorMessage id={errorId} alert={false}>{error}</ErrorMessage>}
                 </li>
               );
             })}
           </ol>
 
           {themes.length === 0 && (
-            <p className="text-small text-ube-soft">Walang theme? Okay lang, puwede rin.</p>
+            <p className="px-1.5 text-small font-medium text-ube-soft">Walang theme? Okay lang, puwede rin.</p>
           )}
-          {errors.themes && <p className="text-small font-semibold text-sili">{errors.themes}</p>}
+          {errors.themes && <ErrorMessage alert={false}>{errors.themes}</ErrorMessage>}
 
           {themes.length < MAX_THEMES && (
-            <Button type="button" variant="ghost" size="sm" className="self-start" onClick={addTheme}>
+            <Button type="button" variant="secondary" size="sm" className="self-start" onClick={addTheme}>
               <Plus /> Add a theme
             </Button>
           )}
@@ -261,15 +253,11 @@ function Field({
   const errorId = `${id}-error`;
   return (
     <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="font-bold">
+      <label htmlFor={id} className="px-1.5 font-bold">
         {label}
       </label>
       {children({ id, "aria-invalid": error ? true : undefined, "aria-describedby": error ? errorId : undefined })}
-      {error && (
-        <p id={errorId} className={cn("text-small font-semibold text-sili")}>
-          {error}
-        </p>
-      )}
+      {error && <ErrorMessage id={errorId} alert={false}>{error}</ErrorMessage>}
     </div>
   );
 }

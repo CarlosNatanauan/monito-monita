@@ -1,7 +1,7 @@
-import { CalendarDays, Gift, Users } from "lucide-react";
+import { Card, CardDescription, CardTitle, DetailRow, DetailRows } from "@/components/ui/card";
 import { formatPartyDate, formatPeso, joinedCount } from "@/lib/format";
 
-/** Party date, budget, and (optionally) how many have joined. */
+/** Party date, budget, and (optionally) how many have joined, as detail rows. */
 export function GroupFacts({
   partyDate,
   budget,
@@ -12,34 +12,21 @@ export function GroupFacts({
   memberCount?: number;
 }) {
   return (
-    <ul className="flex flex-col gap-2 text-ube-soft">
-      <li className="flex items-center gap-2">
-        <CalendarDays className="size-5 shrink-0" aria-hidden />
-        <span>Party: {formatPartyDate(partyDate)}</span>
-      </li>
-      <li className="flex items-center gap-2">
-        <Gift className="size-5 shrink-0" aria-hidden />
-        <span>Budget: {formatPeso(budget)}</span>
-      </li>
-      {memberCount !== undefined && (
-        <li className="flex items-center gap-2">
-          <Users className="size-5 shrink-0" aria-hidden />
-          <span>{joinedCount(memberCount)}</span>
-        </li>
-      )}
-    </ul>
+    <DetailRows>
+      <DetailRow label="Party">{formatPartyDate(partyDate)}</DetailRow>
+      <DetailRow label="Budget">{formatPeso(budget)}</DetailRow>
+      {memberCount !== undefined && <DetailRow label="Kasali">{joinedCount(memberCount)}</DetailRow>}
+    </DetailRows>
   );
 }
 
 /** Shown on the device of a member the organizer removed. No join button. */
 export function RemovedNotice() {
   return (
-    <div className="rounded-2xl bg-card p-5 shadow-[0_1px_2px_rgb(31_27_77/0.06),0_4px_16px_rgb(31_27_77/0.06)]">
-      <p className="text-title font-extrabold">
-        Tinanggal ka ng organizer sa group na &apos;to.
-      </p>
-      <p className="mt-2 text-ube-soft">Kung mali ito, kausapin ang organizer.</p>
-    </div>
+    <Card>
+      <CardTitle>Tinanggal ka ng organizer sa group na &apos;to.</CardTitle>
+      <CardDescription>Kung mali ito, kausapin ang organizer.</CardDescription>
+    </Card>
   );
 }
 

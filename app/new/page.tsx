@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import { pageClass } from "@/components/page";
+import { cn } from "@/lib/utils";
 import { CreateGroupFlow } from "./create-group-flow";
 
 export const metadata: Metadata = {
@@ -7,7 +9,7 @@ export const metadata: Metadata = {
 
 export default function NewGroupPage() {
   return (
-    <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col gap-8 px-4 py-10">
+    <main className={cn(pageClass, "gap-6 pt-10")}>
       <CreateGroupFlow />
     </main>
   );

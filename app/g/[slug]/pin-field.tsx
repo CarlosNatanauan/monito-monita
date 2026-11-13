@@ -40,11 +40,11 @@ export function PinField({
   const hydrated = useSyncExternalStore(noopSubscribe, () => true, () => false);
 
   // React resets uncontrolled forms after an action (and the PIN is never
-  // echoed back), so re-read the real value after every render and reset.
+  // echoed back), so re-read the real value when a result comes back
+  // (invalid / describedBy change) and on reset.
   useLayoutEffect(() => {
-    const value = inputRef.current?.value.length ?? 0;
-    if (value !== length) setLength(value);
-  });
+    setLength(inputRef.current?.value.length ?? 0);
+  }, [invalid, describedBy]);
   useEffect(() => {
     const form = inputRef.current?.form;
     if (!form) return;

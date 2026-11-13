@@ -2,16 +2,17 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
+import { ErrorMessage } from "@/components/ui/error-message";
 import { moveRevealFormAction, startRevealAction } from "./actions";
 
 function ErrorBox({ message }: { message: string | null }) {
-  if (!message) return null;
-  return (
-    <p role="alert" className="rounded-xl bg-sili-wash px-4 py-3 text-small font-semibold text-sili">
-      {message}
-    </p>
-  );
+  return <ErrorMessage>{message}</ErrorMessage>;
 }
+
+// On the dark reveal screen: margarine fill with dark ube text (9.8:1), and
+// a light outline for the quieter button.
+const GOLD_BUTTON = "bg-margarine text-ube-night disabled:bg-gabi-leaf disabled:text-gabi-mist";
+const NIGHT_BUTTON = "border-gabi-mist bg-transparent text-gabi-mist disabled:border-gabi-leaf disabled:bg-transparent disabled:text-gabi-line";
 
 /** "Start the reveal", with a confirm (redraws and removals lock after). */
 export function StartReveal({ slug }: { slug: string }) {
@@ -31,17 +32,17 @@ export function StartReveal({ slug }: { slug: string }) {
     <div className="flex flex-col gap-3">
       <ErrorBox message={error} />
       {!confirming ? (
-        <Button type="button" className="self-start" onClick={() => setConfirming(true)}>
+        <Button type="button" className={`self-start ${GOLD_BUTTON}`} onClick={() => setConfirming(true)}>
           Start the reveal
         </Button>
       ) : (
-        <div className="flex flex-col gap-3 rounded-xl bg-leaf-wash p-4" role="group" aria-label="Confirm reveal">
-          <p className="font-semibold">Pag sinimulan na, hindi na puwedeng mag-redraw o magtanggal ng member. Go?</p>
+        <div className="flex flex-col gap-3 rounded-3xl bg-gabi-leaf p-5" role="group" aria-label="Confirm reveal">
+          <p className="font-bold text-gabi-mist">Pag sinimulan na, hindi na puwedeng mag-redraw o magtanggal ng member. Go?</p>
           <div className="flex gap-2">
-            <Button type="button" disabled={pending} onClick={start}>
+            <Button type="button" size="sm" className={GOLD_BUTTON} disabled={pending} onClick={start}>
               {pending ? "Sandali…" : "Oo, simulan na"}
             </Button>
-            <Button type="button" variant="ghost" disabled={pending} onClick={() => setConfirming(false)}>
+            <Button type="button" variant="ghost" size="sm" className="text-gabi-mist" disabled={pending} onClick={() => setConfirming(false)}>
               Huwag muna
             </Button>
           </div>
@@ -80,19 +81,19 @@ export function RevealControls({ slug, step, total }: { slug: string; step: numb
       <input type="hidden" name="slug" value={slug} />
       <input type="hidden" name="fromStep" value={step} />
       <ErrorBox message={state.error} />
-      <div className="flex gap-3">
+      <div className="flex justify-center gap-3">
         <Button
           ref={previousRef}
           type="submit"
           name="move"
           value="previous"
           variant="secondary"
-         
+          className={`h-[58px] ${NIGHT_BUTTON}`}
           disabled={pending || step <= 1}
         >
           Previous
         </Button>
-        <Button ref={nextRef} type="submit" name="move" value="next" disabled={pending}>
+        <Button ref={nextRef} type="submit" name="move" value="next" className={GOLD_BUTTON} disabled={pending}>
           {last ? "Tapusin ang reveal" : "Next"}
         </Button>
       </div>

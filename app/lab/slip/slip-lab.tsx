@@ -34,9 +34,9 @@ export function SlipLab() {
 
   return (
     <>
-      <header className="flex flex-col gap-2">
-        <p className="text-small font-semibold text-ube-soft">Christmas Party 2026</p>
-        <h1 className="text-heading">Hi, Carlo!</h1>
+      <header className="flex flex-col gap-2 pb-3">
+        <p className="font-medium text-ube-soft">Christmas Party 2026</p>
+        <h1 className="font-display text-heading-lg">Hi, Carlo!</h1>
       </header>
 
       <BunutanSlip

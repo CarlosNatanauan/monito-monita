@@ -89,12 +89,21 @@ export type LinkStatus = "none" | "new-unopened" | "new-opened";
 export interface OrganizerView {
   group: Omit<GroupSummary, "memberCount">;
   themes: { title: string; startDate: string }[];
-  members: { id: string; displayName: string; joinedAt: Date; linkStatus: LinkStatus; pinLocked: boolean }[];
+  members: {
+    id: string;
+    displayName: string;
+    joinedAt: Date;
+    linkStatus: LinkStatus;
+    pinLocked: boolean;
+    /** Has unfolded their own slip (after the draw). Says nothing about pairs. */
+    slipOpened: boolean;
+  }[];
 }
 
 /**
  * Everything the organizer page shows. Deliberately excludes assignments
- * and codenames: the organizer sees who joined, not pairs or aliases.
+ * and codenames: the organizer sees who joined and who has opened their
+ * slip, not pairs or aliases.
  */
 export async function getOrganizerView(groupId: string): Promise<OrganizerView | null> {
   const [group] = await db()
@@ -127,6 +136,7 @@ export async function getOrganizerView(groupId: string): Promise<OrganizerView |
         linkOpenedAt: members.linkOpenedAt,
         // Fully locked (10 wrong PINs): the organizer can unlock it.
         pinLocked: sql<boolean>`${members.pinLockedAt} is not null`,
+        slipOpened: sql<boolean>`${members.slipOpenedAt} is not null`,
       })
       .from(members)
       .where(and(eq(members.groupId, groupId), isNull(members.removedAt)))
@@ -136,9 +146,10 @@ export async function getOrganizerView(groupId: string): Promise<OrganizerView |
   return {
     group,
     themes,
-    members: memberRows.map(({ linkReissuedAt, linkOpenedAt, pinLocked, ...m }) => ({
+    members: memberRows.map(({ linkReissuedAt, linkOpenedAt, pinLocked, slipOpened, ...m }) => ({
       ...m,
       pinLocked: Boolean(pinLocked),
+      slipOpened: Boolean(slipOpened),
       linkStatus: !linkReissuedAt ? "none" : linkOpenedAt ? "new-opened" : "new-unopened",
     })),
   };

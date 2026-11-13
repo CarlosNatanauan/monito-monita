@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { daysBetween, describeThemeStatus, getThemeStatus, inDays } from "@/lib/theme-status";
+import { daysBetween, getThemeStatus, inDays, themeCard } from "@/lib/theme-status";
 import { themeStartDates, todayIn } from "@/lib/theme-weeks";
 
 // Party Sat Dec 19 2026; 4 themes start Nov 21, Nov 28, Dec 5, Dec 12.
@@ -90,18 +90,20 @@ describe("helpers and copy", () => {
   });
 
   it("describes each status in short Taglish", () => {
-    expect(describeThemeStatus(getThemeStatus(themes, PARTY, "2026-11-30"), 500)).toEqual({
-      headline: "Ngayong linggo: Something sweet",
-      english: "This week: Something sweet · Budget ₱500",
-      detail: "Next: Something red, simula Sat, Dec 5, 2026",
+    expect(themeCard(getThemeStatus(themes, PARTY, "2026-11-30"), themes, 500)).toEqual({
+      label: "Ngayong linggo",
+      title: "Something sweet",
+      detail: "Week 2 of 4 · hanggang ₱500",
     });
-    expect(describeThemeStatus(getThemeStatus(themes, PARTY, "2026-12-14"), 500).detail).toBe(
-      "Next: party na sa Sat, Dec 19, 2026 🎉",
+    expect(themeCard(getThemeStatus(themes, PARTY, "2026-12-14"), themes, 500).detail).toBe(
+      "Week 4 of 4 · hanggang ₱500",
     );
-    expect(describeThemeStatus(getThemeStatus(themes, PARTY, "2026-11-20"), 500)).toMatchObject({
-      headline: "Unang theme: Something soft",
-      detail: "Magsisimula bukas, Sat, Nov 21, 2026",
+    expect(themeCard(getThemeStatus(themes, PARTY, "2026-11-20"), themes, 500)).toEqual({
+      label: "Unang theme",
+      title: "Something soft",
+      detail: "Simula bukas, Nov 21 · hanggang ₱500",
     });
-    expect(describeThemeStatus(getThemeStatus(themes, PARTY, PARTY), 500).headline).toBe("Party na ngayon! 🎉");
+    expect(themeCard(getThemeStatus([], PARTY, "2026-12-14"), [], 300).detail).toBe("Party sa 5 araw · hanggang ₱300");
+    expect(themeCard(getThemeStatus(themes, PARTY, PARTY), themes, 500).title).toBe("Party na!");
   });
 });

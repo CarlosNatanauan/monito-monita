@@ -38,19 +38,19 @@ export function YourGroups() {
   if (!hasGroups) return null;
 
   return (
-    <section aria-labelledby="your-groups" className="flex flex-col gap-3">
-      <h2 id="your-groups" className="text-title">
+    <section aria-labelledby="your-groups" className="flex flex-col gap-3 rounded-3xl bg-niyog p-5">
+      <h2 id="your-groups" className="text-title font-extrabold">
         Your groups
       </h2>
-      <ul className="flex flex-col gap-2">
+      <ul className="flex flex-col rows-dashed">
         {groups.map((g) => (
-          <li key={g.slug}>
+          <li key={g.slug} className="py-1 first:pt-0 last:pb-0">
             <Link
               href={g.roles.includes("organizer") ? `/g/${g.slug}/admin` : `/g/${g.slug}/me`}
-              className="flex flex-col rounded-xl bg-niyog px-4 py-3 shadow-[0_1px_2px_rgb(31_27_77/0.06)] outline-none focus-visible:ring-3 focus-visible:ring-ring"
+              className="-mx-2 flex min-h-12 flex-col justify-center rounded-xl px-2 py-2 focus-ring"
             >
-              <span className="font-semibold">Continue: {g.name}</span>
-              <span className="text-small text-ube-soft">{g.roles.join(", ")}</span>
+              <span className="font-bold underline underline-offset-4">Continue: {g.name}</span>
+              <span className="text-small font-medium text-ube-soft">{g.roles.join(", ")}</span>
             </Link>
           </li>
         ))}

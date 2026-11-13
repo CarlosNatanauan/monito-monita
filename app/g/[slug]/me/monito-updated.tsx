@@ -8,9 +8,9 @@ import { acknowledgeMonitoUpdateAction } from "./actions";
 export function MonitoUpdatedNotice({ slug }: { slug: string }) {
   const [pending, startTransition] = useTransition();
   return (
-    <div role="status" className="flex w-full flex-col gap-2 rounded-2xl bg-niyog p-4 ring-2 ring-margarine">
+    <div role="status" className="flex w-full flex-col gap-3 rounded-3xl bg-niyog p-5">
       <p className="text-title font-extrabold">Na-update ang monito mo</p>
-      <p className="text-small text-ube-soft">
+      <p className="text-ube-soft">
         Your monito was updated. May tinanggal sa group, kaya bago na ang nabunot mo. Tingnan sa baba.
       </p>
       <Button

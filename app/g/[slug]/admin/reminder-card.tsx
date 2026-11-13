@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { CopyButton, useOrigin } from "@/components/copy-link";
+import { SegmentedButtons } from "@/components/segmented";
 import { buildGcReminder, type ReminderInput, type ReminderKind } from "@/lib/reminder";
-import { cn } from "@/lib/utils";
 import { reminderCopiedAction } from "./actions";
 
 const KINDS: { kind: ReminderKind; label: string }[] = [
@@ -19,36 +19,33 @@ const KINDS: { kind: ReminderKind; label: string }[] = [
 export function ReminderCard({
   slug,
   defaultKind = "theme",
+  prominent = false,
   ...data
-}: Omit<ReminderInput, "shareUrl" | "kind"> & { slug: string; defaultKind?: ReminderKind }) {
+}: Omit<ReminderInput, "shareUrl" | "kind"> & {
+  slug: string;
+  defaultKind?: ReminderKind;
+  /** The main action on the page: a filled Copy button. */
+  prominent?: boolean;
+}) {
   const origin = useOrigin();
   const [kind, setKind] = useState<ReminderKind>(defaultKind);
   const message = buildGcReminder({ ...data, kind, shareUrl: `${origin}/g/${slug}` });
   const drawn = data.status !== "OPEN";
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-4">
       {drawn && (
-        <div role="group" aria-label="Reminder type" className="flex self-start rounded-full bg-leaf-wash p-1 text-small font-semibold">
-          {KINDS.map((k) => (
-            <button
-              key={k.kind}
-              type="button"
-              aria-pressed={kind === k.kind}
-              onClick={() => setKind(k.kind)}
-              className={cn(
-                "cursor-pointer rounded-full px-4 py-2 outline-none focus-visible:ring-3 focus-visible:ring-ring",
-                kind === k.kind ? "bg-niyog text-ube shadow-[0_1px_2px_rgb(31_27_77/0.10)]" : "text-ube-soft",
-              )}
-            >
-              {k.label}
-            </button>
-          ))}
-        </div>
+        <SegmentedButtons
+          label="Reminder type"
+          value={kind}
+          options={KINDS.map((k) => ({ value: k.kind, label: k.label }))}
+          onChange={setKind}
+          className="bg-leaf-wash"
+        />
       )}
       <pre
         aria-label="Reminder preview"
-        className="rounded-xl bg-niyog p-4 font-sans text-small whitespace-pre-wrap break-words ring-1 ring-border"
+        className="rounded-2xl bg-leaf-wash px-5 py-4 font-sans text-body whitespace-pre-wrap break-words"
         translate="no"
       >
         {message}
@@ -56,7 +53,8 @@ export function ReminderCard({
       <CopyButton
         text={origin ? message : ""}
         label="Copy reminder"
-        variant="secondary"
+        variant={prominent ? "default" : "secondary"}
+        className="w-full"
         onCopied={() => void reminderCopiedAction({ slug, kind: drawn ? kind : "invite" }).catch(() => {})}
       />
     </div>

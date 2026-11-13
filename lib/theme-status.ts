@@ -4,7 +4,7 @@
  * never the server's own date (Vercel runs in UTC, 8 hours behind Manila).
  */
 import { formatPartyDate, formatPeso } from "./format";
-import { addDays, isIsoDate } from "./theme-weeks";
+import { addDays, formatShortDate, isIsoDate } from "./theme-weeks";
 
 export interface ThemeWeekInfo {
   title: string;
@@ -55,48 +55,45 @@ export function inDays(days: number): string {
   return `sa ${days} araw`;
 }
 
-export interface ThemeText {
-  /** Big line, e.g. "Ngayong linggo: Something soft" */
-  headline: string;
-  /** English helper, e.g. "This week: Something soft" */
-  english: string;
-  /** What's next and when. */
+export interface ThemeCardText {
+  /** Small gold label, e.g. "Ngayong linggo" */
+  label: string;
+  /** The big serif line, e.g. "Something soft" */
+  title: string;
+  /** One line under it, e.g. "Week 1 of 3 · hanggang ₱500" */
   detail: string;
 }
 
-/** Short Taglish copy for a theme status (used on /me and the GC reminder). */
-export function describeThemeStatus(status: ThemeStatus, budget: number): ThemeText {
+/**
+ * Short Taglish copy for the theme card on /me. `themes` is the group's
+ * full list, for "Week 2 of 3".
+ */
+export function themeCard(status: ThemeStatus, themes: ThemeWeekInfo[], budget: number): ThemeCardText {
+  const upTo = `hanggang ${formatPeso(budget)}`;
   const party = (date: string) => formatPartyDate(date);
   switch (status.kind) {
-    case "current":
+    case "current": {
+      const sorted = [...themes].sort((a, b) => a.startDate.localeCompare(b.startDate));
+      const week = sorted.findIndex((t) => t.startDate === status.current.startDate) + 1;
       return {
-        headline: `Ngayong linggo: ${status.current.title}`,
-        english: `This week: ${status.current.title} · Budget ${formatPeso(budget)}`,
-        detail: status.next
-          ? `Next: ${status.next.title}, simula ${party(status.next.startDate)}`
-          : `Next: party na sa ${party(status.partyDate)} 🎉`,
+        label: "Ngayong linggo",
+        title: status.current.title,
+        detail: `Week ${week} of ${sorted.length} · ${upTo}`,
       };
+    }
     case "before":
       return {
-        headline: `Unang theme: ${status.first.title}`,
-        english: `First theme: ${status.first.title} · Budget ${formatPeso(budget)}`,
-        detail: `Magsisimula ${inDays(status.daysToStart)}, ${party(status.first.startDate)}`,
+        label: "Unang theme",
+        title: status.first.title,
+        detail: `Simula ${inDays(status.daysToStart)}, ${formatShortDate(status.first.startDate)} · ${upTo}`,
       };
     case "after":
-      return {
-        headline: "Tapos na ang theme weeks!",
-        english: `Themes are done · Budget ${formatPeso(budget)}`,
-        detail: `Party na ${inDays(status.daysToParty)}: ${party(status.partyDate)} 🎉`,
-      };
+      return { label: "Tapos na ang theme weeks", title: "Party na!", detail: `${party(status.partyDate)} · ${upTo}` };
     case "none":
-      return {
-        headline: `Party: ${party(status.partyDate)}`,
-        english: `Budget ${formatPeso(budget)}`,
-        detail: `Party na ${inDays(status.daysToParty)} 🎉`,
-      };
+      return { label: "Walang theme", title: "Kahit ano!", detail: `Party ${inDays(status.daysToParty)} · ${upTo}` };
     case "party":
       return status.isToday
-        ? { headline: "Party na ngayon! 🎉", english: "It's party day!", detail: "Enjoy, at sana magustuhan ng monito mo ang regalo mo!" }
-        : { headline: "Tapos na ang party.", english: "The party is over.", detail: "Salamat sa paglalaro ng Monito Monita!" };
+        ? { label: "Ngayon na", title: "Party na!", detail: "Sana magustuhan ng monito mo ang regalo mo." }
+        : { label: "Tapos na", title: "Salamat!", detail: "Salamat sa paglalaro ng Monito Monita." };
   }
 }
