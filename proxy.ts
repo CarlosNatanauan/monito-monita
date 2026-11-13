@@ -1,4 +1,6 @@
-import { NextResponse, type NextRequest } from "next/server";
+import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
+import { analyticsConfig } from "@/server/analytics";
+import { isLandingView, referrerDomain, sendLandingView } from "@/server/landing-view";
 import {
   authCookieName,
   authCookieOptions,
@@ -23,7 +25,18 @@ import {
  * new member's token is parked in a short-lived pending cookie instead, and
  * /me asks "Ikaw ba talaga si …?" before switching.
  */
-export async function proxy(request: NextRequest) {
+export async function proxy(request: NextRequest, event: NextFetchEvent) {
+  // The landing page: count the view (referrer domain only), after the
+  // response. The page itself stays static, with no analytics script.
+  if (request.nextUrl.pathname === "/") {
+    const config = analyticsConfig();
+    if (config && isLandingView(request.method, request.headers)) {
+      const referrer = referrerDomain(request.headers.get("referer"), request.nextUrl.host);
+      event.waitUntil(sendLandingView(config, referrer));
+    }
+    return NextResponse.next();
+  }
+
   const link = parsePersonalLinkPath(request.nextUrl.pathname);
   const token = request.nextUrl.searchParams.get("t");
 
@@ -78,5 +91,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/g/:slug/me", "/g/:slug/admin"],
+  matcher: ["/", "/g/:slug/me", "/g/:slug/admin"],
 };

@@ -170,6 +170,7 @@ PostHog, sent **from the server only** (a `fetch` to PostHog's capture API insid
 - **Events (the funnel):** `group_created`, `member_joined`, `names_drawn`, `slip_opened` (first unfold only), `wishlist_item_added`, `reminder_copied`, `reveal_started`, `reveal_finished`. Tracked in Server Actions after the change succeeds.
 - **Identity:** the distinct id is a SHA-256 hash of the group's internal UUID (`group` property too), so a PostHog funnel over distinct ids is a funnel of groups. No person profiles (`$process_person_profile: false`), GeoIP off.
 - **Properties:** counts, booleans, or fixed words only, typed per event (e.g. `names_drawn: { members, redraw }`). Never names, PINs, tokens, slugs, wishlist text, or raw ids.
+- **Landing views (`server/landing-view.ts`):** `landing_viewed` is sent from `proxy.ts` (inside `event.waitUntil`) for real page loads of `/` only, so the landing page stays static. Its one property is `referrer_domain`: the referrer reduced to a bare domain (`l.facebook.com` → `facebook.com`, `old.reddit.com` → `reddit.com`; `direct`, `internal`, `app:<android package>`, or `other`), never the full referrer URL. Router prefetches, RSC requests, link-preview fetchers (`facebookexternalhit`) and bots aren't counted. Each event has a random one-off distinct id (not stored, no cookie), so visits can't be linked.
 - **Env vars:** `POSTHOG_KEY` (project API key) and optional `POSTHOG_HOST` (default `https://us.i.posthog.com`; EU: `https://eu.i.posthog.com`). Without a key (local dev, tests), nothing is sent.
 
 ## Security basics
