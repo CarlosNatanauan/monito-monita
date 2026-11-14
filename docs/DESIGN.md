@@ -208,7 +208,26 @@ The ring is drawn for 12 slips. Groups of up to 16 keep every slip on the ring (
 
 - Forms, wishlists and the organizer page are plain and fast. No entrance animations.
 - Motion only answers what the user did.
-- One column, left-aligned, max width 480px for member pages. The organizer page can go wider on desktop.
+- Phones get one column, left-aligned. Wider screens get the layouts below.
+
+## Layout
+
+Phones come first: most people open links from Messenger. Tablets and laptops (organizers often use one) use the extra space instead of a narrow column.
+
+| Screen | Width | Layout |
+|---|---|---|
+| Phone | under 768px | One column, max 480px, 20px side gutters |
+| Tablet | 768–1023px | The two-column layouts below, 32px gutters |
+| Laptop | 1024px and up | Same, with wider gaps. Content max 1120px, centred |
+
+- **Landing:** headline, "Isang link lang", "Create your group" and "Your groups" on the left; the arch with the bowl on the right (kept at its 440px phone size); the 3 steps as a row of three below, divided by the dashed row line.
+- **Create group:** name, budget, party date and the Create button on the left; theme weeks and a live preview of the weekly GC reminder on the right. Phones skip the preview. "Starts once you pick the party date" shows once; each theme's start date appears after a date is picked.
+- **Join and come back:** one centred white card (max 880px) in two parts, the group info on the left and the form on the right, split by a dashed line.
+- **/me:** the slip hero on the left, sticky so it stays in view (only when the screen is at least 640px tall); the receiver's wishlist, theme card, details, own wishlist and personal link on the right.
+- **Organizer:** a dashboard. Status, lights, the draw and the GC reminder on the left; the member list on the right (it scrolls inside its card past about 11 rows); share link, exclusions, theme weeks, details and the party reveal in two columns below. The stage order (before the draw, just drawn, after) decides which cards come first.
+- The page keeps the phone order in the DOM; the grid places each part on wider screens. Short one-card states (not your group, removed) sit in a centred 560px column.
+- Card padding, gaps and tap targets are the same at every width.
+- Check every page at 360×740, 390×844, 430×932, 844×390, 768×1024, 1024×768, 1366×768 and 1920×1080 (`e2e/layouts.spec.ts`).
 
 ## Copy
 
