@@ -13,8 +13,8 @@ import { getGroupPreview } from "@/server/groups";
 import { formatPartyDate } from "@/lib/format";
 import { OG_SIZE } from "@/components/og/share-card";
 import { ComeBackForm } from "./come-back-form";
-import { Eyebrow, pageClass } from "@/components/page";
-import { GroupFacts, PageFallback, RemovedNotice } from "./group-facts";
+import { Eyebrow, widePageClass } from "@/components/page";
+import { GroupFacts, PageFallback, RemovedNotice, SplitCard, splitHalfClass } from "./group-facts";
 import { JoinForm } from "./join-form";
 
 /**
@@ -41,7 +41,7 @@ export default function JoinPage({ params, searchParams }: PageProps<"/g/[slug]"
   return (
     <>
       <HeaderLights />
-      <main className={cn(pageClass, "pt-4")}>
+      <main className={cn(widePageClass, "pt-3")}>
         <Suspense fallback={<PageFallback />}>
           <JoinContent params={params} searchParams={searchParams} />
         </Suspense>
@@ -95,33 +95,36 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
 
   if (comingBack) {
     return (
-      <>
-        <header className="flex flex-col gap-2 pt-4">
-          <Eyebrow>{group.name}</Eyebrow>
-          <h1 className="font-display text-heading-lg">Welcome back!</h1>
-          <p className="mt-2">Ilagay ang pangalan at PIN mo para makita ang slip mo.</p>
-        </header>
-        <div className="pt-2">
-          <ComeBackForm slug={slug} newHref={isOpen && !isFull ? `/g/${slug}` : undefined} />
-        </div>
-      </>
+      <SplitCard
+        info={
+          <header className="flex flex-col gap-2 pt-2 md:pt-0">
+            <Eyebrow>{group.name}</Eyebrow>
+            <h1 className="font-display text-heading-lg break-words">Welcome back!</h1>
+            <p className="mt-2">Ilagay ang pangalan at PIN mo para makita ang slip mo.</p>
+          </header>
+        }
+      >
+        <ComeBackForm slug={slug} newHref={isOpen && !isFull ? `/g/${slug}` : undefined} />
+      </SplitCard>
     );
   }
 
   return (
-    <>
-      <Card className="gap-6 pt-7">
-        <header className="flex flex-col gap-3">
-          <p className="font-medium text-ube-soft">Inimbitahan ka sa bunutan ng</p>
-          <h1 className="font-display text-heading-lg break-words">{group.name}</h1>
-        </header>
-        <GroupFacts partyDate={group.partyDate} budget={group.budget} memberCount={group.memberCount} />
-      </Card>
-
+    <SplitCard
+      info={
+        <Card className={cn("gap-6 pt-7", splitHalfClass)}>
+          <header className="flex flex-col gap-3">
+            <p className="font-medium text-ube-soft">Inimbitahan ka sa bunutan ng</p>
+            <h1 className="font-display text-heading-lg break-words">{group.name}</h1>
+          </header>
+          <GroupFacts partyDate={group.partyDate} budget={group.budget} memberCount={group.memberCount} />
+        </Card>
+      }
+    >
       {session.kind === "removed" ? (
-        <RemovedNotice />
+        <RemovedNotice className={splitHalfClass} />
       ) : !isOpen ? (
-        <Card>
+        <Card className={splitHalfClass}>
           <CardTitle>Sarado na ang sali.</CardTitle>
           <CardContent>
             <CardDescription>
@@ -131,7 +134,7 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
           </CardContent>
         </Card>
       ) : isFull ? (
-        <Card>
+        <Card className={splitHalfClass}>
           <CardTitle>Puno na ang group.</CardTitle>
           <CardContent>
             <CardDescription>
@@ -141,10 +144,10 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
           </CardContent>
         </Card>
       ) : (
-        <div className="pt-4">
+        <div className="pt-2 md:pt-0">
           <JoinForm slug={slug} footer={<ComeBackLink slug={slug} className="self-center" />} />
         </div>
       )}
-    </>
+    </SplitCard>
   );
 }
