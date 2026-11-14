@@ -1,8 +1,10 @@
 /**
  * Anonymity leak checks: no page may expose who is giving to whom, except
  * - a member's own receiver on their own /me (after the draw),
- * - the one pair on screen on the organizer's reveal screen (during the
- *   reveal), and every pair there once the group is REVEALED,
+ * - on the organizer's reveal screen during the reveal: the pairs revealed
+ *   so far that are on the ring (all of them up to 16 members, a window of
+ *   12 around the pair on screen above that), plus codenames of the slips
+ *   on the ring; every pair once the group is REVEALED,
  * - a member's own giver on their own /me, only once REVEALED.
  *
  * For each page we capture the final HTML plus every same-origin HTML,
@@ -173,19 +175,41 @@ export function revealOrderOf(truth: Truth, firstGiverName: string): { giver: st
 }
 
 /**
- * The organizer's reveal screen during the reveal: only the pair on
- * screen (giver, their codename, receiver). No other names, codenames,
- * ids, or wishlists.
+ * Loop indices the reveal screen may show at `step` (1-based) of `total`:
+ * every slip up to 16, else the window of 12 around the pair on screen plus
+ * one hidden slip at each end (offsets -7..+6). Written out here on purpose
+ * rather than imported, so the test states the rule on its own.
  */
-export function expectRevealPageClean(text: string, truth: Truth, onScreen: { giver: string; receiver: string }) {
-  const label = `reveal screen (${onScreen.giver} → ${onScreen.receiver})`;
+export function ringIndices(step: number, total: number): number[] {
+  if (total <= 16) return Array.from({ length: total }, (_, i) => i);
+  const current = step - 1;
+  return Array.from({ length: 14 }, (_, k) => (((current + k - 7) % total) + total) % total);
+}
+
+/**
+ * The organizer's reveal screen during the reveal, at `step` of the loop
+ * `order`: names only from pairs revealed so far that are on the ring;
+ * codenames only of slips on the ring. No ids, no wishlists. Before the
+ * start (step 0) there are no names or codenames at all.
+ */
+export function expectRevealPageClean(
+  text: string,
+  truth: Truth,
+  order: { giver: string; receiver: string; codename: string }[],
+  step: number,
+) {
+  const label = `reveal screen (step ${step} of ${order.length})`;
   commonChecks(text, truth, label);
-  const allowed = [onScreen.giver, onScreen.receiver];
+  const ring = step === 0 ? [] : ringIndices(step, order.length);
+  const shownNames = new Set(ring.filter((i) => i < step).flatMap((i) => [order[i].giver, order[i].receiver]));
+  const shownCodenames = new Set(ring.map((i) => order[i].codename));
+  const allowed = [...shownNames];
   for (const m of truth.members) {
     expect(text, `${label} contains the member id of ${m.name}`).not.toContain(m.id);
-    if (m.name === onScreen.giver) continue;
-    expect(text, `${label} shows the codename of ${m.name}`).not.toContain(m.codename);
-    if (m.name === onScreen.receiver) continue;
+    if (!shownCodenames.has(m.codename)) {
+      expect(text, `${label} shows the codename of ${m.name}`).not.toContain(m.codename);
+    }
+    if (shownNames.has(m.name)) continue;
     expect(containsName(text, m.name, allowed), `${label} shows "${m.name}"`).toBe(false);
   }
   expectNoWishesOf(text, truth, new Set(truth.members.map((m) => m.id)), label);

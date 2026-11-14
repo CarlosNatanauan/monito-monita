@@ -29,8 +29,14 @@ export default defineConfig({
     navigationTimeout: 60_000,
   },
   projects: [
-    { name: "android-pixel-7", use: { ...devices["Pixel 7"] } },
-    { name: "iphone-14", use: { ...devices["iPhone 14"] } },
+    { name: "android-pixel-7", use: { ...devices["Pixel 7"] }, testIgnore: /reveal\.spec\.ts/ },
+    { name: "iphone-14", use: { ...devices["iPhone 14"] }, testIgnore: /reveal\.spec\.ts/ },
+    // The party reveal on a projector laptop (Chromium, 1920×1080; the spec also checks 1366×768 and 1280×720).
+    {
+      name: "projector-1080p",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1920, height: 1080 } },
+      testMatch: /reveal\.spec\.ts/,
+    },
   ],
   webServer: {
     command: `npm run dev -- --port ${PORT}`,

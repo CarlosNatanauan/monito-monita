@@ -1010,12 +1010,21 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
   const revealUrl = `/g/${slug}/reveal`;
   const onScreen = (page: Page) => page.getByRole("region", { name: "Reveal" });
 
-  /** The reveal screen shows exactly this pair, at this step. */
+  const stage = (page: Page) => page.locator(".rv-stage");
+
+  /** The reveal screen shows exactly this pair, at this step: centre text, and its slip on the ring with the halo. */
   async function expectPair(page: Page, step: number, pair: { giver: string; receiver: string; codename: string }) {
     await expect(page.getByText(`${step} of 3`, { exact: true })).toBeVisible();
-    await expect(onScreen(page)).toContainText(`${pair.codename} ay si…`);
+    await expect(onScreen(page)).toContainText(`Si ${pair.codename} ay si…`);
     await expect(onScreen(page)).toContainText(`${pair.giver}!`);
-    await expect(onScreen(page)).toContainText(`→ para kay ${pair.receiver}`);
+    await expect(onScreen(page)).toContainText(`Ang monito niya: ${pair.receiver}`);
+    const current = page.locator('[data-slip][aria-current="step"]');
+    await expect(current).toHaveAttribute("data-slip", String(step - 1));
+    await expect(current).toHaveAttribute("data-halo", "true");
+    await expect(current).toContainText(pair.giver);
+    await expect(current).toContainText(`→ kay ${pair.receiver}`);
+    // Revealed so far: exactly the slips before and including this one.
+    await expect(page.locator('[data-slip][data-face="revealed"]')).toHaveCount(step);
   }
 
   let order: ReturnType<typeof revealOrderOf> = [];
@@ -1037,8 +1046,10 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     const stranger = await newPerson(browser, testInfo, "Stranger");
     expectJoinPageClean(await capturePage(stranger.page, revealUrl), truth);
     await stranger.context.close();
-    // Before the start, the ready screen itself shows no pairs either.
+    // Before the start, the ready screen itself shows no pairs or codenames either.
     expectJoinPageClean(await capturePage(page, revealUrl), truth);
+    expectRevealPageClean(await capturePage(page, revealUrl), truth, revealOrderOf(truth, "Joy M"), 0);
+    await expect(page.locator('[data-slip][data-face="blank"]')).toHaveCount(3);
   });
 
   await test.step("start the reveal: first pair, redraw and remove are locked", async () => {
@@ -1049,6 +1060,8 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
 
     order = revealOrderOf(await getTruth(slug), "Joy M");
     await expectPair(page, 1, order[0]);
+    // The start plays: codenames appear, the first slip flips.
+    await expect(stage(page)).toHaveAttribute("data-last-transition", "start");
     await expect(page.getByRole("button", { name: "Previous", exact: true })).toBeDisabled();
     await shot(page, "reveal-step-1");
 
@@ -1060,9 +1073,9 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await shot(page, "admin-revealing");
   });
 
-  await test.step("leak test during the reveal: only the pair on screen, only on the reveal screen", async () => {
+  await test.step("leak test during the reveal: only the pairs revealed so far, only on the reveal screen", async () => {
     const truth = await getTruth(slug);
-    expectRevealPageClean(await capturePage(organizer.page, revealUrl), truth, order[0]);
+    expectRevealPageClean(await capturePage(organizer.page, revealUrl), truth, order, 1);
     expectOrganizerPageClean(await capturePage(organizer.page, `/g/${slug}/admin`), truth);
     const stranger = await newPerson(browser, testInfo, "Stranger");
     expectJoinPageClean(await capturePage(stranger.page, shareUrl), truth);
@@ -1109,7 +1122,7 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await expectPair(page, 2, order[1]);
     await page.reload();
     await expectPair(page, 2, order[1]);
-    expectRevealPageClean(await capturePage(page, revealUrl), await getTruth(slug), order[1]);
+    expectRevealPageClean(await capturePage(page, revealUrl), await getTruth(slug), order, 2);
     await page.getByRole("button", { name: "Previous", exact: true }).click();
     await expectPair(page, 1, order[0]);
     await page.getByRole("button", { name: "Next", exact: true }).click();
@@ -1127,21 +1140,26 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     // A marker that a full page load would wipe.
     await laptop.page.evaluate(() => ((window as unknown as { stayed: boolean }).stayed = true));
 
-    // Phone taps Next → the laptop follows within a refresh or two.
+    // Phone taps Next → the laptop follows within a refresh or two, and
+    // plays the step (flip and bulbs) instead of jumping to it.
+    const before = Number(await stage(laptop.page).getAttribute("data-transitions"));
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await expectPair(page, 3, order[2]);
     await expect(laptop.page.getByText("3 of 3", { exact: true })).toBeVisible({ timeout: 6_000 });
     await expectPair(laptop.page, 3, order[2]);
+    await expect(stage(laptop.page)).toHaveAttribute("data-last-transition", "next");
+    expect(Number(await stage(laptop.page).getAttribute("data-transitions"))).toBe(before + 1);
     await shot(laptop.page, "reveal-step-3-laptop-follows");
 
     // Arrow keys on the laptop move it; the phone follows too.
     await laptop.page.keyboard.press("ArrowLeft");
     await expectPair(laptop.page, 2, order[1]);
+    await expect(stage(laptop.page)).toHaveAttribute("data-last-transition", "previous");
     await expect(page.getByText("2 of 3", { exact: true })).toBeVisible({ timeout: 6_000 });
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await expect(laptop.page.getByText("3 of 3", { exact: true })).toBeVisible({ timeout: 6_000 });
     expect(await laptop.page.evaluate(() => (window as unknown as { stayed?: boolean }).stayed)).toBe(true);
-    expectRevealPageClean(await capturePage(laptop.page, revealUrl), await getTruth(slug), order[2]);
+    expectRevealPageClean(await capturePage(laptop.page, revealUrl), await getTruth(slug), order, 3);
   });
 
   await test.step("auto-refresh: every ~2s only while visible, never on the organizer page", async () => {
@@ -1169,10 +1187,14 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await expectPair(page, 3, order[2]);
   });
 
-  await test.step("finish: REVEALED, all pairs on the reveal screen", async () => {
+  await test.step("finish: \"Ilawan ang parol\", REVEALED, all pairs on the reveal screen", async () => {
     const { page } = organizer;
-    await page.getByRole("button", { name: "Tapusin ang reveal" }).click();
-    await expect(page.getByRole("heading", { name: "Tapos na ang reveal! 🎉" })).toBeVisible();
+    await page.getByRole("button", { name: "Ilawan ang parol" }).click();
+    await expect(page.getByRole("heading", { name: "Maligayang Pasko!" })).toBeVisible();
+    await expect(stage(page)).toHaveAttribute("data-last-transition", "finale");
+    await expect(page.locator('[data-slip][data-halo="true"]')).toHaveCount(3);
+    await expect(page.locator('[data-bulb][data-state="glow"]')).toHaveCount(await page.locator("[data-bulb]").count());
+    await page.getByRole("button", { name: "Lahat ng pairs" }).click();
     const all = page.getByRole("list", { name: "All pairs" });
     await expect(all.getByRole("listitem")).toHaveCount(3);
     for (const [i, pair] of order.entries()) {
@@ -1181,7 +1203,8 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await shot(page, "reveal-done");
 
     // The laptop follows to the end, then stops refreshing.
-    await expect(laptop.page.getByRole("heading", { name: "Tapos na ang reveal! 🎉" })).toBeVisible({ timeout: 6_000 });
+    await expect(laptop.page.getByRole("heading", { name: "Maligayang Pasko!" })).toBeVisible({ timeout: 6_000 });
+    await expect(stage(laptop.page)).toHaveAttribute("data-last-transition", "finale");
     await laptop.page.waitForTimeout(500);
     expect(await countRefreshes(laptop.page, () => laptop.page.waitForTimeout(5_000)), "refreshes after the end").toBe(0);
     await laptop.context.close();
