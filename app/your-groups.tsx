@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useSyncExternalStore } from "react";
+import { cn } from "@/lib/utils";
 import { groupsSnapshot, parseGroups, readGroups, subscribeGroups, writeGroups } from "@/lib/your-groups";
 import { checkGroupsAction } from "./actions";
 
@@ -11,7 +12,7 @@ const serverSnapshot = () => "[]";
  * "Your groups" on the home page: groups this device created or joined,
  * from localStorage (no tokens). Groups that no longer exist are dropped.
  */
-export function YourGroups() {
+export function YourGroups({ className }: { className?: string }) {
   const raw = useSyncExternalStore(subscribeGroups, groupsSnapshot, serverSnapshot);
   const groups = useMemo(() => parseGroups(raw), [raw]);
   const hasGroups = groups.length > 0;
@@ -38,7 +39,7 @@ export function YourGroups() {
   if (!hasGroups) return null;
 
   return (
-    <section aria-labelledby="your-groups" className="flex flex-col gap-3 rounded-3xl bg-niyog p-5">
+    <section aria-labelledby="your-groups" className={cn("flex flex-col gap-3 rounded-3xl bg-niyog p-5", className)}>
       <h2 id="your-groups" className="text-title font-extrabold">
         Your groups
       </h2>

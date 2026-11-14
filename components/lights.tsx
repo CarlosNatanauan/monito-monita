@@ -113,6 +113,7 @@ const TWINKLE_PERIOD = 3.3; // seconds: three groups, ~1.1s each
 
 /**
  * The header string (landing, join, /me): 7 bulbs under a full-width wire,
+ * spread across the page column (480px on phones, 1120px from md),
  * all on, one in three glowing, the glow shifting every ~1.1s. Only the
  * opacity of a pre-glowing layer changes. Static under reduced motion.
  * Decoration only: hidden from screen readers.
@@ -121,7 +122,8 @@ export function HeaderLights() {
   return (
     <div aria-hidden className="pointer-events-none relative h-11 w-full shrink-0 overflow-hidden">
       <span className="absolute inset-x-0 top-2.5 h-0.5 bg-ube-line" />
-      <div className="mx-auto flex max-w-[480px] justify-between px-[30px] pt-3">
+      {/* Spans the page column: 480px on phones, the 1120px frame from md. */}
+      <div className="mx-auto flex max-w-[480px] justify-between px-[30px] pt-3 md:max-w-[calc(1120px+4rem)] md:px-12">
         {Array.from({ length: HEADER_BULBS }, (_, i) => {
           const phase = i % 3;
           return (

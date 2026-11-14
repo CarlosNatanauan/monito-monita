@@ -23,7 +23,7 @@ type Phase = "idle" | "ready" | "drawing" | "shown";
  * a sample name (the same unfold as /me). Tap again for another name.
  * Reduced motion: the opened slip fades in, no GSAP.
  */
-export function TryBunutan() {
+export function TryBunutan({ className }: { className?: string }) {
   const reduced = usePrefersReducedMotion();
   const [phase, setPhase] = useState<Phase>("idle");
   const [name, setName] = useState<string | null>(null);
@@ -144,7 +144,7 @@ export function TryBunutan() {
     <section
       ref={sectionRef}
       aria-label="Try a bunutan"
-      className="group relative rounded-t-[166px] rounded-b-[30px] bg-niyog/45 p-1.5"
+      className={cn("group relative rounded-t-[166px] rounded-b-[30px] bg-niyog/45 p-1.5", className)}
     >
       <div
         className="leaf-panel relative isolate h-[340px] overflow-hidden rounded-t-[160px] rounded-b-3xl shadow-[inset_0_0_0_2px_var(--color-margarine)]"
