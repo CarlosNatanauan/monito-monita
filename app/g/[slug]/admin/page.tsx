@@ -153,6 +153,8 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     <Card>
       <CardTitle>Paalala para sa GC</CardTitle>
       <ReminderCard
+        // A fresh default ("Na-draw na!") once the names are drawn.
+        key={isOpen ? "open" : "drawn"}
         {...reminderData}
         defaultKind={justDrawn ? "drawn" : "theme"}
         prominent={group.status === "DRAWN"}
