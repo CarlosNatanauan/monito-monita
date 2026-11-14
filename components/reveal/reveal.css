@@ -24,9 +24,14 @@
 
 /* The gold radial glow behind everything at the finale. */
 .rv-parol-glow {
+  /* Only as big as the lit area (the gradient is clear beyond it): a
+     full-frame layer cost ~15fps while fading at 2x CPU throttling. */
   position: absolute;
-  inset: 0;
-  background: radial-gradient(ellipse 46% 50% at 50% 50%, rgb(244 197 66 / 0.34) 0%, rgb(244 197 66 / 0.12) 45%, transparent 75%);
+  left: 250px;
+  top: 120px;
+  width: 1420px;
+  height: 840px;
+  background: radial-gradient(closest-side, rgb(244 197 66 / 0.34) 0%, rgb(244 197 66 / 0.12) 60%, transparent 100%);
   opacity: 0;
   pointer-events: none;
 }

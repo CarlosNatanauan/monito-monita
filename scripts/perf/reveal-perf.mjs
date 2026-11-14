@@ -10,13 +10,20 @@
 //
 // Run against a PRODUCTION build, not `next dev`:
 //   npm run build && npx next start -p 3100
-//   node scripts/perf/reveal-perf.mjs http://localhost:3100
+//   node scripts/perf/reveal-perf.mjs http://localhost:3100 [--gpu]
+//
+// Headless Chromium composites in software by default, which overstates
+// what full-screen layers (the finale's gold glow, the confetti canvas)
+// cost on a real laptop. --gpu turns GPU compositing on (ANGLE / D3D11 on
+// Windows), closer to a laptop driving a projector. Report both.
 import { chromium } from "@playwright/test";
 
-const base = process.argv[2] ?? "http://localhost:3100";
+const base = process.argv.slice(2).find((a) => !a.startsWith("--")) ?? "http://localhost:3100";
+const gpu = process.argv.includes("--gpu");
 const RUNS = 3;
 const LAPTOP = { viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 };
-const browser = await chromium.launch();
+const browser = await chromium.launch({ args: gpu ? ["--enable-gpu", "--use-angle=d3d11", "--ignore-gpu-blocklist"] : [] });
+console.log(`Compositing: ${gpu ? "GPU (--gpu)" : "software (headless default)"}`);
 
 const lab = (q) => `${base}/lab/reveal?${q}`;
 const idle = (page) =>

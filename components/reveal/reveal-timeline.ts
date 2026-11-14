@@ -146,7 +146,8 @@ export function playTransition(root: HTMLElement, t: StepTransition, g: RingGeom
       .filter((el): el is HTMLElement => el !== null);
     tl.fromTo(halos, { opacity: 0 }, { opacity: 1, duration: 0.4, stagger: sweep / Math.max(halos.length, 1), clearProps: "opacity" }, 0.1);
     const glow = q(root, '[data-part="parol-glow"]');
-    if (glow) tl.fromTo(glow, { opacity: 0 }, { opacity: 1, duration: 1.4, ease: "sine.out", clearProps: "opacity" }, 0.6);
+    // After the sweep, so the big glow never fades while the bulbs and haloes do.
+    if (glow) tl.fromTo(glow, { opacity: 0 }, { opacity: 1, duration: 1.2, ease: "sine.out", clearProps: "opacity" }, sweep);
     if (centre) {
       tl.fromTo(centre, { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 0.8, ease: "back.out(1.6)", clearProps: "opacity,transform" }, sweep * 0.6);
     }

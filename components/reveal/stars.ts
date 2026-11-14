@@ -31,11 +31,12 @@ export function prepareStars(): Stars {
 
   return {
     burst: () => {
-      const base: confetti.Options = { shapes: [star], colors: GOLD, gravity: 0.5, decay: 0.92, ticks: 260, scalar: 1.6, flat: true };
+      // ~65 stars: more cost ~30fps on a 2x-throttled laptop for little gain.
+      const base: confetti.Options = { shapes: [star], colors: GOLD, gravity: 0.6, decay: 0.92, ticks: 180, scalar: 1.4, flat: true };
       // From the centre, then from both lower corners toward the middle.
-      fire({ ...base, origin: { x: 0.5, y: 0.5 }, particleCount: 70, spread: 360, startVelocity: 32 });
-      fire({ ...base, origin: { x: 0.12, y: 0.9 }, particleCount: 40, angle: 60, spread: 55, startVelocity: 55 });
-      fire({ ...base, origin: { x: 0.88, y: 0.9 }, particleCount: 40, angle: 120, spread: 55, startVelocity: 55 });
+      fire({ ...base, origin: { x: 0.5, y: 0.5 }, particleCount: 30, spread: 360, startVelocity: 30 });
+      fire({ ...base, origin: { x: 0.12, y: 0.9 }, particleCount: 18, angle: 60, spread: 50, startVelocity: 55 });
+      fire({ ...base, origin: { x: 0.88, y: 0.9 }, particleCount: 18, angle: 120, spread: 50, startVelocity: 55 });
     },
     dispose: () => {
       fire.reset();
