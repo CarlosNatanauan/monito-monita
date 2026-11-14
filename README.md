@@ -15,7 +15,7 @@ Draw names, share wishlists, run the weekly theme rounds ("something soft", "som
 - **Draw names** — fair, random, with exclusions (no couples, no siblings)
 - **Wishlists** — so nobody has to guess
 - **Theme weeks** — everyone sees this week's theme, organizer can post reminders to the GC
-- **The reveal** — a party-day screen that reveals everyone one by one
+- **The reveal** — a party-day screen for the projector: a ring of slips that flip one by one as the lights travel along the loop, then the parol lights up
 
 ## Docs
 

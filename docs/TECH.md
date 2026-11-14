@@ -26,7 +26,7 @@ Each tool has one clear job. Animation code is **lazy-loaded** only on the scree
 | Tool | Job | Used for |
 |---|---|---|
 | **Motion** (motion.dev) | Everyday UI motion in React: state changes, layout animations, gestures | Buttons, wishlist add/remove, press-and-hold on the slip, page elements responding to taps |
-| **GSAP** + plugins (100% free, including formerly paid plugins) | Cinematic, choreographed timelines | Slip unfold sequence, **DrawSVG** for the handwritten name being "written", **MotionPath** for gold light traveling along the reveal loop, **MorphSVG** for the slip folding/unfolding shapes |
+| **GSAP** + plugins (100% free, including formerly paid plugins) | Cinematic, choreographed timelines | Slip unfold sequence, the bowl draw and join drop, the party reveal (slip flips, bulbs lighting along the loop, the turning window, the parol finale) |
 | **Rive** (optional, decide after mockups) | Illustrated, interactive animations with state machines, tiny runtime | The bowl with slips tumbling, if SVG + GSAP isn't rich enough. Needs design time in the Rive editor |
 | **canvas-confetti** | Particle bursts | Gold star/parol sparkles at big moments only |
 | **View Transitions** (React / Next 16) | Smooth page-to-page transitions | Join → member home, member home → slip. Check Next 16 docs for current support |
@@ -139,7 +139,7 @@ The server knows everything. The API must never leak it.
 
 - A member can only fetch **their own** assignment (who they're giving to).
 - No endpoint returns "who is giving to me" before `REVEALED`.
-- Organizer pages show who has joined and the draw status, **not** the pairs. The one exception is the reveal screen once the organizer starts the reveal: one pair at a time, then all of them after `REVEALED`.
+- Organizer pages show who has joined and the draw status, **not** the pairs. The one exception is the reveal screen once the organizer starts the reveal: only the pairs revealed so far, then all of them after `REVEALED`.
 - Before reveal, nothing in page HTML, JSON, or network responses should contain other people's pairs. Check this in the browser's Network tab.
 
 ## Changes after the draw
@@ -158,10 +158,17 @@ The server knows everything. The API must never leak it.
 
 - The organizer opens `/g/[slug]/reveal` (organizer only) and taps **Start the reveal**: the group becomes `REVEALING` at step 1.
 - **Next / Previous** move along the loop, starting with the first member to join. The step is stored on the group (`revealStep`), so a refreshed projector or another device (organizer link on a laptop) resumes at the same pair. Each move sends the step the screen was showing; if the server already moved (double tap, second device), nothing changes and the screen catches up.
-- Next on the last pair sets the group to `REVEALED`. Then the reveal screen lists every pair, and each member's /me shows "Ang nagbigay sa'yo ay…" (their own giver only).
+- Next on the last pair ("Ilawan ang parol") sets the group to `REVEALED`. Then the reveal screen plays the finale and shows every pair, and each member's /me shows "Ang nagbigay sa'yo ay…" (their own giver only).
 - Once the reveal starts, redraws and removals are blocked (the loop on screen must not change). There is no going back to `DRAWN`.
-- **Leaks:** while `REVEALING`, the reveal screen receives only the pair on screen, never the whole loop. The organizer page, join page, and /me stay as before (no giver) until `REVEALED`. The e2e leak test checks this.
-- The current screen is plain; the animated parol version comes after the redesign.
+- **Leaks:** while `REVEALING`, the reveal screen receives the pair on screen and the ring (`server/reveal-window.ts`): up to 16 members every slip, above 16 a window of 12 around the pair on screen plus one hidden slip at each end. Revealed slips (pairs up to the current step) carry the giver and receiver; the others only a codename. A name from a pair that isn't revealed yet never leaves the server. Codenames are only ever shown to their owner elsewhere, so a codename on an unrevealed slip doesn't say who it is. The organizer page, join page, and /me stay as before (no giver) until `REVEALED`. The e2e leak tests check this at every stage, for 3 and for 30 members.
+
+### The reveal screen (`components/reveal/`)
+
+- **Stage:** drawn at 1920×1080 and scaled to fit the window (`reveal-stage.tsx`, `reveal.css`); controls sit in the window's corners, 5% in. Phones (portrait) get the stage on top and big buttons below: the organizer's phone is the remote.
+- **State, then motion:** the stage always renders the exact state for the step (`ring.ts`), so a refresh mid-reveal is correct by construction. When the step or status changes while open (own tap, or the 2-second auto-refresh picking up the phone's tap), `transition.ts` works out what changed and a timeline animates from the old state into it: `reveal-timeline.ts` (GSAP, lazy-loaded after the screen is up) or, with reduced motion, `fade-transition.ts` (Web Animations cross-fades, no GSAP). Only `transform` and `opacity` animate, from pre-painted glow and halo layers.
+- **Confetti** (`stars.ts`, canvas-confetti, gold stars only) loads while the last pair is on screen; never with reduced motion.
+- **Sound** (`sound.ts`): optional Web Audio bells, off by default, remembered per device in `localStorage`.
+- `/lab/reveal?n=3..150&step=0..n+1&speed=` shows the screen with made-up names (no database), for tuning and `scripts/perf/reveal-perf.mjs`.
 
 ## Analytics (`server/analytics.ts`)
 
@@ -227,5 +234,6 @@ e2e/
 ## Environments
 
 - `.env` is never committed. Commit a `.env.example`.
+- **Own URL:** `NEXT_PUBLIC_SITE_URL` (production: `https://monitomonita-ph.vercel.app`, set in Vercel for Production only). Every link people see, copy or share, and the share images, use it when set; otherwise the address the page was opened on (`lib/site-url.ts`). Never a hardcoded domain.
 - Separate databases for development and production.
 - Vercel preview deploys for every branch.

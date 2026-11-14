@@ -186,12 +186,15 @@ White pill track, 4px padding. Active segment: `ube` fill, white text. Inactive:
   2. The 4 bulbs toward the receiver light one after another (140ms apart) and glow.
   3. Bulbs from earlier steps settle to "on".
 - **Finale:** after the 12th, the button reads "Ilawan ang parol". Every bulb goes to glowing in a sweep around the ring, every slip gets its halo, a gold radial glow fades in behind, and the centre reads "Maligayang Pasko!". Gold star confetti only.
-- Minimum text size on this screen: 24px at 1080p. Nothing important in the outer 5% of the frame.
+- Minimum text size on this screen: 24px at 1080p. Nothing important in the outer 5% of the frame. Checked at 1920×1080, 1366×768 and 1280×720 (common office projectors) by `e2e/reveal.spec.ts`.
 - Reduced motion: no flip or travel; slips and bulbs cross-fade.
+- **Controls:** Next and Previous (Space and → / ←), Fullscreen (F), and "Tunog" for optional sound, off by default. On a laptop or projector they sit in the corners, 5% in, sized with the window; on the organizer's phone (portrait) the stage is on top with big buttons below, so the phone works as the remote. A screen that picks up a new step from the phone plays the same transition.
+- Before the start: the ring of blank slips with every bulb off, "Party reveal" and "{n} slips. Handa na?" in the centre.
+- After the finale, groups up to 16 keep the lit ring ("Lahat ng pairs" shows the list); larger groups go to the list on their own ("Balik sa parol" goes back).
 
-### Large groups (planned for Phase 3, not built yet)
+### Large groups
 
-The ring is drawn for 12 slips. Groups of up to 16 keep every slip on the ring. **Above 16:**
+The ring is drawn for 12 slips. Groups of up to 16 keep every slip on the ring (from 13, the slips shrink to 88–79% so neighbours never touch; text stays at 24px or more). Below 8, each gap gets more than 4 bulbs so the string still goes all the way round. **Above 16:**
 
 - The ring shows a **moving window of 12 slips centred on the current pair**: the giver on screen sits in the same spot on the ring, with the 5–6 slips before and after it in loop order around it.
 - **Next** rotates the window by one slip (transform only: the ring turns, the slip leaving the window fades out and the one entering fades in), then the usual flip and bulb travel play. **Previous** turns it back.

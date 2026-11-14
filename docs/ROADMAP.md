@@ -81,11 +81,13 @@ Goal: the moments strangers see first, then launch.
 Ship before the first parties.
 
 - [x] Reveal logic: start, Next / Previous stored on the server, REVEALED at the end, "Ang nagbigay sa'yo ay…" on /me (plain screen for now)
-- [ ] Reveal screen: ring of slips on indigo, gold light travels along the loop, slips flip one by one
-- [ ] Final "parol lights up" moment when everyone is revealed
-- [ ] Projector check: readable from the back of a room
-- [ ] Reduced-motion and plain-list fallback
-- [ ] Optional sound (off by default)
+- [x] Reveal screen: ring of slips on gabi, bulbs light along the loop, slips flip one by one (`/lab/reveal` to try it)
+- [x] Final "parol lights up" moment when everyone is revealed ("Ilawan ang parol", gold stars)
+- [x] Large groups: a window of 12 slips turns around the current pair; the full list of pairs at the end
+- [x] Projector check: 24px+ at 1080p, nothing in the outer 5%, at 1920×1080, 1366×768 and 1280×720
+- [x] Phone as remote: the projector plays each step it picks up from the phone
+- [x] Reduced-motion cross-fades and the plain list of pairs
+- [x] Optional sound (off by default)
 
 ## December: Live season
 
@@ -112,4 +114,4 @@ The real usage happens now. Priority is **keeping it working**, then adding the 
 - **Gift links:** Shopee/Lazada affiliate links on gift ideas
 - **PWA:** installable, push notifications
 - **Tagalog** language option
-- Buy the domain (monitomonita.app was available as of Nov 9, 2026)
+- Buy a domain (monitomonita.app was available as of Nov 9, 2026; the app runs at https://monitomonita-ph.vercel.app until then)

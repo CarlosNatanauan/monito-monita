@@ -46,7 +46,7 @@ Keep this list updated as scripts are added.
 - `npm run test:watch`: unit tests in watch mode
 - `npx vitest run tests/draw.test.ts`: run a single test file
 - `npm run test:db`: database constraint smoke tests against the dev DB in `.env.local` (rolled back; never run against production)
-- `npm run test:e2e`: Playwright main flow on Pixel 7 (Chromium) and iPhone 14 (WebKit) against `npm run dev` (reuses a running dev server on :3000) and the dev DB; deletes its test groups; screenshots in `e2e/screenshots/`. After `npm run build`, stop any running dev server first: a reused dev server that predates the build serves 500s
+- `npm run test:e2e`: Playwright main flow on Pixel 7 (Chromium) and iPhone 14 (WebKit), plus the party reveal on a 1920×1080 projector laptop (`e2e/reveal.spec.ts`, also checks 1366×768 and 1280×720; `--project=projector-1080p` runs just that), against `npm run dev` (reuses a running dev server on :3000) and the dev DB; deletes its test groups; screenshots in `e2e/screenshots/`. After `npm run build`, stop any running dev server first: a reused dev server that predates the build serves 500s
 - `npm run db:generate`: generate a SQL migration in `drizzle/` from `server/db/schema.ts` (commit it)
 - `npm run db:migrate`: apply pending migrations to the database in `DATABASE_URL` (`.env.local` = Neon dev branch)
 - `npm run db:migrate:prod`: apply migrations to PRODUCTION, using only `.env.production.local`; shows host and pending migrations and asks for confirmation. The human runs this, never the AI assistant.
@@ -54,7 +54,9 @@ Keep this list updated as scripts are added.
 - `node scripts/perf/slip-perf.mjs http://localhost:3100`: slip unfold frame rate at 4x CPU throttling, lazy-GSAP, reduced-motion, and noindex checks on `/lab/slip`. Run against a production build (`npm run build && npx next start -p 3100`), not `next dev`
 - `node scripts/perf/landing-perf.mjs http://localhost:3100`: landing bowl draw frame rate at 4x CPU throttling, GSAP not in the first load, reduced motion, static page. Production build, like slip-perf
 - Lighthouse (mobile) on the landing: `CHROME_PATH=<playwright chromium> npx -y lighthouse@12 http://localhost:3100/ --only-categories=performance,accessibility,best-practices,seo --quiet --chrome-flags="--headless=new"` against the production build
+- `node scripts/perf/reveal-perf.mjs http://localhost:3100`: party reveal frame rate (Next for 12 and 30, Previous, the finale) at 2x CPU throttling on a 1920×1080 laptop, lazy GSAP and confetti, reduced motion, every transition ending exactly on the fresh-load state, noindex. Production build, like slip-perf
 - `/lab/lights`: progress lights at 3–150 members (no database)
+- `/lab/reveal?n=12&step=7`: the party reveal with made-up names (no database): `n` 3–150, `step` 0 (before the start) to `n`, `n+1` for after the finale, `speed=0.1` to slow the timelines
 - `node scripts/perf/slip-frames.mjs [baseUrl] [outDir]`: screenshots of the slip unfold at fixed timeline points (`TIMES=0.3,1.5` to pick), into `test-results/slip-frames/` by default
 
 Database notes: use `db()` from `server/db` for everything (node-postgres pool, attached with `attachDatabasePool` for Vercel); use `db().transaction(...)` when writes must succeed or fail together. Exclusion pairs must be stored sorted (`member_a_id < member_b_id`).
