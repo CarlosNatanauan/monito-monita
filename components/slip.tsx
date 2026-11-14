@@ -18,13 +18,14 @@ export function Slip({
   return (
     <div
       className={cn(
-        "relative -rotate-3 rounded-md bg-niyog px-8 py-6 text-center shadow-[0_2px_4px_rgb(75_36_114/0.1),0_10px_24px_rgb(75_36_114/0.14)]",
+        "relative max-w-full -rotate-3 rounded-md bg-niyog px-8 py-6 text-center shadow-[0_2px_4px_rgb(75_36_114/0.1),0_10px_24px_rgb(75_36_114/0.14)]",
         creases &&
           "bg-[linear-gradient(to_right,transparent_calc(50%-0.5px),rgb(75_36_114/0.12)_calc(50%-0.5px),rgb(75_36_114/0.12)_calc(50%+0.5px),transparent_calc(50%+0.5px)),linear-gradient(to_bottom,transparent_calc(50%-0.5px),rgb(75_36_114/0.12)_calc(50%-0.5px),rgb(75_36_114/0.12)_calc(50%+0.5px),transparent_calc(50%+0.5px))]",
         className,
       )}
     >
-      <p className="font-hand text-hand-lg whitespace-nowrap text-ube">~ {children} ~</p>
+      {/* A long codename wraps (balanced) on a small phone instead of running into the gutter. */}
+      <p className="font-hand text-hand-lg text-balance text-ube">~ {children} ~</p>
     </div>
   );
 }

@@ -28,12 +28,12 @@ import { todayIn } from "@/lib/theme-weeks";
 import { getReceiverWishlist, listWishlist } from "@/server/wishlists";
 import { WishlistView } from "@/components/wish-item";
 import { CleanWelcomeParam } from "./clean-welcome";
-import { MonitoReveal } from "./monito-reveal";
+import { MonitoReveal, MonitoSlip, WhenOpened } from "./monito-reveal";
 import { MonitoUpdatedNotice } from "./monito-updated";
 import { SetPinCard } from "./set-pin-card";
 import { SwitchConfirm } from "./switch-confirm";
 import { WishlistEditor } from "./wishlist-editor";
-import { Eyebrow, pageClass } from "@/components/page";
+import { Eyebrow, Narrow, stickyClass, widePageClass } from "@/components/page";
 import { GroupFacts, PageFallback, RemovedNotice } from "../group-facts";
 
 export const metadata: Metadata = {
@@ -44,7 +44,7 @@ export default function MemberHomePage({ params, searchParams }: PageProps<"/g/[
   return (
     <>
       <HeaderLights />
-      <main className={cn(pageClass, "pt-4")}>
+      <main className={cn(widePageClass, "pt-3 md:pt-6")}>
         <Suspense fallback={<PageFallback />}>
           <MemberHome params={params} searchParams={searchParams} />
         </Suspense>
@@ -55,7 +55,7 @@ export default function MemberHomePage({ params, searchParams }: PageProps<"/g/[
 
 function PageTitle({ eyebrow, children }: { eyebrow?: string; children: React.ReactNode }) {
   return (
-    <header className="flex flex-col gap-2 pt-4 pb-3">
+    <header className="flex flex-col gap-2 pt-2 pb-1 md:pb-2">
       {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
       <h1 className="font-display text-heading-lg break-words">{children}</h1>
     </header>
@@ -78,17 +78,17 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
 
   if (session.kind === "removed") {
     return (
-      <>
+      <Narrow>
         <RememberGroup slug={slug} name={group.name} role="member" forget />
         <PageTitle>{group.name}</PageTitle>
         <RemovedNotice />
-      </>
+      </Narrow>
     );
   }
 
   if (session.kind === "none") {
     return (
-      <>
+      <Narrow>
         <RememberGroup slug={slug} name={group.name} role="member" forget />
         <PageTitle>{group.name}</PageTitle>
         <Card>
@@ -107,7 +107,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
             )}
           </CardContent>
         </Card>
-      </>
+      </Narrow>
     );
   }
 
@@ -116,14 +116,14 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   // Another member's link was opened on this device: confirm before switching.
   if (pendingSwitch) {
     return (
-      <>
+      <Narrow>
         <PageTitle>{group.name}</PageTitle>
         <SwitchConfirm
           slug={slug}
           current={pendingSwitch.current.displayName}
           other={pendingSwitch.other.displayName}
         />
-      </>
+      </Narrow>
     );
   }
   const welcome = query.welcome === "1";
@@ -167,61 +167,50 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
     </p>
   );
 
-  return (
+  // The slip hero: the bunutan slip after the draw, the codename slip before.
+  const hero = drawn ? (
     <>
-      <RememberGroup slug={slug} name={group.name} role="member" />
-      {welcome && <CleanWelcomeParam />}
-      {organizer && <RoleSwitch slug={slug} current="member" />}
-      <PageTitle eyebrow={group.name}>Hi, {member.displayName}!</PageTitle>
-
-      {welcome && personalLink}
-
-      {drawn ? (
-        <>
-          {receiver?.changedAt && <MonitoUpdatedNotice slug={slug} />}
-          {receiver ? (
-            // Signature moment #3: the full unfold plays once; later visits
-            // show the slip already open (docs/DESIGN.md).
-            <div className="flex flex-col gap-4">
-              <MonitoReveal
-                slug={slug}
-                receiverName={receiver.displayName}
-                alreadyOpened={receiver.slipOpenedAt !== null}
-                codename={codename}
-              >
-                <Card>
-                  <CardTitle>Wishlist ni {receiver.displayName}</CardTitle>
-                  <WishlistView
-                    items={receiverWishlist}
-                    emptyText={`Wala pang wishlist si ${receiver.displayName}. Balikan mo mamaya!`}
-                  />
-                </Card>
-              </MonitoReveal>
-            </div>
-          ) : (
-            <>
-              <Card>
-                <CardTitle>Ang monito mo ay…</CardTitle>
-                <CardDescription>Inaayos pa ng organizer ang bunutan. Balik ka in a bit.</CardDescription>
-              </Card>
-              {codename}
-            </>
-          )}
-        </>
+      {receiver?.changedAt && <MonitoUpdatedNotice slug={slug} />}
+      {receiver ? (
+        // Signature moment #3: the full unfold plays once; later visits
+        // show the slip already open (docs/DESIGN.md).
+        <MonitoSlip />
       ) : (
-        <>
-          <section className="flex flex-col items-center gap-4 py-4" aria-label="Your codename">
-            <p className="font-medium text-ube-soft">Ang codename mo:</p>
-            <Slip>{member.codename}</Slip>
-          </section>
+        <Card>
+          <CardTitle>Ang monito mo ay…</CardTitle>
+          <CardDescription>Inaayos pa ng organizer ang bunutan. Balik ka in a bit.</CardDescription>
+        </Card>
+      )}
+      {codename}
+    </>
+  ) : (
+    <>
+      <section className="flex flex-col items-center gap-4 py-2 md:py-6" aria-label="Your codename">
+        <p className="font-medium text-ube-soft">Ang codename mo:</p>
+        <Slip>{member.codename}</Slip>
+      </section>
+      <Card>
+        <CardHeader>
+          <CardTitle>Waiting for the bunutan…</CardTitle>
+          <CardDescription>Hintayin si organizer na mag-draw ng names.</CardDescription>
+        </CardHeader>
+        <GroupFacts partyDate={group.partyDate} budget={group.budget} memberCount={group.memberCount} />
+      </Card>
+    </>
+  );
+
+  const rest = (
+    <>
+      {drawn && receiver && (
+        <WhenOpened>
           <Card>
-            <CardHeader>
-              <CardTitle>Waiting for the bunutan…</CardTitle>
-              <CardDescription>Hintayin si organizer na mag-draw ng names.</CardDescription>
-            </CardHeader>
-            <GroupFacts partyDate={group.partyDate} budget={group.budget} memberCount={group.memberCount} />
+            <CardTitle>Wishlist ni {receiver.displayName}</CardTitle>
+            <WishlistView
+              items={receiverWishlist}
+              emptyText={`Wala pang wishlist si ${receiver.displayName}. Balikan mo mamaya!`}
+            />
           </Card>
-        </>
+        </WhenOpened>
       )}
 
       {giver && (
@@ -253,6 +242,34 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
       </Card>
 
       {!welcome && personalLink}
+    </>
+  );
+
+  // Phones: one column (the personal link first right after joining, the
+  // slip, then the rest). From md: the slip on the left, sticky so it stays
+  // in view; everything else on the right. The DOM keeps the phone order.
+  const layout = (
+    <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-x-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-x-12">
+      {welcome && <div className="flex flex-col gap-4 md:col-start-2 md:row-start-1">{personalLink}</div>}
+      <div className={cn("flex flex-col gap-4 md:col-start-1 md:row-span-2 md:row-start-1", stickyClass)}>{hero}</div>
+      <div className="flex flex-col gap-4 md:col-start-2">{rest}</div>
+    </div>
+  );
+
+  return (
+    <>
+      <RememberGroup slug={slug} name={group.name} role="member" />
+      {welcome && <CleanWelcomeParam />}
+      {organizer && <RoleSwitch slug={slug} current="member" />}
+      <PageTitle eyebrow={group.name}>Hi, {member.displayName}!</PageTitle>
+
+      {drawn && receiver ? (
+        <MonitoReveal slug={slug} receiverName={receiver.displayName} alreadyOpened={receiver.slipOpenedAt !== null}>
+          {layout}
+        </MonitoReveal>
+      ) : (
+        layout
+      )}
     </>
   );
 }

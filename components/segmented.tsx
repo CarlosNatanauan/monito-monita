@@ -21,7 +21,7 @@ export function SegmentedNav({
   items: { href: string; label: string; current: boolean }[];
 }) {
   return (
-    <nav aria-label={label} className={track}>
+    <nav aria-label={label} className={cn(track, "md:max-w-[420px]")}>
       {items.map((item) => (
         <Link
           key={item.href}
