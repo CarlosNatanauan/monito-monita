@@ -63,6 +63,7 @@ Goal: the moments strangers see first, then launch.
 - [x] Name + PIN: come back on any device (join with PIN, come-back form, lockout, organizer unlock / reset PIN, "send this link to yourself")
 - [x] PostHog analytics (create → join → draw → slip opened funnel), server-side only
 - [x] Playwright test of the main flow on a mobile viewport
+- [x] Responsive layouts for tablets and laptops (two columns, organizer dashboard), checked at 8 sizes
 - [ ] Fix everything from the test group's feedback
 - [ ] **Launch Nov 28:** post in your own GCs, Facebook, Reddit (r/Philippines), LinkedIn
 

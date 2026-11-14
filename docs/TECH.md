@@ -228,7 +228,8 @@ drizzle/                        generated migrations
 tests/
   draw.test.ts
 e2e/
-  main-flow.spec.ts             Playwright
+  flow-1 … flow-4 *.spec.ts     Playwright main flow (phones and a laptop)
+  layouts.spec.ts               every page at 8 screen sizes
 ```
 
 ## Environments

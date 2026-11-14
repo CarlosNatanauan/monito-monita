@@ -44,9 +44,10 @@ Keep this list updated as scripts are added.
 - `npm run lint`: lint
 - `npm test`: run unit tests once (Vitest)
 - `npm run test:watch`: unit tests in watch mode
-- `npx vitest run tests/draw.test.ts`: run a single test file
+- `npx vitest run tests/draw.test.ts`: run a single test file (on Windows run Vitest from PowerShell; in Git Bash its fork pool fails every file with "reading 'config'")
+- `npx playwright test layouts --project=laptop-1366`: just the 8-size layout sweep
 - `npm run test:db`: database constraint smoke tests against the dev DB in `.env.local` (rolled back; never run against production)
-- `npm run test:e2e`: Playwright main flow on Pixel 7 (Chromium) and iPhone 14 (WebKit), plus the party reveal on a 1920×1080 projector laptop (`e2e/reveal.spec.ts`, also checks 1366×768 and 1280×720; `--project=projector-1080p` runs just that), against `npm run dev` (reuses a running dev server on :3000) and the dev DB; deletes its test groups; screenshots in `e2e/screenshots/`. After `npm run build`, stop any running dev server first: a reused dev server that predates the build serves 500s
+- `npm run test:e2e`: Playwright main flow in four specs (`e2e/flow-1-setup-join`, `flow-2-draw-slip`, `flow-3-organizer`, `flow-4-reveal`; 2–4 start from groups seeded by `e2e/seed.ts`) on Pixel 7 (Chromium), iPhone 14 (WebKit) and a 1366×768 laptop (`laptop-1366`, which also runs `e2e/layouts.spec.ts`: every page at 8 sizes from 360×740 to 1920×1080, screenshots in `e2e/screenshots/layouts/`), plus the party reveal on a 1920×1080 projector laptop (`e2e/reveal.spec.ts`, also checks 1366×768 and 1280×720; `--project=projector-1080p` runs just that), against `npm run dev` (reuses a running dev server on :3000) and the dev DB; deletes its test groups; screenshots in `e2e/screenshots/`. After `npm run build`, stop any running dev server first: a reused dev server that predates the build serves 500s
 - `npm run db:generate`: generate a SQL migration in `drizzle/` from `server/db/schema.ts` (commit it)
 - `npm run db:migrate`: apply pending migrations to the database in `DATABASE_URL` (`.env.local` = Neon dev branch)
 - `npm run db:migrate:prod`: apply migrations to PRODUCTION, using only `.env.production.local`; shows host and pending migrations and asks for confirmation. The human runs this, never the AI assistant.
