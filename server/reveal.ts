@@ -6,8 +6,10 @@
  *
  * Anonymity:
  * - getRevealView is for the organizer's reveal screen only. While
- *   REVEALING it returns just the pair on screen, never the whole loop;
- *   the full list only once REVEALED.
+ *   REVEALING it returns the pair on screen, the pairs revealed so far
+ *   that are on the ring, and codenames for the rest of the ring (see
+ *   ./reveal-window.ts): never a name from a pair not revealed yet. The
+ *   full list only once REVEALED.
  * - getOwnGiver ("Ang nagbigay sa'yo ay…") returns nothing until the
  *   group is REVEALED, checked in the query itself.
  */
@@ -15,6 +17,7 @@ import { and, asc, eq, isNull } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db, type Tx } from "./db";
 import { assignments, groups, members, type GroupStatus } from "./db/schema";
+import { revealSlipsAt, type RevealSlip } from "./reveal-window";
 
 // --- Pure logic (unit tested) ----------------------------------------------
 
@@ -65,11 +68,13 @@ export interface RevealPair {
   receiverName: string;
 }
 
+export type { RevealSlip };
+
 export type RevealView =
-  | { status: "OPEN"; total: number }
-  | { status: "DRAWN"; total: number }
-  | { status: "REVEALING"; step: number; total: number; pair: RevealPair }
-  | { status: "REVEALED"; total: number; pairs: RevealPair[] };
+  | { status: "OPEN"; groupName: string; total: number }
+  | { status: "DRAWN"; groupName: string; total: number }
+  | { status: "REVEALING"; groupName: string; step: number; total: number; pair: RevealPair; slips: RevealSlip[] }
+  | { status: "REVEALED"; groupName: string; total: number; pairs: RevealPair[] };
 
 const giver = alias(members, "giver");
 const receiver = alias(members, "receiver");
@@ -109,21 +114,29 @@ const toRevealPair = (p: RevealPair): RevealPair => ({
  */
 export async function getRevealView(groupId: string): Promise<RevealView | null> {
   const [group] = await db()
-    .select({ status: groups.status, step: groups.revealStep })
+    .select({ status: groups.status, step: groups.revealStep, name: groups.name })
     .from(groups)
     .where(eq(groups.id, groupId))
     .limit(1);
   if (!group) return null;
+  const groupName = group.name;
   const pairs = group.status === "OPEN" ? [] : await orderedPairs(groupId);
   const total = pairs.length;
 
   if (group.status === "REVEALING") {
     const step = Math.min(Math.max(group.step, 1), total);
-    // Only the pair on screen leaves the server.
-    return { status: "REVEALING", step, total, pair: toRevealPair(pairs[step - 1]) };
+    // Only pairs revealed so far (and only those on the ring) leave the server.
+    return {
+      status: "REVEALING",
+      groupName,
+      step,
+      total,
+      pair: toRevealPair(pairs[step - 1]),
+      slips: revealSlipsAt(pairs, step),
+    };
   }
-  if (group.status === "REVEALED") return { status: "REVEALED", total, pairs: pairs.map(toRevealPair) };
-  return { status: group.status, total };
+  if (group.status === "REVEALED") return { status: "REVEALED", groupName, total, pairs: pairs.map(toRevealPair) };
+  return { status: group.status, groupName, total };
 }
 
 /**
