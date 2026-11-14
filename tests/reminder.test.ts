@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildGcReminder, mostHaveOpened, type ReminderInput } from "@/lib/reminder";
+import { buildGcReminder, buildThemePreview, mostHaveOpened, type ReminderInput } from "@/lib/reminder";
 import { getThemeStatus } from "@/lib/theme-status";
 import { themeStartDates } from "@/lib/theme-weeks";
 
@@ -69,6 +69,32 @@ describe("buildGcReminder", () => {
         "💸 Budget: ₱500",
       ].join("\n"),
     );
+  });
+});
+
+describe("buildThemePreview", () => {
+  it("reads like week 1's theme reminder, from what's typed so far", () => {
+    expect(
+      buildThemePreview({ groupName: " Opisina ", budget: 300, partyDate: PARTY, themes: ["", " Something red ", "x"] }),
+    ).toBe(
+      [
+        "🎁 Opisina reminder!",
+        "",
+        "✨ Ngayong linggo: Something red",
+        "💸 Budget: ₱300",
+        "🎉 Party: Sat, Dec 19, 2026",
+        "",
+        "Na-update n'yo na ba ang wishlist n'yo? Buksan ang personal link n'yo para hindi mahirapan ang monito n'yo 😉",
+      ].join("\n"),
+    );
+  });
+
+  it("shows a dash for blanks, a sample name, and no theme line without themes", () => {
+    const message = buildThemePreview({ groupName: "", budget: null, partyDate: "", themes: [] });
+    expect(message).toContain("🎁 Barkada Christmas Party reminder!");
+    expect(message).toContain("💸 Budget: ₱—");
+    expect(message).toContain("🎉 Party: —");
+    expect(message).not.toContain("✨");
   });
 });
 

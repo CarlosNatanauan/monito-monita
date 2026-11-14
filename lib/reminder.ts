@@ -15,10 +15,14 @@ export interface ReminderInput {
   kind?: ReminderKind;
   shareUrl: string;
   memberCount: number;
+  /** "" while not picked yet (the create form's live preview): shows a dash. */
   partyDate: string;
-  budget: number;
+  /** null while not typed yet (the create form's live preview): shows a dash. */
+  budget: number | null;
   theme: ThemeStatus;
 }
+
+const NOT_YET = "—";
 
 function themeLine(theme: ThemeStatus): string | null {
   switch (theme.kind) {
@@ -36,7 +40,8 @@ function themeLine(theme: ThemeStatus): string | null {
 }
 
 export function buildGcReminder(input: ReminderInput): string {
-  const party = formatPartyDate(input.partyDate);
+  const party = input.partyDate ? formatPartyDate(input.partyDate) : NOT_YET;
+  const budget = input.budget === null ? `₱${NOT_YET}` : formatPeso(input.budget);
 
   if (input.status === "OPEN") {
     const joined =
@@ -50,7 +55,7 @@ export function buildGcReminder(input: ReminderInput): string {
       `👉 ${input.shareUrl}`,
       "",
       `${joined} Party: ${party} 🎉`,
-      `Budget: ${formatPeso(input.budget)}`,
+      `Budget: ${budget}`,
     ].join("\n");
   }
 
@@ -61,7 +66,7 @@ export function buildGcReminder(input: ReminderInput): string {
       "Na-draw na! Buksan ang link mo para makita ang monito mo 🎁",
       "",
       `🎉 Party: ${party}`,
-      `💸 Budget: ${formatPeso(input.budget)}`,
+      `💸 Budget: ${budget}`,
     ].join("\n");
   }
 
@@ -70,7 +75,7 @@ export function buildGcReminder(input: ReminderInput): string {
     `🎁 ${input.groupName} reminder!`,
     "",
     ...(theme ? [theme] : []),
-    `💸 Budget: ${formatPeso(input.budget)}`,
+    `💸 Budget: ${budget}`,
     `🎉 Party: ${party}`,
     "",
     "Na-update n'yo na ba ang wishlist n'yo? Buksan ang personal link n'yo para hindi mahirapan ang monito n'yo 😉",
@@ -83,4 +88,31 @@ export function buildGcReminder(input: ReminderInput): string {
  */
 export function mostHaveOpened({ opened, total }: { opened: number; total: number }): boolean {
   return total > 0 && opened * 2 > total;
+}
+
+/**
+ * The create form's live preview: the weekly theme reminder as it will
+ * read in week 1, from what has been typed so far. Blank fields show a
+ * dash; the group name falls back to a sample.
+ */
+export function buildThemePreview(input: {
+  groupName: string;
+  budget: number | null;
+  partyDate: string;
+  themes: string[];
+}): string {
+  const first = input.themes.map((t) => t.trim()).find(Boolean);
+  const theme: ThemeStatus = first
+    ? { kind: "current", current: { title: first, startDate: "" }, next: null, partyDate: input.partyDate, daysToParty: 0 }
+    : { kind: "none", partyDate: input.partyDate, daysToParty: 0 };
+  return buildGcReminder({
+    groupName: input.groupName.trim() || "Barkada Christmas Party",
+    status: "DRAWN",
+    kind: "theme",
+    shareUrl: "",
+    memberCount: 0,
+    partyDate: input.partyDate,
+    budget: input.budget,
+    theme,
+  });
 }

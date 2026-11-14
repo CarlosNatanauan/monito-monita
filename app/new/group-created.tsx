@@ -48,49 +48,52 @@ export function GroupCreated({
   return (
     <>
       <RememberGroup slug={slug} name={groupName} role="organizer" />
-      <header className="flex flex-col gap-3 pb-2">
+      <header className="flex flex-col gap-3 md:pb-2">
         <h1 className="font-display text-heading-lg">Ready na ang group mo!</h1>
         <p>
           <span className="font-bold">{groupName}</span> is set. Dalawang link ang kailangan mo:
         </p>
       </header>
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Share link (para sa GC)</CardTitle>
-          <CardDescription>I-paste sa group chat para makasali ang lahat.</CardDescription>
-        </CardHeader>
-        <div className="flex flex-col gap-3">
-          <LinkBox url={shareUrl} />
-          <div className="flex gap-2">
-            <CopyButton text={shareUrl} label="Copy link" className="flex-1 px-4" />
-            {canShare && (
-              <Button type="button" variant="secondary" onClick={share} className="h-[58px] flex-1">
-                <Share2 /> Share
-              </Button>
-            )}
+      {/* From md: the two links side by side. */}
+      <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-6">
+        <Card>
+          <CardHeader>
+            <CardTitle>Share link (para sa GC)</CardTitle>
+            <CardDescription>I-paste sa group chat para makasali ang lahat.</CardDescription>
+          </CardHeader>
+          <div className="flex flex-col gap-3">
+            <LinkBox url={shareUrl} />
+            <div className="flex gap-2">
+              <CopyButton text={shareUrl} label="Copy link" className="flex-1 px-4" />
+              {canShare && (
+                <Button type="button" variant="secondary" onClick={share} className="h-[58px] flex-1">
+                  <Share2 /> Share
+                </Button>
+              )}
+            </div>
           </div>
-        </div>
-      </Card>
+        </Card>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <KeyRound className="size-5 shrink-0" aria-hidden />
-            Ito ang susi mo bilang organizer.
-          </CardTitle>
-          <CardDescription>This is your key as the organizer.</CardDescription>
-        </CardHeader>
-        <div className="flex flex-col gap-3">
-          <p className="text-small font-medium">
-            I-save mo &apos;to (bookmark o send sa sarili mo). <strong>Huwag i-share sa GC:</strong> kung sino ang may
-            hawak nito, siya ang organizer.
-          </p>
-          {/* Masked like the personal link on /me: people screenshot this screen. */}
-          <LinkBox url={organizerUrl} masked maskedLabel="Organizer link (nakatago). Gamitin ang Copy organizer link." />
-          <CopyButton text={organizerUrl} label="Copy organizer link" variant="secondary" />
-        </div>
-      </Card>
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <KeyRound className="size-5 shrink-0" aria-hidden />
+              Ito ang susi mo bilang organizer.
+            </CardTitle>
+            <CardDescription>This is your key as the organizer.</CardDescription>
+          </CardHeader>
+          <div className="flex flex-col gap-3">
+            <p className="text-small font-medium">
+              I-save mo &apos;to (bookmark o send sa sarili mo). <strong>Huwag i-share sa GC:</strong> kung sino ang may
+              hawak nito, siya ang organizer.
+            </p>
+            {/* Masked like the personal link on /me: people screenshot this screen. */}
+            <LinkBox url={organizerUrl} masked maskedLabel="Organizer link (nakatago). Gamitin ang Copy organizer link." />
+            <CopyButton text={organizerUrl} label="Copy organizer link" variant="secondary" />
+          </div>
+        </Card>
+      </div>
 
       <p className="px-1.5 text-small font-medium text-ube-soft">
         Naka-remember na rin ang device na &apos;to bilang organizer ng group.

@@ -3,9 +3,11 @@
 import { Plus, X } from "lucide-react";
 import { useActionState, useId, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { Input } from "@/components/ui/input";
 import { submitWithoutReset } from "@/lib/forms";
+import { buildThemePreview } from "@/lib/reminder";
 import {
   formatShortDate,
   isIsoDate,
@@ -104,131 +106,172 @@ function CreateGroupForm({
     clearErrors((k) => k === "themes");
   };
 
+  const preview = buildThemePreview({
+    groupName: name,
+    budget: budget ? Number(budget) : null,
+    partyDate: isIsoDate(partyDate) ? partyDate : "",
+    themes: themes.map((t) => t.title),
+  });
+
+  // Phones: one column (details, themes, Create). From md: the details and
+  // the Create button on the left; the theme weeks and a live preview of the
+  // GC reminder on the right. The DOM keeps the phone order.
   return (
     <>
-      <header className="flex flex-col gap-3 pb-2">
+      <header className="flex flex-col gap-3 md:pb-2">
         <h1 className="font-display text-heading-lg">Create your group</h1>
         <p>Ilang details lang, tapos share mo na sa GC.</p>
       </header>
 
-      <form onSubmit={submitWithoutReset(formAction)} className="flex flex-col gap-6" noValidate>
+      <form onSubmit={submitWithoutReset(formAction)} className="flex flex-col gap-5" noValidate>
         {showBanner && state.status === "error" && <ErrorMessage>{state.message}</ErrorMessage>}
 
-        <Field label="Group name" error={errors.name}>
-          {(props) => (
-            <Input
-              {...props}
-              name="name"
-              value={name}
-              onChange={(e) => {
-                setName(e.target.value);
-                clearErrors((k) => k === "name");
-              }}
-              placeholder="Barkada Christmas Party"
-              maxLength={60}
-              autoComplete="off"
-              required
-            />
-          )}
-        </Field>
+        <div className="flex flex-col gap-5 md:grid md:grid-cols-2 md:grid-rows-[auto_1fr] md:items-start md:gap-x-10 md:gap-y-8 lg:gap-x-16">
+          <div className="flex flex-col gap-5 md:col-start-1 md:row-start-1 md:gap-6">
+            <Field label="Group name" error={errors.name}>
+              {(props) => (
+                <Input
+                  {...props}
+                  name="name"
+                  value={name}
+                  onChange={(e) => {
+                    setName(e.target.value);
+                    clearErrors((k) => k === "name");
+                  }}
+                  placeholder="Barkada Christmas Party"
+                  maxLength={60}
+                  autoComplete="off"
+                  required
+                />
+              )}
+            </Field>
 
-        <Field label="Budget per gift" error={errors.budget}>
-          {(props) => (
-            <div className="relative">
-              <span aria-hidden className="pointer-events-none absolute inset-y-0 left-[18px] flex items-center font-bold text-ube-soft">
-                ₱
-              </span>
-              <Input
-                {...props}
-                name="budget"
-                value={budget}
-                onChange={(e) => {
-                  setBudget(e.target.value.replace(/[^\d]/g, ""));
-                  clearErrors((k) => k === "budget");
-                }}
-                inputMode="numeric"
-                placeholder="500"
-                className="pl-10"
-                required
-              />
-            </div>
-          )}
-        </Field>
+            <Field label="Budget per gift" error={errors.budget}>
+              {(props) => (
+                <div className="relative">
+                  <span aria-hidden className="pointer-events-none absolute inset-y-0 left-[18px] flex items-center font-bold text-ube-soft">
+                    ₱
+                  </span>
+                  <Input
+                    {...props}
+                    name="budget"
+                    value={budget}
+                    onChange={(e) => {
+                      setBudget(e.target.value.replace(/[^\d]/g, ""));
+                      clearErrors((k) => k === "budget");
+                    }}
+                    inputMode="numeric"
+                    placeholder="500"
+                    className="pl-10"
+                    required
+                  />
+                </div>
+              )}
+            </Field>
 
-        <Field label="Party date" error={errors.partyDate}>
-          {(props) => (
-            <Input
-              {...props}
-              type="date"
-              name="partyDate"
-              value={partyDate}
-              min={today}
-              onChange={(e) => {
-                setPartyDate(e.target.value);
-                clearErrors((k) => k === "partyDate");
-              }}
-              required
-            />
-          )}
-        </Field>
+            <Field label="Party date" error={errors.partyDate}>
+              {(props) => (
+                <Input
+                  {...props}
+                  type="date"
+                  name="partyDate"
+                  value={partyDate}
+                  min={today}
+                  onChange={(e) => {
+                    setPartyDate(e.target.value);
+                    clearErrors((k) => k === "partyDate");
+                  }}
+                  required
+                />
+              )}
+            </Field>
+          </div>
 
-        <fieldset className="flex flex-col gap-3">
-          <legend className="mb-1 px-1.5 font-bold">Theme weeks</legend>
-          <p className="-mt-1 px-1.5 text-small font-medium text-ube-soft">
-            Isang theme kada linggo bago ang party. Palitan o tanggalin as you like.
-          </p>
+          <div className="flex flex-col gap-6 md:col-start-2 md:row-span-2 md:row-start-1">
+            <fieldset className="flex flex-col gap-3">
+              <legend className="mb-1 px-1.5 font-bold">Theme weeks</legend>
+              <p className="-mt-1 px-1.5 text-small font-medium text-ube-soft">
+                Isang theme kada linggo bago ang party. Palitan o tanggalin as you like.
+              </p>
+              {/* Said once, not under every theme. Each theme's date shows once there is a party date. */}
+              {themes.length > 0 && startDates.length === 0 && (
+                <p className="-mt-1 px-1.5 text-small font-medium text-ube-soft">Starts once you pick the party date.</p>
+              )}
 
-          <ol className="flex flex-col gap-3">
-            {themes.map((theme, index) => {
-              const error = errors[`themes.${index}`];
-              const errorId = `theme-${theme.key}-error`;
-              return (
-                <li key={theme.key} className="flex flex-col gap-1">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      name="theme"
-                      value={theme.title}
-                      onChange={(e) => updateTheme(theme.key, index, e.target.value)}
-                      aria-label={`Theme ${index + 1}`}
-                      aria-invalid={error ? true : undefined}
-                      aria-describedby={error ? errorId : undefined}
-                      placeholder="Something…"
-                      maxLength={60}
-                    />
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => removeTheme(theme.key)}
-                      aria-label={`Remove theme ${index + 1}`}
-                    >
-                      <X />
-                    </Button>
-                  </div>
-                  <p className="px-1.5 text-small font-medium text-ube-soft">
-                    {startDates[index] ? `Starts ${formatShortDate(startDates[index])}` : "Starts once you pick the party date"}
-                  </p>
-                  {error && <ErrorMessage id={errorId} alert={false}>{error}</ErrorMessage>}
-                </li>
-              );
-            })}
-          </ol>
+              <ol className="flex flex-col gap-3">
+                {themes.map((theme, index) => {
+                  const error = errors[`themes.${index}`];
+                  const errorId = `theme-${theme.key}-error`;
+                  return (
+                    <li key={theme.key} className="flex flex-col gap-1">
+                      <div className="flex items-center gap-2">
+                        <Input
+                          name="theme"
+                          value={theme.title}
+                          onChange={(e) => updateTheme(theme.key, index, e.target.value)}
+                          aria-label={`Theme ${index + 1}`}
+                          aria-invalid={error ? true : undefined}
+                          aria-describedby={error ? errorId : undefined}
+                          placeholder="Something…"
+                          maxLength={60}
+                        />
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => removeTheme(theme.key)}
+                          aria-label={`Remove theme ${index + 1}`}
+                        >
+                          <X />
+                        </Button>
+                      </div>
+                      {startDates[index] && (
+                        <p className="px-1.5 text-small font-medium text-ube-soft">
+                          Starts {formatShortDate(startDates[index])}
+                        </p>
+                      )}
+                      {error && <ErrorMessage id={errorId} alert={false}>{error}</ErrorMessage>}
+                    </li>
+                  );
+                })}
+              </ol>
 
-          {themes.length === 0 && (
-            <p className="px-1.5 text-small font-medium text-ube-soft">Walang theme? Okay lang, puwede rin.</p>
-          )}
-          {errors.themes && <ErrorMessage alert={false}>{errors.themes}</ErrorMessage>}
+              {themes.length === 0 && (
+                <p className="px-1.5 text-small font-medium text-ube-soft">Walang theme? Okay lang, puwede rin.</p>
+              )}
+              {errors.themes && <ErrorMessage alert={false}>{errors.themes}</ErrorMessage>}
 
-          {themes.length < MAX_THEMES && (
-            <Button type="button" variant="secondary" size="sm" className="self-start" onClick={addTheme}>
-              <Plus /> Add a theme
-            </Button>
-          )}
-        </fieldset>
+              {themes.length < MAX_THEMES && (
+                <Button type="button" variant="secondary" size="sm" className="self-start" onClick={addTheme}>
+                  <Plus /> Add a theme
+                </Button>
+              )}
+            </fieldset>
 
-        <Button type="submit" className="w-full" disabled={pending || !hydrated}>
-          {pending ? "Ginagawa na…" : "Create group"}
-        </Button>
+            {/* Tablets and laptops only: phones keep the form short. */}
+            <Card className="hidden md:flex" role="region" aria-labelledby="reminder-preview-title">
+              <CardHeader>
+                <CardTitle id="reminder-preview-title">Paalala para sa GC</CardTitle>
+                <CardDescription>Ganito ang ipo-post mo kada linggo, pag na-draw na.</CardDescription>
+              </CardHeader>
+              <pre
+                aria-label="Reminder preview"
+                className="rounded-2xl bg-leaf-wash px-5 py-4 font-sans text-body whitespace-pre-wrap break-words"
+                translate="no"
+              >
+                {preview}
+              </pre>
+            </Card>
+          </div>
+
+          <Button
+            type="submit"
+            className="w-full md:col-start-1 md:row-start-2 md:self-start"
+            disabled={pending || !hydrated}
+          >
+            {pending ? "Ginagawa na…" : "Create group"}
+          </Button>
+        </div>
       </form>
     </>
   );
