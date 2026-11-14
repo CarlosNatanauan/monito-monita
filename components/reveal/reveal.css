@@ -1,0 +1,224 @@
+/*
+ * The party reveal stage (docs/DESIGN.md, "Reveal screen"). Drawn at
+ * 1920×1080 and scaled to fit. Final states come from data attributes;
+ * timelines only animate transform and opacity between them, from
+ * pre-painted layers (glows and halos are never animated box-shadows).
+ *
+ * Plain CSS with an rv- prefix, loaded only by the reveal stage: the
+ * project's Turbopack rule compiles every .css as global (no CSS modules).
+ */
+
+.rv-stage {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 1920px;
+  height: 1080px;
+  transform: translate(-50%, -50%) scale(var(--stage-scale, 1));
+  transform-origin: 50% 50%;
+  color: #fff;
+}
+.rv-stage[data-measured="false"] {
+  opacity: 0;
+}
+
+/* The gold radial glow behind everything at the finale. */
+.rv-parol-glow {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 46% 50% at 50% 50%, rgb(244 197 66 / 0.34) 0%, rgb(244 197 66 / 0.12) 45%, transparent 75%);
+  opacity: 0;
+  pointer-events: none;
+}
+.rv-stage[data-finale="true"] .rv-parol-glow {
+  opacity: 1;
+}
+
+/* --- Bulbs ------------------------------------------------------------------ */
+
+.rv-bulb {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--color-gabi-leaf);
+  box-shadow: inset 0 0 0 1.5px var(--color-gabi-line);
+}
+.rv-bulb-on,
+.rv-bulb-glow {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  opacity: 0;
+}
+.rv-bulb-on {
+  background: var(--color-margarine);
+}
+.rv-bulb-glow {
+  background: var(--color-margarine-core);
+  box-shadow: 0 0 28px 10px rgb(244 197 66 / 0.9);
+  will-change: opacity;
+}
+.rv-bulb[data-state="on"] .rv-bulb-on,
+.rv-bulb[data-state="glow"] .rv-bulb-on,
+.rv-bulb[data-state="glow"] .rv-bulb-glow {
+  opacity: 1;
+}
+
+/* --- Slips ------------------------------------------------------------------ */
+
+.rv-slip {
+  position: absolute;
+  left: 0;
+  top: 0;
+  perspective: 1400px;
+  list-style: none;
+}
+.rv-flip {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  transform-style: preserve-3d;
+}
+.rv-slip[data-face="revealed"] .rv-flip {
+  transform: rotateY(180deg);
+}
+.rv-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  padding: 8px 14px;
+  border-radius: 12px;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  text-align: center;
+  overflow: hidden;
+}
+.rv-front {
+  background: var(--color-gabi-leaf);
+  color: var(--color-gabi-mist);
+  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+}
+.rv-back {
+  background: var(--color-niyog);
+  color: var(--color-ube);
+  transform: rotateY(180deg);
+  box-shadow: 0 8px 22px rgb(0 0 0 / 0.3);
+}
+.rv-slip[data-face="blank"] .rv-code {
+  opacity: 0;
+}
+.rv-name,
+.rv-code {
+  font-family: var(--font-hand);
+  line-height: 1.05;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  line-clamp: 2;
+  overflow: hidden;
+}
+.rv-to {
+  font-weight: 700;
+  font-size: 24px;
+  line-height: 1.25;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Gold outline and halo: a pre-painted layer, faded in. */
+.rv-halo {
+  position: absolute;
+  inset: -1px;
+  border-radius: 13px;
+  box-shadow:
+    0 0 0 4px var(--color-margarine),
+    0 0 50px 10px rgb(244 197 66 / 0.6);
+  opacity: 0;
+  pointer-events: none;
+  will-change: opacity;
+}
+.rv-slip[data-halo="true"] .rv-halo {
+  opacity: 1;
+}
+
+/* --- Centre ------------------------------------------------------------------ */
+
+/* Positioned without a transform, so timelines can move and scale it freely. */
+.rv-centre {
+  position: absolute;
+  left: 440px;
+  width: 1040px;
+  top: 250px;
+  height: 580px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  gap: 14px;
+}
+.rv-centre-line {
+  max-width: 860px;
+  overflow-wrap: anywhere;
+}
+
+/* --- All pairs (large groups after the finale, or on request) ---------------- */
+
+.rv-list {
+  position: absolute;
+  left: 96px;
+  right: 96px;
+  top: 66px;
+  bottom: 140px;
+  display: flex;
+  flex-direction: column;
+}
+/* The scroller wraps the columns, so long lists scroll down instead of
+   overflowing into extra columns to the side. */
+.rv-list-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}
+.rv-list-items {
+  padding: 0 4px 8px;
+  column-gap: 48px;
+}
+.rv-list-item {
+  break-inside: avoid;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1.5px dashed rgb(220 235 221 / 0.18);
+}
+
+/* --- Reduced motion: no flip or travel, faces cross-fade --------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  .rv-slip[data-face="revealed"] .rv-flip,
+  .rv-back {
+    transform: none;
+  }
+  .rv-back {
+    opacity: 0;
+  }
+  .rv-slip[data-face="revealed"] .rv-back {
+    opacity: 1;
+  }
+  .rv-slip[data-face="revealed"] .rv-front {
+    opacity: 0;
+  }
+}
