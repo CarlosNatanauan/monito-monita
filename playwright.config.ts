@@ -8,6 +8,12 @@ if (existsSync(".env.local")) process.loadEnvFile(".env.local");
 // project folder, so an already-running dev server is reused.
 const PORT = 3000;
 
+// The projector reveal and the 8-size layout sweep set their own screens.
+// Anchored on the file name: flow-4-reveal.spec.ts is a phone spec.
+const PROJECTOR_SPEC = /[\/]reveal\.spec\.ts$/;
+const PHONE_IGNORE = /[\/](reveal|layouts)\.spec\.ts$/;
+const LAPTOP_MATCH = /[\/](flow-\d-[\w-]+|layouts)\.spec\.ts$/;
+
 export default defineConfig({
   testDir: "./e2e",
   outputDir: "./test-results",
@@ -16,9 +22,9 @@ export default defineConfig({
   workers: 1,
   fullyParallel: false,
   retries: 0,
-  // One long flow per phone. WebKit takes ~5.5 minutes on a Windows dev
-  // machine (it was already ~5 before the redesign), so leave headroom.
-  timeout: 480_000,
+  // The main flow is split in four specs (flow-1 … flow-4), each well
+  // under this on WebKit on a Windows dev machine.
+  timeout: 240_000,
   expect: { timeout: 20_000 },
   reporter: [["list"]],
   globalTeardown: "./e2e/global-teardown.ts",
@@ -29,13 +35,20 @@ export default defineConfig({
     navigationTimeout: 60_000,
   },
   projects: [
-    { name: "android-pixel-7", use: { ...devices["Pixel 7"] }, testIgnore: /reveal\.spec\.ts/ },
-    { name: "iphone-14", use: { ...devices["iPhone 14"] }, testIgnore: /reveal\.spec\.ts/ },
+    { name: "android-pixel-7", use: { ...devices["Pixel 7"] }, testIgnore: PHONE_IGNORE },
+    { name: "iphone-14", use: { ...devices["iPhone 14"] }, testIgnore: PHONE_IGNORE },
+    // The tablet and laptop layouts: the flow specs on an organizer's laptop
+    // (Chromium, 1366×768), and every page at 8 sizes (layouts.spec.ts).
+    {
+      name: "laptop-1366",
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 768 } },
+      testMatch: LAPTOP_MATCH,
+    },
     // The party reveal on a projector laptop (Chromium, 1920×1080; the spec also checks 1366×768 and 1280×720).
     {
       name: "projector-1080p",
       use: { ...devices["Desktop Chrome"], viewport: { width: 1920, height: 1080 } },
-      testMatch: /reveal\.spec\.ts/,
+      testMatch: PROJECTOR_SPEC,
     },
   ],
   webServer: {
