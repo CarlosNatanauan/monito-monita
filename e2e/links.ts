@@ -1,15 +1,19 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
- * The personal link on /me. It's shown masked ("…/me?t=••••••"), so the
- * test gets the real link the way a person does: "Copy my link". The copy
- * is caught in the page (no OS clipboard), and the token must not appear
- * anywhere in the visible text.
+ * Reads a masked link the way a person gets it: the box shows
+ * "host/…/{page}?t=••••••", and `copy` puts the real link on the
+ * clipboard. The copy is caught in the page (no OS clipboard), and the
+ * token must not appear anywhere in the visible text.
  */
-export async function readMyLink(page: Page): Promise<string> {
-  const box = page.locator("[data-masked-link]");
+export async function readMaskedLink(
+  page: Page,
+  { scope, copyLabel, pageName }: { scope?: Locator; copyLabel: string; pageName: "me" | "admin" },
+): Promise<string> {
+  const within = scope ?? page.locator("body");
+  const box = within.locator("[data-masked-link]");
   // Host, then dots, once the origin is known ("localhost:3000/…/me?t=••••••").
-  await expect(box).toHaveText(/^[a-z0-9.-]+(:\d+)?\/…\/me\?t=•{6}/);
+  await expect(box).toHaveText(new RegExp(`^[a-z0-9.-]+(:\\d+)?/…/${pageName}\\?t=•{6}`));
 
   await page.evaluate(() => {
     const w = window as unknown as { __copied?: string };
@@ -21,13 +25,19 @@ export async function readMyLink(page: Page): Promise<string> {
       },
     });
   });
-  const copy = page.getByRole("button", { name: "Copy my link" });
-  await copy.click();
-  await expect(page.getByRole("button", { name: "Copied!" })).toBeVisible();
+  await within.getByRole("button", { name: copyLabel, exact: true }).click();
+  await expect(within.getByRole("button", { name: "Copied!" })).toBeVisible();
   const link = await page.evaluate(() => (window as unknown as { __copied?: string }).__copied ?? "");
-  expect(link).toMatch(/^https?:\/\/[^/]+\/g\/[a-z0-9]+\/me\?t=[\w-]+/);
+  expect(link).toMatch(new RegExp(`^https?://[^/]+/g/[a-z0-9]+/${pageName}\\?t=[\\w-]+`));
+  // The copied link uses the page's own origin (no NEXT_PUBLIC_SITE_URL in dev), never a hardcoded domain.
+  expect(new URL(link).origin).toBe(new URL(page.url()).origin);
 
   const token = new URL(link).searchParams.get("t")!;
-  expect(await page.locator("body").innerText(), "the token is visible on /me").not.toContain(token);
+  expect(await page.locator("body").innerText(), `the token is visible on ${page.url()}`).not.toContain(token);
   return link;
+}
+
+/** The personal link on /me, via "Copy my link". */
+export async function readMyLink(page: Page): Promise<string> {
+  return readMaskedLink(page, { copyLabel: "Copy my link", pageName: "me" });
 }

@@ -5,10 +5,16 @@ const TOKEN = "q8Zr2l1PfY0b-x_93KpLmN4sTuVwXyZaBcDeFgHiJkL";
 
 describe("maskLink", () => {
   it("hides the token and the slug of an absolute member link", () => {
-    const masked = maskLink(`https://monitomonita.app/g/abc123def456/me?t=${TOKEN}`);
-    expect(masked).toBe(`monitomonita.app/…/me?t=${MASK}`);
+    const masked = maskLink(`https://monitomonita-ph.vercel.app/g/abc123def456/me?t=${TOKEN}`);
+    expect(masked).toBe(`monitomonita-ph.vercel.app/…/me?t=${MASK}`);
     expect(masked).not.toContain(TOKEN);
     expect(masked).not.toContain("abc123def456");
+  });
+
+  it("hides the token of an organizer link", () => {
+    expect(maskLink(`https://monitomonita-ph.vercel.app/g/abc123def456/admin?t=${TOKEN}`)).toBe(
+      `monitomonita-ph.vercel.app/…/admin?t=${MASK}`,
+    );
   });
 
   it("keeps the port for local links", () => {

@@ -6,6 +6,7 @@ import { CopyButton, LinkBox } from "@/components/copy-link";
 import { RememberGroup } from "@/components/remember-group";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { siteOrigin } from "@/lib/site-url";
 
 const noopSubscribe = () => () => {};
 
@@ -27,7 +28,7 @@ export function GroupCreated({
   organizerToken: string;
 }) {
   // Only rendered in the browser after the action succeeds.
-  const origin = window.location.origin;
+  const origin = siteOrigin(window.location.origin);
   const shareUrl = `${origin}/g/${slug}`;
   const organizerUrl = `${origin}/g/${slug}/admin?t=${organizerToken}`;
   const canShare = useCanShare();
@@ -85,7 +86,8 @@ export function GroupCreated({
             I-save mo &apos;to (bookmark o send sa sarili mo). <strong>Huwag i-share sa GC:</strong> kung sino ang may
             hawak nito, siya ang organizer.
           </p>
-          <LinkBox url={organizerUrl} />
+          {/* Masked like the personal link on /me: people screenshot this screen. */}
+          <LinkBox url={organizerUrl} masked maskedLabel="Organizer link (nakatago). Gamitin ang Copy organizer link." />
           <CopyButton text={organizerUrl} label="Copy organizer link" variant="secondary" />
         </div>
       </Card>

@@ -7,13 +7,13 @@ import {
   sendLandingView,
 } from "@/server/landing-view";
 
-const OWN = "monitomonita.app";
+const OWN = "monitomonita-ph.vercel.app";
 const config = { key: "phc_test", host: "https://us.i.posthog.com" };
 
 describe("referrerDomain", () => {
   it("reduces Facebook and Messenger link wrappers to the site", () => {
     expect(referrerDomain("https://l.facebook.com/", OWN)).toBe("facebook.com");
-    expect(referrerDomain("https://lm.facebook.com/l.php?u=https%3A%2F%2Fmonitomonita.app%2F&h=AT0", OWN)).toBe(
+    expect(referrerDomain("https://lm.facebook.com/l.php?u=https%3A%2F%2Fmonitomonita-ph.vercel.app%2F&h=AT0", OWN)).toBe(
       "facebook.com",
     );
     expect(referrerDomain("https://m.facebook.com/groups/123/posts/456", OWN)).toBe("facebook.com");
@@ -32,7 +32,7 @@ describe("referrerDomain", () => {
   it("direct, internal, Android apps, and junk", () => {
     expect(referrerDomain(null, OWN)).toBe("direct");
     expect(referrerDomain("", OWN)).toBe("direct");
-    expect(referrerDomain("https://monitomonita.app/g/abc123def456", OWN)).toBe("internal");
+    expect(referrerDomain("https://monitomonita-ph.vercel.app/g/abc123def456", OWN)).toBe("internal");
     expect(referrerDomain("http://localhost:3000/new", "localhost:3000")).toBe("internal");
     expect(referrerDomain("android-app://com.facebook.orca/", OWN)).toBe("app:com.facebook.orca");
     expect(referrerDomain("not a url", OWN)).toBe("other");

@@ -8,7 +8,7 @@ const themes = themeStartDates(PARTY, 2).map((startDate, i) => ({ title: ["Somet
 const base: ReminderInput = {
   groupName: "Barkada Party",
   status: "OPEN",
-  shareUrl: "https://monitomonita.app/g/abc123xyz789",
+  shareUrl: "https://monitomonita-ph.vercel.app/g/abc123xyz789",
   memberCount: 7,
   partyDate: PARTY,
   budget: 500,
@@ -22,7 +22,7 @@ describe("buildGcReminder", () => {
         "🎁 Monito Monita: Barkada Party",
         "",
         "Sali na sa exchange gift natin! 🎄",
-        "👉 https://monitomonita.app/g/abc123xyz789",
+        "👉 https://monitomonita-ph.vercel.app/g/abc123xyz789",
         "",
         "7 na ang sumali. Party: Sat, Dec 19, 2026 🎉",
         "Budget: ₱500",

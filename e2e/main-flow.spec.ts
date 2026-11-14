@@ -21,7 +21,7 @@ import { formatPartyDate } from "../lib/format";
 import { addDays, formatShortDate, todayIn } from "../lib/theme-weeks";
 import { closeDb } from "../server/db";
 import { deleteGroups, E2E_PREFIX } from "./db-cleanup";
-import { readMyLink } from "./links";
+import { readMaskedLink, readMyLink } from "./links";
 import {
   capturePage,
   expectJoinPageClean,
@@ -234,7 +234,8 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     await expect(page.getByText("Ito ang susi mo bilang organizer.")).toBeVisible();
 
     shareUrl = await readLink(page, /\/g\/[a-z0-9]+$/);
-    organizerUrl = await readLink(page, /\/admin\?t=/);
+    // The organizer link is masked on screen (screenshots); Copy has the real one.
+    organizerUrl = await readMaskedLink(page, { copyLabel: "Copy organizer link", pageName: "admin" });
     slug = new URL(shareUrl).pathname.split("/")[2];
     createdSlugs.push(slug);
     expect(organizerUrl).toContain(`/g/${slug}/admin?t=`);
@@ -831,9 +832,13 @@ test("main flow: create, join, organizer, exclusions, draw, results, reveal, lea
     };
     page.on("response", onResponse);
     await page.getByRole("button", { name: "Oo, gumawa ng bago" }).click();
-    const box = page.getByRole("group", { name: "New link for Ben" }).locator("p.select-all");
-    await expect(box).toHaveText(new RegExp(`^https?://.+/g/${slug}/me\\?t=`));
-    const newLink = (await box.textContent())!.trim();
+    // Masked on screen like /me; "Copy link" has the real one.
+    const newLink = await readMaskedLink(page, {
+      scope: page.getByRole("group", { name: "New link for Ben" }),
+      copyLabel: "Copy link",
+      pageName: "me",
+    });
+    expect(newLink).toContain(`/g/${slug}/me?t=`);
     page.off("response", onResponse);
     expect(newLink).not.toBe(benLink);
     expectOrganizerPageClean((await Promise.all(responses)).join("\n"), truth);

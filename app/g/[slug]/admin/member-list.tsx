@@ -229,7 +229,12 @@ export function MemberList({
                     huwag buksan sa phone mo).
                     {newLink.pinReset && " Na-reset ang PIN niya: magse-set siya ng bago pagbukas ng link."}
                   </p>
-                  <CopyLink path={newLink.path} label="Copy link" variant="secondary" />
+                  <CopyLink
+                    path={newLink.path}
+                    label="Copy link"
+                    variant="secondary"
+                    maskedLabel={`Bagong link ni ${member.displayName} (nakatago). Gamitin ang Copy link.`}
+                  />
                 </Inset>
               )}
 

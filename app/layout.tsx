@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Gochi_Hand, Instrument_Serif, Manrope } from "next/font/google";
+import { serverSiteUrl } from "@/lib/site-url";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
@@ -28,21 +29,14 @@ const gochi = Gochi_Hand({
   variable: "--font-gochi",
 });
 
-// Absolute URLs for share images. Production: NEXT_PUBLIC_SITE_URL, or
-// Vercel's production domain; preview deploys use their own URL.
-function siteUrl(): URL {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL;
-  if (explicit) return new URL(explicit);
-  const vercel =
-    process.env.VERCEL_ENV === "production" ? process.env.VERCEL_PROJECT_PRODUCTION_URL : process.env.VERCEL_URL;
-  return new URL(vercel ? `https://${vercel}` : "http://localhost:3000");
-}
+// Absolute URLs for share images: NEXT_PUBLIC_SITE_URL in production
+// (https://monitomonita-ph.vercel.app), else the deploy's own URL.
 
 const SHARE_TITLE = "Monito Monita — Bunutan, wishlists, and the big reveal.";
 const DESCRIPTION = "Bunutan, wishlists, and the big reveal. Isang link lang.";
 
 export const metadata: Metadata = {
-  metadataBase: siteUrl(),
+  metadataBase: serverSiteUrl(),
   title: "Monito Monita",
   description: DESCRIPTION,
   // The generic preview: home, and every page without its own (including

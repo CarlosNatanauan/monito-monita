@@ -2,8 +2,8 @@
 export const MASK = "••••••";
 
 /**
- * A personal link as it may appear on screen: the host and the end of the
- * path, with the token replaced by dots ("monitomonita.app/…/me?t=••••••").
+ * A personal or organizer link as it may appear on screen: the host and the end of the
+ * path, with the token replaced by dots ("monitomonita-ph.vercel.app/…/me?t=••••••").
  * People screenshot their page, so the token itself is never shown; Copy
  * and Share still use the full link. Pure; works on paths too.
  */

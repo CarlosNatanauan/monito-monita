@@ -15,7 +15,7 @@ import { addDays, todayIn } from "../lib/theme-weeks";
 import { closeDb, db } from "../server/db";
 import { members } from "../server/db/schema";
 import { deleteGroups, E2E_PREFIX } from "./db-cleanup";
-import { readMyLink } from "./links";
+import { readMaskedLink, readMyLink } from "./links";
 import { capturePage, expectJoinPageClean, getTruth } from "./leak";
 
 const createdSlugs: string[] = [];
@@ -293,9 +293,7 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     await page.getByRole("button", { name: "Oo, gumawa ng bago" }).click();
     const group = page.getByRole("group", { name: "New link for Ana" });
     await expect(group.getByText("Na-reset ang PIN niya", { exact: false })).toBeVisible();
-    const box = group.locator("p.select-all");
-    await expect(box).toHaveText(new RegExp(`^https?://.+/g/${slug}/me\\?t=`));
-    const newLink = (await box.textContent())!.trim();
+    const newLink = await readMaskedLink(page, { scope: group, copyLabel: "Copy link", pageName: "me" });
 
     const anaE = await newPerson(browser, testInfo, "Ana (phone E)");
     await anaE.page.goto(newLink);

@@ -4,12 +4,16 @@ import { Check } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { maskLink } from "@/lib/mask-link";
+import { siteOrigin } from "@/lib/site-url";
 
 const noopSubscribe = () => () => {};
 
-/** The site origin in the browser ("" during server rendering). */
+/**
+ * The origin for links on screen, in Copy and in Share: NEXT_PUBLIC_SITE_URL
+ * when set, else the page's real origin ("" during server rendering).
+ */
 export function useOrigin(): string {
-  return useSyncExternalStore(noopSubscribe, () => window.location.origin, () => "");
+  return useSyncExternalStore(noopSubscribe, () => siteOrigin(window.location.origin), () => "");
 }
 
 /**
@@ -17,7 +21,16 @@ export function useOrigin(): string {
  * the link with its token as dots instead (personal links: people
  * screenshot their page); the real link is then only in Copy / Share.
  */
-export function LinkBox({ url, masked = false }: { url: string; masked?: boolean }) {
+export function LinkBox({
+  url,
+  masked = false,
+  maskedLabel = "Personal link (nakatago). Gamitin ang Copy o Send.",
+}: {
+  url: string;
+  masked?: boolean;
+  /** What a screen reader says instead of the hidden link. */
+  maskedLabel?: string;
+}) {
   if (masked) {
     return (
       <p
@@ -26,7 +39,7 @@ export function LinkBox({ url, masked = false }: { url: string; masked?: boolean
         translate="no"
       >
         <span aria-hidden>{maskLink(url)}</span>
-        <span className="sr-only">Personal link (nakatago). Gamitin ang Copy o Send.</span>
+        <span className="sr-only">{maskedLabel}</span>
       </p>
     );
   }
@@ -72,21 +85,24 @@ export function CopyButton({
   );
 }
 
-/** A link from a path, made absolute in the browser, with a Copy button. */
+/** A link from a path, made absolute in the browser, with a Copy button. Pass `maskedLabel` to hide its token. */
 export function CopyLink({
   path,
   label,
   variant = "default",
+  maskedLabel,
 }: {
   path: string;
   label: string;
   variant?: "default" | "secondary";
+  /** Show the link with its token as dots (Copy still uses the full link). */
+  maskedLabel?: string;
 }) {
   const origin = useOrigin();
   const url = origin ? `${origin}${path}` : "";
   return (
     <div className="flex flex-col gap-3">
-      <LinkBox url={url || path} />
+      <LinkBox url={url || path} masked={Boolean(maskedLabel)} maskedLabel={maskedLabel} />
       <CopyButton text={url} label={label} variant={variant} />
     </div>
   );
