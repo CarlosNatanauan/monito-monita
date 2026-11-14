@@ -3,8 +3,10 @@
  *
  *   npm run db:migrate:prod
  *
- * - Reads DATABASE_URL from .env.production.local only (never .env.local,
- *   never the shell environment).
+ * - Reads DATABASE_URL from .env.prod-migrate.local only (never .env.local,
+ *   never the shell environment). That name is deliberate: Next.js never
+ *   loads it, so `next dev` / `next start` can't reach production. Don't use
+ *   .env.production.local (Next loads it on every `next build` / `next start`).
  * - Refuses to run if it's the same database as .env.local (dev).
  * - Shows the host, database, and pending migrations, then asks you to
  *   type "migrate production" before changing anything.
@@ -16,8 +18,10 @@ import { drizzle } from "drizzle-orm/node-postgres";
 import { migrate } from "drizzle-orm/node-postgres/migrator";
 import pg from "pg";
 
-const PROD_ENV_FILE = ".env.production.local";
+const PROD_ENV_FILE = ".env.prod-migrate.local";
 const DEV_ENV_FILE = ".env.local";
+// Next.js loads this one automatically; production credentials must never live there.
+const NEXT_LOADED_PROD_FILE = ".env.production.local";
 const MIGRATIONS_FOLDER = "drizzle";
 const CONFIRMATION = "migrate production";
 
@@ -29,6 +33,13 @@ function fail(message: string): never {
 function readDatabaseUrl(file: string): string | undefined {
   if (!existsSync(file)) return undefined;
   return parseEnv(readFileSync(file, "utf8")).DATABASE_URL;
+}
+
+if (existsSync(NEXT_LOADED_PROD_FILE)) {
+  fail(
+    `${NEXT_LOADED_PROD_FILE} exists. Next.js loads it on every local \`next build\` / \`next start\`, ` +
+      `so a local build could reach production. Rename it to ${PROD_ENV_FILE} and run this again.`,
+  );
 }
 
 const prodUrl = readDatabaseUrl(PROD_ENV_FILE);
