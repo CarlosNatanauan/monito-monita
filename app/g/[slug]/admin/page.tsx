@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import type { CSSProperties, ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
@@ -19,7 +20,7 @@ import { checkDrawFeasibility } from "@/server/draw-check";
 import { countAssignments, countSlipsOpened, hasOpenedOwnSlip } from "@/server/draw-service";
 import { getDrawSetup, toExclusions } from "@/server/exclusions";
 import { getOrganizerView } from "@/server/members";
-import { Eyebrow, pageClass } from "@/components/page";
+import { Eyebrow, Narrow, widePageClass } from "@/components/page";
 import { GroupFacts, PageFallback } from "../group-facts";
 import { DrawSection } from "./draw-section";
 import { ExclusionsSection } from "./exclusions-section";
@@ -39,7 +40,7 @@ const STATUS_LABEL: Record<GroupStatus, string> = {
 
 export default function OrganizerPage({ params }: PageProps<"/g/[slug]/admin">) {
   return (
-    <main className={cn(pageClass, "pt-5 md:max-w-2xl")}>
+    <main className={cn(widePageClass, "pt-4 md:pt-8")}>
       <Suspense fallback={<PageFallback />}>
         <OrganizerContent params={params} />
       </Suspense>
@@ -54,7 +55,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
   const organizer = await getCurrentOrganizer(slug);
   if (!organizer) {
     return (
-      <>
+      <Narrow>
         {/* This device's organizer link no longer works: drop it from "Your groups". */}
         <RememberGroup slug={slug} name="" role="organizer" forget />
         <Card className="mt-6">
@@ -64,7 +65,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
             ka, gamitin ang personal link mo.
           </CardDescription>
         </Card>
-      </>
+      </Narrow>
     );
   }
 
@@ -142,7 +143,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
             ? null
             : feasibility.status === "too_few"
               ? feasibility.message
-              : "Ayusin muna ang mga bawal sa itaas."
+              : "Ayusin muna ang mga bawal magkabunot."
         }
       />
     </Card>
@@ -174,19 +175,22 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
   const membersCard = (
     <Card>
       <CardTitle>Members ({memberCount})</CardTitle>
-      <MemberList
-        slug={slug}
-        canRemove={group.status === "OPEN" || group.status === "DRAWN"}
-        drawn={!isOpen}
-        members={view.members.map((m) => ({
-          id: m.id,
-          displayName: m.displayName,
-          joinedLabel: formatJoinedAt(m.joinedAt, group.timezone),
-          linkStatus: m.linkStatus,
-          pinLocked: m.pinLocked,
-          slipOpened: m.slipOpened,
-        }))}
-      />
+      {/* From md: scrolls inside the card past ~11 rows, so a big group doesn't push the rest far down. */}
+      <div className="md:-mx-2 md:max-h-[40rem] md:overflow-y-auto md:px-2 md:py-0.5">
+        <MemberList
+          slug={slug}
+          canRemove={group.status === "OPEN" || group.status === "DRAWN"}
+          drawn={!isOpen}
+          members={view.members.map((m) => ({
+            id: m.id,
+            displayName: m.displayName,
+            joinedLabel: formatJoinedAt(m.joinedAt, group.timezone),
+            linkStatus: m.linkStatus,
+            pinLocked: m.pinLocked,
+            slipOpened: m.slipOpened,
+          }))}
+        />
+      </div>
     </Card>
   );
 
@@ -251,43 +255,100 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     </Card>
   );
 
+  // Theme weeks, then the party details: one cell on wider screens.
+  const setupCell = (
+    <div className="flex flex-col gap-4 md:gap-6">
+      {themeWeeks}
+      {details}
+    </div>
+  );
+
+  // Phones: one column, in the order below for each stage. From md: a
+  // dashboard (status and lights, the draw, the GC reminder on the left;
+  // members on the right; the rest in two columns below).
+  const sections: Section[] = isOpen
+    ? // Before the draw: get everyone in, set the bawal pairs, then draw.
+      [
+        { key: "share", area: "left", node: shareLink },
+        { key: "join", area: "below", node: joinAsMember },
+        { key: "exclusions", area: "below", node: exclusions },
+        { key: "bunutan", area: "left", node: bunutan },
+        { key: "members", area: "right", node: membersCard },
+        { key: "reminder", area: "left", node: reminder },
+        { key: "setup", area: "below", node: setupCell },
+      ]
+    : // After the draw: track slips, remind the GC, then the rest.
+      [
+        { key: "reveal-now", area: "left", node: group.status === "REVEALING" && reveal },
+        { key: "bunutan", area: "left", node: bunutan },
+        { key: "reminder", area: "left", node: reminder },
+        { key: "own-slip", area: "left", node: ownSlip },
+        { key: "members", area: "right", node: membersCard },
+        { key: "reveal", area: "below", node: group.status !== "REVEALING" && reveal },
+        { key: "share", area: "below", node: shareLink },
+        { key: "exclusions", area: "below", node: exclusions },
+        { key: "setup", area: "below", node: setupCell },
+      ];
+
   return (
     <>
       <RememberGroup slug={slug} name={group.name} role="organizer" />
       {member && <RoleSwitch slug={slug} current="organizer" />}
-      <header className="flex flex-col gap-2 pt-5 pb-3">
+      <header className="flex flex-col gap-2 pt-2 pb-1 md:pb-3">
         <Eyebrow>Organizer</Eyebrow>
         <h1 className="font-display text-heading-lg break-words">{group.name}</h1>
         <p className="mt-2 font-bold text-dahon">{STATUS_LABEL[group.status]}</p>
       </header>
 
-      {isOpen ? (
-        // Before the draw: get everyone in, set the bawal pairs, then draw.
-        <>
-          {shareLink}
-          {joinAsMember}
-          {exclusions}
-          {bunutan}
-          {membersCard}
-          {reminder}
-          {themeWeeks}
-          {details}
-        </>
-      ) : (
-        // After the draw: track slips, remind the GC, then the rest.
-        <>
-          {group.status === "REVEALING" && reveal}
-          {bunutan}
-          {reminder}
-          {ownSlip}
-          {membersCard}
-          {group.status !== "REVEALING" && reveal}
-          {shareLink}
-          {exclusions}
-          {themeWeeks}
-          {details}
-        </>
-      )}
+      <Dashboard sections={sections} />
     </>
+  );
+}
+
+type Area = "left" | "right" | "below";
+interface Section {
+  key: string;
+  area: Area;
+  node: ReactNode;
+}
+
+/**
+ * The organizer page's sections in phone order (the DOM order, so phones
+ * and screen readers read them as listed). From md each one gets a cell:
+ * "left" sections stack in the first column; "right" (the members) spans
+ * them in the second column, plus a flexible row so a long list doesn't
+ * spread the left cards apart; "below" sections fill two columns
+ * underneath, row by row.
+ */
+function Dashboard({ sections }: { sections: Section[] }) {
+  const shown = sections.filter((s) => Boolean(s.node));
+  const leftCount = shown.filter((s) => s.area === "left").length;
+  let left = 0;
+  let below = 0;
+  const cell = (area: Area): { col: string; row: string } => {
+    if (area === "left") return { col: "1", row: String(++left) };
+    if (area === "right") return { col: "2", row: `1 / span ${leftCount + 1}` };
+    const i = below++;
+    return { col: String(1 + (i % 2)), row: String(leftCount + 2 + Math.floor(i / 2)) };
+  };
+  return (
+    <div
+      className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-6 md:[grid-template-rows:var(--rows)] lg:gap-x-8"
+      style={{ "--rows": `repeat(${leftCount}, auto) 1fr` } as CSSProperties}
+    >
+      {shown.map((s) => {
+        const { col, row } = cell(s.area);
+        return (
+          <div
+            key={s.key}
+            data-area={s.area}
+            className="flex flex-col md:[grid-column:var(--col)] md:[grid-row:var(--row)]"
+            style={{ "--col": col, "--row": row } as CSSProperties}
+          >
+            {s.node}
+          </div>
+        );
+      })}
+    </div>
   );
 }
