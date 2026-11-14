@@ -87,7 +87,7 @@ export function RevealScreen({
       <header className="z-10 flex items-center justify-between gap-2 px-4 pt-3 landscape:absolute landscape:inset-x-[5vw] landscape:top-[5vh] landscape:p-0">
         <Link
           href={backHref}
-          className="flex min-h-11 items-center rounded-sm font-bold text-gabi-mist underline underline-offset-4 focus-ring landscape:text-[clamp(16px,2.2vh,24px)]"
+          className="flex min-h-11 items-center rounded-sm font-bold text-gabi-mist underline underline-offset-4 focus-ring landscape:text-[clamp(16px,2.4vh,28px)]"
         >
           Back to organizer page
         </Link>

@@ -13,7 +13,7 @@ export const GOLD_BUTTON =
 export const NIGHT_BUTTON =
   "h-[58px] border-[1.5px] border-gabi-mist bg-transparent text-gabi-mist disabled:border-gabi-leaf disabled:bg-transparent disabled:text-gabi-line landscape:h-[clamp(48px,6vh,68px)] landscape:px-[clamp(20px,2.4vh,34px)] landscape:text-[clamp(17px,2.5vh,28px)]";
 export const ICON_BUTTON =
-  "h-12 gap-2 rounded-full px-4 font-bold text-gabi-mist hover:bg-gabi-leaf landscape:h-[clamp(44px,5vh,60px)] landscape:text-[clamp(16px,2.2vh,24px)]";
+  "h-12 gap-2 rounded-full px-4 font-bold text-gabi-mist hover:bg-gabi-leaf landscape:h-[clamp(44px,5.4vh,64px)] landscape:text-[clamp(16px,2.4vh,28px)]";
 
 const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement &&

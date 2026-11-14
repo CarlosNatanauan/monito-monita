@@ -42,6 +42,8 @@ export interface StageView {
 
 type TimelineModule = typeof import("./reveal-timeline");
 
+const prefersReduced = () => window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
 /**
  * The ring of slips and bulbs with the centre text. Renders the state
  * for `view` directly (a refresh mid-reveal shows exactly the right
@@ -94,7 +96,8 @@ export function RevealStage({
   // once it's all over), so it's ready before the first Next.
   const timelines = useRef<TimelineModule | null>(null);
   useEffect(() => {
-    if (reduced || finale || timelines.current) return;
+    // Asked directly: during hydration the hook still says "no preference".
+    if (prefersReduced() || finale || timelines.current) return;
     let alive = true;
     import("./reveal-timeline").then((m) => {
       if (alive) timelines.current = m;
@@ -108,7 +111,7 @@ export function RevealStage({
   const stars = useRef<import("./stars").Stars | null>(null);
   const nearEnd = view.status === "REVEALING" && view.step === view.total;
   useEffect(() => {
-    if (!nearEnd || reduced || stars.current) return;
+    if (!nearEnd || prefersReduced() || stars.current) return;
     let alive = true;
     import("./stars").then((m) => {
       if (alive) stars.current = m.prepareStars();
