@@ -3,6 +3,7 @@
 //   2. GSAP is lazy: not part of the first page load, fetched on intent/idle
 //   3. reduced motion: no GSAP, the open slip is shown
 //   4. the landing page is static (served from the prerender, no DB)
+//   5. the light string twinkle: 3 opacity-only animations, idle frame rate at 4x, none under reduced motion
 //
 // Run against a PRODUCTION build, not `next dev`:
 //   npm run build && npx next start -p 3100
@@ -108,5 +109,55 @@ for (let run = 1; run <= RUNS; run++) {
 // 4. Static.
 const res = await fetch(base);
 console.log(`Static: x-nextjs-cache "${res.headers.get("x-nextjs-cache")}", cache-control "${res.headers.get("cache-control")}"`);
+
+// 5. The light string's twinkle: three opacity-only animations, smooth at 4x
+//    throttling with nothing else moving, none under reduced motion.
+{
+  const ctx = await browser.newContext({ ...devices["Pixel 7"] });
+  const page = await ctx.newPage();
+  await page.goto(base, { waitUntil: "networkidle" });
+  const anims = await page.evaluate(() =>
+    document.getAnimations()
+      .filter((a) => a.effect?.target?.closest?.("[data-light-string]"))
+      .map((a) => [...new Set(a.effect.getKeyframes().flatMap((k) => Object.keys(k).filter((p) => !["offset", "easing", "composite", "computedOffset"].includes(p))))].join(",")),
+  );
+  const cdp = await ctx.newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
+  const { frames, longTasks } = await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        const frames = [];
+        let longTasks = 0;
+        new PerformanceObserver((l) => (longTasks += l.getEntries().length)).observe({ type: "longtask" });
+        let last = performance.now();
+        const start = last;
+        const tick = (t) => {
+          frames.push(t - last);
+          last = t;
+          if (t - start < 5000) requestAnimationFrame(tick);
+          else resolve({ frames: frames.slice(1), longTasks });
+        };
+        requestAnimationFrame(tick);
+      }),
+  );
+  const avg = frames.reduce((a, b) => a + b, 0) / frames.length;
+  const sorted = [...frames].sort((a, b) => a - b);
+  console.log(
+    `Light string twinkle: ${anims.length} animations (${[...new Set(anims)].join(" | ") || "none"}); ` +
+      `idle 5s at 4x: ${(1000 / avg).toFixed(1)} fps avg, p95 ${sorted[Math.floor(frames.length * 0.95)].toFixed(1)}ms, ` +
+      `worst ${sorted.at(-1).toFixed(1)}ms, frames over 34ms: ${frames.filter((d) => d > 34).length}/${frames.length}, long tasks: ${longTasks}`,
+  );
+  await ctx.close();
+
+  const rm = await browser.newContext({ ...devices["Pixel 7"], reducedMotion: "reduce" });
+  const still = await rm.newPage();
+  await still.goto(base, { waitUntil: "networkidle" });
+  const r = await still.evaluate(() => ({
+    anims: document.getAnimations().filter((a) => a.effect?.target?.closest?.("[data-light-string]")).length,
+    opacity: [...document.querySelectorAll("[data-light-string] .ls-halo")].map((el) => getComputedStyle(el).opacity),
+  }));
+  console.log(`Light string, reduced motion: ${r.anims} animations, halo opacity ${r.opacity.join(", ")} (lit, static)`);
+  await rm.close();
+}
 
 await browser.close();

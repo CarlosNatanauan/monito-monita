@@ -18,8 +18,7 @@ export type ArtName =
   | "bowl-front"
   | "bilao"
   | "simbahan"
-  | "clothespin"
-  | "swag";
+  | "clothespin";
 
 export const ART_VIEWBOX: Record<ArtName, string> = {
   parol: "0 0 120 170",
@@ -30,25 +29,43 @@ export const ART_VIEWBOX: Record<ArtName, string> = {
   bilao: "0 0 240 50",
   simbahan: "0 0 300 90",
   clothespin: "0 0 16 46",
-  swag: "0 0 360 40",
 };
 
-// The decorative string: bulbs of slightly different sizes and tilts,
-// cycling gold, red, pale gold, green.
-const SWAG_BULBS: [number, number, number, number, number, string][] = [
-  [20, 17.5, 5, 8, 8, "#F4C542"],
-  [49, 19.6, 6, 7, -6, "#C4283A"],
-  [78, 23.6, 5.5, 8.5, 5, "#FFE9A3"],
-  [107, 25, 6, 8, -9, "#1F6B45"],
-  [136, 25.8, 5, 7.5, 4, "#F4C542"],
-  [165, 26.9, 6.5, 8, -4, "#C4283A"],
-  [194, 25.9, 5.5, 7, 7, "#FFE9A3"],
-  [223, 26.8, 6, 8.5, -7, "#1F6B45"],
-  [252, 25.1, 5, 8, 6, "#F4C542"],
-  [281, 22.7, 6, 7.5, -5, "#C4283A"],
-  [310, 20.7, 5.5, 8, 9, "#FFE9A3"],
-  [339, 16.6, 6, 7, -8, "#1F6B45"],
+// The decorative light string (docs/DESIGN.md, "Light string"): one swag
+// of 360px between two nails, drawn at true pixel size. <LightString />
+// (components/page.tsx) draws the wire as one continuous path and repeats
+// these groups along it. Bulbs hang from the wire by a dark socket cap,
+// cycle gold, red, pale gold, green, and each has a white highlight. Their
+// flat halos are split into three groups (bulb i in group i % 3), each drawn
+// on its own layer so a twinkle animates three layers, not every bulb.
+export const SWAG_W = 360;
+/** The wire's height at x (0..360): the sag M0 5 Q180 29 360 5. */
+const swagWireY = (x: number) => {
+  const t = x / SWAG_W;
+  return 5 + 48 * t * (1 - t);
+};
+// [rx, ry, tilt, fill, halo]: slightly different sizes and tilts.
+const SWAG_BULB_LOOKS: [number, number, number, string, string][] = [
+  [5, 8, 8, "#F4C542", "#F4C542"],
+  [6, 7, -6, "#C4283A", "#C4283A"],
+  [5.5, 8.5, 5, "#FFE9A3", "#F4C542"],
+  [6, 8, -9, "#1F6B45", "#1F6B45"],
+  [5, 7.5, 4, "#F4C542", "#F4C542"],
+  [6.5, 8, -4, "#C4283A", "#C4283A"],
+  [5.5, 7, 7, "#FFE9A3", "#F4C542"],
+  [6, 8.5, -7, "#1F6B45", "#1F6B45"],
+  [5, 8, 6, "#F4C542", "#F4C542"],
+  [6, 7.5, -5, "#C4283A", "#C4283A"],
+  [5.5, 8, 9, "#FFE9A3", "#F4C542"],
+  [6, 7, -8, "#1F6B45", "#1F6B45"],
 ];
+/** Socket cap height: the bulb's glass starts just under it. */
+const CAP = 4;
+const SWAG_BULBS = SWAG_BULB_LOOKS.map(([rx, ry, tilt, fill, halo], i) => {
+  const x = 15 + 30 * i;
+  return { i, rx, ry, fill, halo, transform: `translate(${x} ${swagWireY(x).toFixed(2)}) rotate(${tilt})` };
+});
+export const SWAG_HALO_GROUPS = 3;
 
 export function ArtSymbols() {
   return (
@@ -125,12 +142,31 @@ export function ArtSymbols() {
         <path d="M.5 17h15M.5 20.5h15" fill="none" stroke="#5A4A6B" strokeWidth="1.3" />
       </symbol>
 
-      <symbol id="art-swag" viewBox={ART_VIEWBOX.swag}>
-        <path d="M0 6Q180 30 360 6" fill="none" stroke="#3F1F63" strokeWidth="1.3" />
-        {SWAG_BULBS.map(([cx, cy, rx, ry, r, fill]) => (
-          <ellipse key={cx} cx={cx} cy={cy} rx={rx} ry={ry} transform={`rotate(${r} ${cx} ${cy})`} fill={fill} stroke="#3F1F63" strokeWidth="1.2" />
+      <defs>
+        {/* One swag's nail (at x 0) and bulbs; the wire is drawn by LightString. */}
+        <g id="art-swag-bulbs">
+          <circle cx="0" cy="2.4" r="2.2" fill="#3F1F63" />
+          <circle cx="-0.6" cy="1.8" r="0.7" fill="#FFFFFF" fillOpacity="0.55" />
+          {SWAG_BULBS.map((b) => (
+            <g key={b.i} transform={b.transform}>
+              <ellipse cx="0" cy={CAP - 0.6 + b.ry} rx={b.rx} ry={b.ry} fill={b.fill} stroke="#3F1F63" strokeWidth="1.1" />
+              <ellipse cx={-b.rx * 0.4} cy={CAP + b.ry * 0.6} rx="1.2" ry="2.3" fill="#FFFFFF" fillOpacity="0.85" />
+              <rect x="-2.6" y="-0.8" width="5.2" height={CAP + 0.6} rx="1.1" fill="#3F1F63" />
+            </g>
+          ))}
+        </g>
+        {/* Flat painted halos, in three groups: two pale steps of the bulb's colour. */}
+        {Array.from({ length: SWAG_HALO_GROUPS }, (_, g) => (
+          <g key={g} id={`art-swag-halo-${g}`}>
+            {SWAG_BULBS.filter((b) => b.i % SWAG_HALO_GROUPS === g).map((b) => (
+              <g key={b.i} transform={b.transform} fill={b.halo}>
+                <circle cx="0" cy={CAP - 0.6 + b.ry} r={b.ry + 6} fillOpacity="0.14" />
+                <circle cx="0" cy={CAP - 0.6 + b.ry} r={b.ry + 3} fillOpacity="0.22" />
+              </g>
+            ))}
+          </g>
         ))}
-      </symbol>
+      </defs>
     </svg>
   );
 }

@@ -146,9 +146,9 @@ What is built (`components/page.tsx`, checked by `e2e/layouts.spec.ts`):
 
 | Width | Layout |
 |---|---|
-| Phone, under 600px | One column, 20px gutters. Light string across the top (one swag) |
+| Phone, under 600px | One column, 20px gutters. Light string across the top (one swag between two nails, the wire running on past them) |
 | Tablet, 600 to 1023px | One column, max 560px, centred (phones turned sideways too). The organizer page uses two columns from 840px (side column 340px, 32px gap) |
-| Laptop, 1024px and up (iPad landscape included) | Two columns inside a 1120px container (32px gutters when the window is narrower): main column (flexible) and a 420px side column, 48px gap. Light string repeats in swags of 340px across the full width |
+| Laptop, 1024px and up (iPad landscape included) | Two columns inside a 1120px container (32px gutters when the window is narrower): main column (flexible) and a 420px side column, 48px gap. Light string: one continuous wire across the full width, sagging between nails every 360px |
 
 What goes where on laptop. Asymmetric: text left, picture right, never centred.
 - **Landing:** brand, headline, line of copy, "Create your group", "Your groups" and "Paano 'to?" left; the evening sky with bowl and parol right (500px tall).
@@ -227,7 +227,11 @@ The DOM keeps the phone order; the grid places each block on wider screens. On p
 
 ### Light string
 Wire: 1.3px ube line that sags (quadratic curve). Bulbs are ovals of slightly different sizes and tilts.
-- **Decorative** (top of member pages): bulbs cycle gold, red, pale gold, green. One swag on phone, repeating swags on laptop.
+- **Decorative** (top of member pages, `LightString` in `components/page.tsx`): strung like real Christmas lights along a wall.
+  - **One continuous wire** across the full width: a single path that sags between nails every 360px (a small ube nail head with a pale dot at each hanging point). It is drawn at true pixel size on a 3960px strip centred on the page and clipped to the window, so it never stretches and has no seams at any width. The middle of the window is the middle of a sag: a 390px phone shows one swag with a nail 15px in from each edge, and wider windows show more swags, the wire running off both edges.
+  - **Bulbs**, 12 per swag, 30px apart, cycle gold, red, pale gold, green. Each hangs from the wire by a small dark ube socket cap and has a small white highlight, like light on glass.
+  - **Lit:** a flat painted halo behind each bulb: two pale circles of the bulb's colour (14% and 22%; gold for pale-gold bulbs, which would vanish on the page), no blur, no box-shadow, drawn behind the wire.
+  - **Twinkle:** the halos are split into three groups (every third bulb) on three layers of their own, and only those three layers' opacity animates (1 to 0.3, ease-in-out, back and forth over 4.2s, 5.4s and 6.6s, out of sync). Slow and calm, never flashing. Under `prefers-reduced-motion` there is no twinkle; the halos stay fully lit.
 - **Progress** (organizer): one bulb per member, left to right.
   - **Off:** white fill, ube outline.
   - **On:** `--ilaw` fill, ube outline.
@@ -285,7 +289,7 @@ All motion uses `transform` and `opacity` only.
    - **Phone follow-along** (any window taller than wide): no stage. The group name and "7 of 12" in gold top-left, the parol top-right, the centre text ("Handa na?", "Si … ay si… Jun!", "Maligayang Pasko!") in a column, then "Nabunyag na": the latest six revealed pairs as white slips in two columns ("Huling 6 lang ang ipinapakita. 11 pa ang nakatiklop."), every pair after the finale. Big groups add the small progress string. The organizer's buttons (Start, Previous, Next) sit under it, so the phone is still the remote.
    - The stage keeps the state for each step in its markup; motion only plays the change. Bulbs light by switching their state attribute, with a CSS transition and a delay per bulb; no script runs per frame for them.
 
-Everywhere else there is no entrance animation. Motion only answers what the user did.
+Everywhere else there is no entrance animation. Motion only answers what the user did. The one ambient exception is the light string's twinkle (see Light string): three opacity-only layers, slow, and off under reduced motion.
 
 Reduced motion (`prefers-reduced-motion`): no flips, drops or sweeps. States cross-fade in 150ms.
 

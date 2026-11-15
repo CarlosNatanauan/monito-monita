@@ -263,6 +263,33 @@
   }
 }
 
+/* The decorative light string's twinkle (components/page.tsx, LightString):
+   three halo layers, a third of the bulbs each, softly brighten and dim out
+   of sync. Opacity only, on three elements; the lit state is the default and
+   reduced motion keeps it (no animation is declared at all). */
+@media (prefers-reduced-motion: no-preference) {
+  .ls-halo {
+    animation: ls-twinkle 4.2s ease-in-out infinite alternate;
+    will-change: opacity;
+  }
+  .ls-halo[data-halo-group="1"] {
+    animation-duration: 5.4s;
+    animation-delay: -2.1s;
+  }
+  .ls-halo[data-halo-group="2"] {
+    animation-duration: 6.6s;
+    animation-delay: -4.3s;
+  }
+}
+@keyframes ls-twinkle {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.3;
+  }
+}
+
 /* The landing parol sways a few degrees on a slow loop (signature moment #1). */
 @keyframes parol-sway {
   0%,

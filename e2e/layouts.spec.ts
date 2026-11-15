@@ -187,6 +187,25 @@ for (const size of SIZES) {
     await expect(steps).toHaveCount(3);
     const [s1, s3] = [await box(steps.first()), await box(steps.last())];
     expect(s3.y - s1.y, "steps on the 40px rules").toBe(80);
+    // The decorative light string: one wire, edge to edge, nails every 360px
+    // with the window's middle on the middle of a sag.
+    const string = await page.locator("[data-light-string]").evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      const strips = [...el.querySelectorAll("svg")].map((s) => s.getBoundingClientRect());
+      return {
+        left: r.left,
+        width: r.width,
+        wires: el.querySelectorAll("path").length,
+        covers: strips.every((s) => s.left <= r.left && s.right >= r.right),
+        offset: (((strips[0].left + strips[0].width / 2 - (r.left + r.width / 2)) % 360) + 360) % 360,
+      };
+    });
+    const nailOffset = Math.min(string.offset, 360 - string.offset);
+    expect(string.left, "light string from the left edge").toBe(0);
+    expect(string.width, "light string across the full width").toBe(size.width);
+    expect(string.wires, "one continuous wire").toBe(1);
+    expect(string.covers, "the wire strip covers the window edge to edge").toBe(true);
+    expect(nailOffset, "window centred on the middle of a sag").toBeLessThan(1);
     await shot(page, "landing");
 
     // Returning visitor: "Your groups" under the main button.

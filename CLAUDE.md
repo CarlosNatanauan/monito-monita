@@ -28,7 +28,7 @@ Monito Monita: a web app for running Filipino exchange gift groups (draw names, 
 ## Design rules
 
 - Follow `docs/DESIGN.md`: its colors, type, and the bunutan (paper slip) motif.
-- Heavy animation only in the 4 signature moments. Everywhere else, motion only responds to user actions.
+- Heavy animation only in the 4 signature moments. Everywhere else, motion only responds to user actions. (One exception: the decorative light string's slow twinkle, opacity only on 3 layers.)
 - Animate only `transform` and `opacity`. Lazy-load animation code (GSAP, Rive, confetti) only on the screens that use it.
 - Motion for everyday UI motion; GSAP for the signature timelines. Don't mix both on the same element.
 - Always respect `prefers-reduced-motion`.
@@ -53,7 +53,7 @@ Keep this list updated as scripts are added.
 - `npm run db:migrate:prod`: apply migrations to PRODUCTION, using only `.env.prod-migrate.local` (a name Next.js never loads, so a local `next dev`/`next start` can't reach production; never put production credentials in `.env.production.local`, and the script refuses to run while that file exists); shows host and pending migrations and asks for confirmation. The human runs this, never the AI assistant.
 - `npm run db:studio`: browse the database in Drizzle Studio
 - `node scripts/perf/slip-perf.mjs http://localhost:3100`: slip unfold frame rate at 4x CPU throttling, lazy-GSAP, reduced-motion, and noindex checks on `/lab/slip`. Run against a production build (`npm run build && npx next start -p 3100`), not `next dev`
-- `node scripts/perf/landing-perf.mjs http://localhost:3100`: landing bowl draw frame rate at 4x CPU throttling, GSAP not in the first load, reduced motion, static page. Production build, like slip-perf
+- `node scripts/perf/landing-perf.mjs http://localhost:3100`: landing bowl draw frame rate at 4x CPU throttling, GSAP not in the first load, reduced motion, static page, and the light string twinkle (3 opacity-only animations, idle frame rate at 4x, none under reduced motion). Production build, like slip-perf
 - `node scripts/perf/js-weight.mjs http://localhost:3100`: JS on the wire (compressed, first load, Pixel 7) for the join page and /me against the 150 KB budget; creates an "E2E JS weight" group in the dev DB. `VERBOSE=1` lists each file and flags prefetches. Production build, like slip-perf
 - Lighthouse (mobile) on the landing: `CHROME_PATH=<playwright chromium> npx -y lighthouse@12 http://localhost:3100/ --only-categories=performance,accessibility,best-practices,seo --quiet --chrome-flags="--headless=new"` against the production build
 - `node scripts/perf/reveal-perf.mjs http://localhost:3100 [--gpu]`: party reveal frame rate (Next for 12 and 30, Previous, the finale) at 2x CPU throttling on a 1920×1080 laptop, lazy GSAP and confetti, reduced motion, every transition ending exactly on the fresh-load state, noindex. `--gpu` turns on GPU compositing (headless software compositing overstates the finale's full-screen layers). Production build, like slip-perf
