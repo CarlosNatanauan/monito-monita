@@ -1,106 +1,39 @@
-/**
- * The glass bowl on the bilao (docs/DESIGN.md, "The bowl"), as two SVG
- * layers in the same 260×180 box: the back (bilao, far rim, slips inside)
- * and the front (the glass itself, near rim, one highlight streak). A slip
- * placed between the layers sits inside the bowl, seen through the glass.
- * Pure markup, no JS: it paints with the page.
- */
-
-export const BOWL = { W: 260, H: 180 } as const;
-
-const SLIP_WHITE = "#ffffff";
-const SLIP_LILAC = "#ede6f5";
-
-// Small slips (56×26), mixed angles; the first two poke over the rim.
-const SLIPS: { x: number; y: number; r: number; fill: string }[] = [
-  { x: 74, y: 30, r: -12, fill: SLIP_WHITE },
-  { x: 128, y: 28, r: 8, fill: SLIP_LILAC },
-  { x: 52, y: 72, r: 10, fill: SLIP_WHITE },
-  { x: 142, y: 66, r: -9, fill: SLIP_LILAC },
-  { x: 84, y: 98, r: -4, fill: SLIP_LILAC },
-  { x: 128, y: 104, r: 14, fill: SLIP_WHITE },
-  { x: 98, y: 126, r: 4, fill: SLIP_WHITE },
-];
-
-/** The outline of the glass body, from rim to base. */
-const BODY = "M28 44 C28 112 68 156 130 156 C192 156 232 112 232 44 Z";
-
-type LayerProps = { className?: string; style?: React.CSSProperties };
-
-export function BowlBack({ className, style }: LayerProps) {
-  return (
-    <svg
-      viewBox={`0 0 ${BOWL.W} ${BOWL.H}`}
-      className={className}
-      style={style}
-      aria-hidden
-      focusable="false"
-    >
-      {/* The bilao (woven tray) */}
-      <ellipse cx="130" cy="158" rx="126" ry="17" fill="#8c6a35" />
-      <ellipse cx="130" cy="156" rx="124" ry="15" fill="#c9a56b" />
-      <ellipse cx="130" cy="156" rx="100" ry="10" fill="none" stroke="#8c6a35" strokeOpacity="0.35" strokeWidth="1.5" />
-      {/* Inside of the glass and the far half of the rim */}
-      <path d={BODY} fill="#ffffff" fillOpacity="0.1" />
-      <path d="M28 44 A102 11 0 0 1 232 44" fill="none" stroke="#ffffff" strokeOpacity="0.7" strokeWidth="1.5" />
-      {SLIPS.map((s, i) => (
-        <rect
-          key={i}
-          x={s.x}
-          y={s.y}
-          width="56"
-          height="26"
-          rx="4"
-          fill={s.fill}
-          transform={`rotate(${s.r} ${s.x + 28} ${s.y + 13})`}
-        />
-      ))}
-    </svg>
-  );
-}
-
-export function BowlFront({ className, style }: LayerProps) {
-  return (
-    <svg
-      viewBox={`0 0 ${BOWL.W} ${BOWL.H}`}
-      className={className}
-      style={style}
-      aria-hidden
-      focusable="false"
-    >
-      <defs>
-        <linearGradient id="bowl-glass" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#ffffff" stopOpacity="0.38" />
-          <stop offset="0.55" stopColor="#ffffff" stopOpacity="0.16" />
-          <stop offset="1" stopColor="#ffffff" stopOpacity="0.3" />
-        </linearGradient>
-      </defs>
-      {/* Glass body with its outline, the near half of the rim, a highlight streak */}
-      <path d={BODY} fill="url(#bowl-glass)" stroke="#ffffff" strokeOpacity="0.9" strokeWidth="1.5" />
-      <path d="M28 44 A102 11 0 0 0 232 44" fill="none" stroke="#ffffff" strokeWidth="1.5" />
-      <path d="M44 62 C44 92 52 112 64 126" fill="none" stroke="#ffffff" strokeOpacity="0.75" strokeWidth="5" strokeLinecap="round" />
-    </svg>
-  );
-}
+import { Art } from "@/components/art/symbols";
+import { cn } from "@/lib/utils";
 
 /**
- * Both layers as one SVG string (share images, where React SVG can't be
- * used directly).
+ * The glass bowl of slips (docs/design/svg/bowl.svg), in two layers in the
+ * same 200×150 box, so a slip placed between them rises from inside it:
+ * the back (the two slips over the rim, the glass) and the front (slips
+ * seen inside, the rim, the highlight, the foot). `tone`: ube lines on
+ * light pages, lilac (#CDB8EC) on the evening sky.
  */
+
+export const BOWL = { W: 200, H: 150 } as const;
+
+type Tone = "light" | "sky";
+const TONE: Record<Tone, string> = { light: "text-ube", sky: "text-[#CDB8EC]" };
+
+type LayerProps = { className?: string; style?: React.CSSProperties; tone?: Tone };
+
+export function BowlBack({ className, style, tone = "sky" }: LayerProps) {
+  return <Art name="bowl-back" className={cn(TONE[tone], className)} style={style} />;
+}
+
+export function BowlFront({ className, style, tone = "sky" }: LayerProps) {
+  return <Art name="bowl-front" className={cn(TONE[tone], className)} style={style} />;
+}
+
+/** The woven tray, always under the bowl (240×50). */
+export function Bilao({ className, style }: { className?: string; style?: React.CSSProperties }) {
+  return <Art name="bilao" className={className} style={style} />;
+}
+
+/** The bowl on its bilao, on the sky, as one SVG string (share images: next/og can't use <use>). */
 export function bowlSvgMarkup(): string {
-  const slips = SLIPS.map(
-    (s) =>
-      `<rect x="${s.x}" y="${s.y}" width="56" height="26" rx="4" fill="${s.fill}" transform="rotate(${s.r} ${s.x + 28} ${s.y + 13})"/>`,
-  ).join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${BOWL.W} ${BOWL.H}">
-<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fff" stop-opacity="0.38"/><stop offset="0.55" stop-color="#fff" stop-opacity="0.16"/><stop offset="1" stop-color="#fff" stop-opacity="0.3"/></linearGradient></defs>
-<ellipse cx="130" cy="158" rx="126" ry="17" fill="#8c6a35"/><ellipse cx="130" cy="156" rx="124" ry="15" fill="#c9a56b"/>
-<ellipse cx="130" cy="156" rx="100" ry="10" fill="none" stroke="#8c6a35" stroke-opacity="0.35" stroke-width="1.5"/>
-<path d="${BODY}" fill="#fff" fill-opacity="0.1"/>
-<path d="M28 44 A102 11 0 0 1 232 44" fill="none" stroke="#fff" stroke-opacity="0.7" stroke-width="1.5"/>
-${slips}
-<path d="${BODY}" fill="url(#g)" stroke="#fff" stroke-opacity="0.9" stroke-width="1.5"/>
-<path d="M28 44 A102 11 0 0 0 232 44" fill="none" stroke="#fff" stroke-width="1.5"/>
-<path d="M44 62 C44 92 52 112 64 126" fill="none" stroke="#fff" stroke-opacity="0.75" stroke-width="5" stroke-linecap="round"/>
+  const c = "#CDB8EC";
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 200">
+<g transform="translate(0 150)"><ellipse cx="120" cy="25" rx="116" ry="22" fill="#C99B4B" stroke="#7A5A2A" stroke-width="1.5"/><ellipse cx="120" cy="23" rx="100" ry="15" fill="#E3BE77"/><path d="M30 23q10-8 20 0t20 0 20 0 20 0 20 0 20 0 20 0 20 0 20 0M40 30q10-7 20 0t20 0 20 0 20 0 20 0 20 0 20 0 20 0" fill="none" stroke="#A67C34" stroke-width="1.2"/></g>
+<g transform="translate(20 12)"><rect x="70" y="14" width="52" height="24" transform="rotate(-14 96 26)" fill="#fff" stroke="${c}" stroke-width="2"/><rect x="112" y="10" width="52" height="24" transform="rotate(12 138 22)" fill="#fff" stroke="${c}" stroke-width="2"/><path d="M14 42C16 104 52 138 100 138 148 138 184 104 186 42" fill="#fff" fill-opacity=".55" stroke="${c}" stroke-width="2.5"/><rect x="40" y="62" width="52" height="24" transform="rotate(9 66 74)" fill="#fff" stroke="${c}" stroke-width="2"/><rect x="104" y="56" width="52" height="24" transform="rotate(-12 130 68)" fill="#fff" stroke="${c}" stroke-width="2"/><rect x="62" y="90" width="52" height="24" transform="rotate(-5 88 102)" fill="#fff" stroke="${c}" stroke-width="2"/><rect x="106" y="98" width="46" height="22" transform="rotate(16 129 109)" fill="#fff" stroke="${c}" stroke-width="2"/><path d="M50 72q6-5 12 0t12 0M112 68q6-5 12 0t12 0M72 102q6-5 12 0t12 0" fill="none" stroke="${c}" stroke-width="1.5"/><ellipse cx="100" cy="42" rx="86" ry="11" fill="none" stroke="${c}" stroke-width="2.5"/><path d="M30 60C32 84 40 102 52 114" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round"/><path d="M70 138C80 147 120 147 130 138" fill="none" stroke="${c}" stroke-width="2.5"/></g>
 </svg>`;
 }

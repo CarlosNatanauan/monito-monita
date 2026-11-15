@@ -1,10 +1,11 @@
 "use client";
 
-import { Check } from "lucide-react";
 import { useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
-import { maskLink } from "@/lib/mask-link";
+import { CheckIcon } from "@/components/ui/icons";
+import { displayLink, maskLink } from "@/lib/mask-link";
 import { siteOrigin } from "@/lib/site-url";
+import { cn } from "@/lib/utils";
 
 const noopSubscribe = () => () => {};
 
@@ -16,36 +17,48 @@ export function useOrigin(): string {
   return useSyncExternalStore(noopSubscribe, () => siteOrigin(window.location.origin), () => "");
 }
 
+/** True in browsers with the Web Share API (most phones). False on the server. */
+export function useCanShare(): boolean {
+  return useSyncExternalStore(
+    noopSubscribe,
+    () => typeof navigator !== "undefined" && typeof navigator.share === "function",
+    () => false,
+  );
+}
+
 /**
- * Shows a link (path or absolute URL) as selectable text. `masked` shows
- * the link with its token as dots instead (personal links: people
- * screenshot their page); the real link is then only in Copy / Share.
+ * The link box (docs/DESIGN.md, "GC bubble and link box"): white, a 1.5px
+ * dashed ube border, bold, wraps anywhere. `masked` shows the link with its
+ * token as dots (personal and organizer links: people screenshot their
+ * page); the real link is then only in Copy / Share, or after "Ipakita".
  */
 export function LinkBox({
   url,
   masked = false,
-  maskedLabel = "Personal link (nakatago). Gamitin ang Copy o Send.",
+  maskedLabel = "Personal link (nakatago). Gamitin ang Copy.",
+  className,
 }: {
   url: string;
   masked?: boolean;
   /** What a screen reader says instead of the hidden link. */
   maskedLabel?: string;
+  className?: string;
 }) {
+  const box = cn(
+    "rounded-paper border-[1.5px] border-dashed border-ube bg-papel px-3 py-2.5 font-bold [overflow-wrap:anywhere]",
+    className,
+  );
   if (masked) {
     return (
-      <p
-        data-masked-link
-        className="rounded-2xl bg-leaf-wash px-5 py-4 font-medium break-all"
-        translate="no"
-      >
+      <p data-masked-link className={box} translate="no">
         <span aria-hidden>{maskLink(url)}</span>
         <span className="sr-only">{maskedLabel}</span>
       </p>
     );
   }
   return (
-    <p className="rounded-2xl bg-leaf-wash px-5 py-4 font-medium break-all select-all" translate="no">
-      {url}
+    <p className={cn(box, "select-all")} translate="no">
+      {displayLink(url)}
     </p>
   );
 }
@@ -56,6 +69,7 @@ export function CopyButton({
   variant = "default",
   className,
   onCopied,
+  ariaLabel,
 }: {
   text: string;
   label: string;
@@ -63,6 +77,7 @@ export function CopyButton({
   className?: string;
   /** Called after a successful copy. */
   onCopied?: () => void;
+  ariaLabel?: string;
 }) {
   const [copied, setCopied] = useState(false);
 
@@ -78,32 +93,107 @@ export function CopyButton({
   };
 
   return (
-    <Button type="button" variant={variant} onClick={copy} className={className} aria-live="polite" disabled={!text}>
-      {copied && <Check />}
+    <Button
+      type="button"
+      variant={variant}
+      onClick={copy}
+      className={className}
+      aria-live="polite"
+      aria-label={copied ? undefined : ariaLabel}
+      disabled={!text}
+    >
+      {copied && <CheckIcon />}
       {copied ? "Copied!" : label}
     </Button>
   );
 }
 
-/** A link from a path, made absolute in the browser, with a Copy button. Pass `maskedLabel` to hide its token. */
+/** A public link from a path (the share link), made absolute in the browser, with a Copy button. */
 export function CopyLink({
   path,
   label,
-  variant = "default",
-  maskedLabel,
+  variant = "secondary",
+  buttonClassName = "self-start",
 }: {
   path: string;
   label: string;
   variant?: "default" | "secondary";
-  /** Show the link with its token as dots (Copy still uses the full link). */
-  maskedLabel?: string;
+  buttonClassName?: string;
 }) {
   const origin = useOrigin();
   const url = origin ? `${origin}${path}` : "";
   return (
-    <div className="flex flex-col gap-3">
-      <LinkBox url={url || path} masked={Boolean(maskedLabel)} maskedLabel={maskedLabel} />
-      <CopyButton text={url} label={label} variant={variant} />
-    </div>
+    <>
+      <LinkBox url={url || path} />
+      <CopyButton text={url} label={label} variant={variant} className={buttonClassName} />
+    </>
+  );
+}
+
+/**
+ * A private link (personal or organizer): masked until "Ipakita", then
+ * Copy, and "I-send sa sarili mo" where the phone can share. Pass either
+ * a `path` (made absolute here) or a full `url`.
+ */
+export function PrivateLink({
+  path,
+  url: fullUrl,
+  maskedLabel,
+  copyLabel = "Copy",
+  copyAriaLabel,
+  shareText,
+  prominent = false,
+}: {
+  path?: string;
+  url?: string;
+  maskedLabel: string;
+  copyLabel?: string;
+  copyAriaLabel?: string;
+  /** With a share text, phones also get "I-send sa sarili mo". */
+  shareText?: string;
+  /** Right after joining: sending it to yourself (or Copy, without share) is the filled main button. */
+  prominent?: boolean;
+}) {
+  const origin = useOrigin();
+  const url = fullUrl ?? (origin && path ? `${origin}${path}` : "");
+  const [shown, setShown] = useState(false);
+  const canShare = useCanShare();
+  const [failed, setFailed] = useState(false);
+
+  const share = async () => {
+    setFailed(false);
+    try {
+      await navigator.share({ title: "Monito Monita", text: shareText, url });
+    } catch (error) {
+      // Closing the share sheet isn't an error. Anything else: use Copy.
+      if (!(error instanceof DOMException && error.name === "AbortError")) setFailed(true);
+    }
+  };
+
+  return (
+    <>
+      <LinkBox url={url || path || ""} masked={!shown} maskedLabel={maskedLabel} />
+      <div className="flex flex-wrap gap-2.5">
+        <Button type="button" variant="secondary" aria-pressed={shown} onClick={() => setShown((s) => !s)} disabled={!url}>
+          {shown ? "Itago" : "Ipakita"}
+        </Button>
+        <CopyButton
+          text={url}
+          label={copyLabel}
+          variant={prominent && !(shareText && canShare) ? "default" : "secondary"}
+          ariaLabel={copyAriaLabel}
+        />
+        {shareText && canShare && (
+          <Button type="button" variant={prominent ? "default" : "secondary"} onClick={share} disabled={!url} className={cn(prominent && "w-full")}>
+            I-send sa sarili mo
+          </Button>
+        )}
+      </div>
+      {failed && (
+        <p role="status" className="text-small text-ube-soft">
+          Hindi nabuksan ang share. I-copy na lang ang link.
+        </p>
+      )}
+    </>
   );
 }

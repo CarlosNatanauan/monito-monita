@@ -1,12 +1,12 @@
 import * as React from "react"
 import { cn } from "@/lib/utils"
 
-// Restyled for Monito Monita (docs/DESIGN.md, "Inputs"): white, radius 18,
-// 1.5px ube-line border, 18px side padding, 16px text (no iOS zoom).
-// Focus: a 2px ube border (the extra 0.5px is an inset shadow, so nothing
-// shifts) plus the 4px gold ring. Errors: a 2px sili border.
+// Restyled for Monito Monita (docs/DESIGN.md, "Inputs"): 54px, white,
+// 1.5px ube border, uneven 6px corners, 16px text (no iOS zoom). Focus:
+// the 3px gold outline. Error: a 2.5px sili border (drawn inside, so
+// nothing shifts) plus the error message under it.
 export const fieldClass =
-  "w-full min-w-0 rounded-[18px] border-[1.5px] border-ube-line bg-niyog px-[18px] text-body text-ube outline-none placeholder:text-ube-soft focus-visible:border-ube focus-visible:shadow-[inset_0_0_0_0.5px_var(--color-ube),0_0_0_4px_rgb(244_197_66/0.8)] aria-invalid:border-sili aria-invalid:shadow-[inset_0_0_0_0.5px_var(--color-sili)] aria-invalid:focus-visible:shadow-[inset_0_0_0_0.5px_var(--color-sili),0_0_0_4px_rgb(244_197_66/0.8)] disabled:cursor-not-allowed disabled:bg-ube-mist disabled:text-ube-soft"
+  "w-full min-w-0 rounded-field border-[1.5px] border-ube bg-papel px-3.5 text-body text-ube outline-none placeholder:text-ube-soft focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ilaw aria-invalid:border-sili aria-invalid:shadow-[inset_0_0_0_1px_var(--color-sili)] disabled:cursor-not-allowed disabled:bg-ube-mist disabled:text-ube-soft"
 
 function Input({
   className,
@@ -15,9 +15,9 @@ function Input({
   hand = false,
   ...props
 }: Omit<React.ComponentProps<"input">, "size"> & {
-  /** 58px on the page, 52px inside cards. */
-  size?: "default" | "card"
-  /** The name field: typed text in Gochi Hand 26. */
+  /** 54px on the page, 48px inside a listahan row. */
+  size?: "default" | "row"
+  /** The name field: typed text in Gochi Hand 28. */
   hand?: boolean
 }) {
   return (
@@ -26,7 +26,7 @@ function Input({
       data-slot="input"
       className={cn(
         fieldClass,
-        size === "card" ? "h-[52px]" : "h-[58px]",
+        size === "row" ? "h-12 px-2.5" : "h-[54px]",
         hand && "font-hand text-hand placeholder:font-sans placeholder:text-body",
         className
       )}
@@ -41,8 +41,8 @@ function Select({ className, ...props }: React.ComponentProps<"select">) {
     <select
       className={cn(
         fieldClass,
-        "h-[52px] appearance-none bg-[length:10px_6px] bg-[right_16px_center] bg-no-repeat pr-9",
-        "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0h10L5 6z' fill='%234B2472'/%3E%3C/svg%3E\")]",
+        "h-12 appearance-none bg-[length:8px_5px] bg-[right_14px_center] bg-no-repeat pr-8",
+        "bg-[url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M0 0h10L5 6z' fill='%233F1F63'/%3E%3C/svg%3E\")]",
         className
       )}
       {...props}

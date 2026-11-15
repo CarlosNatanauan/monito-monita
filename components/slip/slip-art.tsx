@@ -3,22 +3,25 @@
 import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
 
 /**
- * The bunutan slip as pure markup: four paper panels in CSS 3D.
+ * The bunutan slip as pure markup: four paper panels in CSS 3D
+ * (docs/DESIGN.md, "The slip"): white paper, square corners, the name in
+ * Gochi Hand, a flat offset shadow. No glow, no blur.
  *
  * Folded twice: the right half folds over the left (rotateY), then the
- * bottom half folds up over the top (rotateX). The folded state is set
- * with inline styles so the slip looks right before any JS loads.
- * `unfold-controller.tsx` animates the `data-part` elements; the folded
- * values here must match the ones it starts from.
+ * bottom half folds up over the top (rotateX). The folded packet hangs
+ * from the slip's top edge (where the clothespin holds it), so it opens
+ * downward on the string. The folded state is set with inline styles so
+ * the slip looks right before any JS loads. The timelines animate the
+ * `data-part` elements; the folded values here must match theirs.
  */
 
 export const SLIP = {
   W: 300,
   H: 160,
-  /** The folded packet is a quarter of the paper; scale it up a little (to ~190×100). */
-  FOLD_SCALE: 1.25,
-  FOLD_ROT: -6,
-  OPEN_ROT: -2,
+  /** The folded packet is a quarter of the paper; scaled up to ~202×108 (180×96 on a phone panel). */
+  FOLD_SCALE: 1.35,
+  FOLD_ROT: -4,
+  OPEN_ROT: -3,
   /** Soft leading edge of the ink reveal, in px. */
   FEATHER: 16,
 } as const;
@@ -28,34 +31,26 @@ export type SlipState = "folded" | "open";
 type Side = "left" | "right" | "top" | "bottom";
 
 const { W, H, FEATHER } = SLIP;
-const INK = "75 36 114"; // ube, for shading only
-const GOLD = "244 197 66"; // margarine
+const INK = "63 31 99"; // ube, for shading only
+/** The one shadow: flat, offset, no blur (docs/DESIGN.md). */
+const FLAT_SHADOW = "3px 4px 0 rgb(30 18 56 / 0.45)";
+/** While lifted: further off the paper below, still flat. */
+const LIFT_SHADOW = "7px 10px 0 rgb(30 18 56 / 0.28)";
 const OPPOSITE: Record<Side, Side> = { left: "right", right: "left", top: "bottom", bottom: "top" };
 
 // Soft valley along a fold line, drawn at one edge of a panel. Panels draw
 // half each; the flat face draws both halves, so the swap at the end is invisible.
 const creaseAt = (edge: Side) => `linear-gradient(to ${OPPOSITE[edge]}, rgb(${INK} / 0.06), transparent 6px)`;
-// The open slip's two faint crease lines: 1px, ube at 12%, centred both ways.
-const line = (to: string) =>
-  `linear-gradient(to ${to}, transparent calc(50% - 0.5px), rgb(${INK} / 0.12) calc(50% - 0.5px), rgb(${INK} / 0.12) calc(50% + 0.5px), transparent calc(50% + 0.5px))`;
-const FLAT_CREASES = [line("right"), line("bottom")].join(", ");
 // Outside of the folded packet. Top and left are open edges where the paper
 // layers show; right and bottom are the two folds, softly rounded.
 const layerLines = (to: Side) =>
   `linear-gradient(to ${to}, transparent 2px, rgb(${INK} / 0.05) 2px, rgb(${INK} / 0.05) 3px, transparent 3px, transparent 5px, rgb(${INK} / 0.04) 5px, rgb(${INK} / 0.04) 6px, transparent 6px)`;
-// The diagonal flap on the folded packet: a fine line rising to the right,
-// with the flap below it a faint ube tint.
-const FLAP = `linear-gradient(165deg, transparent 56%, rgb(${INK} / 0.16) 56%, rgb(${INK} / 0.16) calc(56% + 1px), rgb(${INK} / 0.06) calc(56% + 1px))`;
-const PACKET = [
-  FLAP,
-  layerLines("bottom"),
-  layerLines("right"),
-  `linear-gradient(to top, rgb(${INK} / 0.10), transparent 9px)`,
-  `linear-gradient(to left, rgb(${INK} / 0.08), transparent 9px)`,
-].join(", ");
-// The outside of the paper: a slightly warm off-white, so the folded slip
-// reads as paper. The inside (where the name is) stays Slip white.
-const BACK = "linear-gradient(135deg, #fffefb 0%, #f8f5ee 100%)";
+// The diagonal fold on the folded packet: a fine lilac line rising to the
+// right, the flap below it pale lilac (docs/design/reference.html, .fold).
+const FLAP = "linear-gradient(168deg, transparent 52%, #D9C8EC 52% 53%, #F6F1FB 53%)";
+const PACKET = [FLAP, layerLines("bottom"), layerLines("right")].join(", ");
+// The outside of the paper: plain white, like the inside.
+const BACK = "#fff";
 
 // Shading overlays. A turning panel darkens toward its free edge as it goes
 // edge-on; a panel lifting off casts a shadow that starts at the fold.
@@ -64,7 +59,7 @@ const turnShade = (freeEdge: Side) =>
 const castShade = (fromEdge: Side) =>
   `linear-gradient(to ${OPPOSITE[fromEdge]}, rgb(${INK} / 0.26), transparent 75%)`;
 
-const R = 6; // outer corner radius
+const R = 0; // square paper corners
 const p3d: CSSProperties = { transformStyle: "preserve-3d" };
 const faceBase: CSSProperties = {
   position: "absolute",
@@ -116,12 +111,14 @@ export function SlipArt({ name, state }: { name: string; state: SlipState }) {
   const placer: CSSProperties = {
     position: "absolute",
     inset: 0,
+    // Hangs from the top edge: scale and tilt around the clothespin.
+    transformOrigin: "50% 0%",
     transform: folded ? `rotate(${SLIP.FOLD_ROT}deg) scale(${SLIP.FOLD_SCALE})` : `rotate(${SLIP.OPEN_ROT}deg)`,
   };
   const footprint: CSSProperties = {
     position: "absolute",
     inset: 0,
-    borderRadius: R,
+    transformOrigin: "50% 0%",
     transform: folded ? "scale(0.5, 0.5)" : undefined,
   };
   const turned = (axis: "x" | "y") =>
@@ -129,57 +126,20 @@ export function SlipArt({ name, state }: { name: string; state: SlipState }) {
 
   return (
     <div data-part="stage" aria-hidden className="relative" style={{ width: W, height: H, perspective: 800 }}>
-      {/* Gold glow behind everything (finish only) */}
-      <div
-        data-part="glow"
-        className="pointer-events-none absolute"
-        style={{
-          left: -W * 0.2,
-          right: -W * 0.2,
-          top: -H * 0.6,
-          bottom: -H * 0.6,
-          background:
-            `radial-gradient(closest-side, rgb(${GOLD} / 0.55), rgb(${GOLD} / 0.18) 55%, transparent 100%)`,
-          opacity: folded ? 0 : 0.3,
-        }}
-      />
-
-      {/* Flat layer under the paper: shadows and the gold rim. Moves with the placer. */}
+      {/* Flat layer under the paper: the second sheet and the flat shadows. Moves with the placer. */}
       <div data-part="shadow-placer" style={placer}>
-        {/* Folded only: a second sheet peeking out behind at +3°, and a soft gold glow. */}
+        {/* Folded only: a second, lilac sheet behind, square to the string. */}
         <div
           data-part="under-sheet"
           style={{
             ...footprint,
-            transform: folded ? `scale(0.5, 0.5) translate(6px, 4px) rotate(${3 - SLIP.FOLD_ROT}deg)` : undefined,
-            background: "linear-gradient(135deg, #f1e9da, #e2d6c0)",
-            boxShadow: "0 2px 6px rgb(13 43 31 / 0.25)",
+            transform: folded ? `scale(0.5, 0.5) rotate(${-SLIP.FOLD_ROT}deg)` : undefined,
+            background: "#E6DAF1",
             opacity: folded ? 1 : 0,
           }}
         />
-        <div
-          data-part="fold-glow"
-          style={{ ...footprint, boxShadow: `0 0 80px 24px rgb(${GOLD} / 0.4)`, opacity: folded ? 1 : 0 }}
-        />
-        <div
-          data-part="shadow-lift"
-          style={{ ...footprint, boxShadow: `0 24px 36px -10px rgb(${INK} / 0.32)`, opacity: 0 }}
-        />
-        <div
-          data-part="shadow-contact"
-          style={{ ...footprint, boxShadow: "0 1px 2px rgb(13 43 31 / 0.18), 0 8px 18px rgb(13 43 31 / 0.22)" }}
-        />
-        <div
-          data-part="rim"
-          style={{
-            position: "absolute",
-            inset: 0,
-            borderRadius: R,
-            // 3px margarine outline, the gold halo, and a drop shadow.
-            boxShadow: `0 0 0 3px rgb(${GOLD}), 0 0 50px 10px rgb(${GOLD} / 0.75), 0 22px 30px -6px rgb(13 43 31 / 0.4)`,
-            opacity: folded ? 0 : 1,
-          }}
-        />
+        <div data-part="shadow-lift" style={{ ...footprint, boxShadow: LIFT_SHADOW, opacity: 0 }} />
+        <div data-part="shadow-contact" style={{ ...footprint, boxShadow: FLAT_SHADOW }} />
       </div>
 
       <div data-part="placer" style={{ ...placer, ...p3d }}>
@@ -189,7 +149,8 @@ export function SlipArt({ name, state }: { name: string; state: SlipState }) {
             position: "absolute",
             inset: 0,
             ...p3d,
-            transform: folded ? `translate(${W / 4}px, ${H / 4}px)` : undefined,
+            // The packet sits at the top centre (it hangs from the top edge).
+            transform: folded ? `translate(${W / 4}px, 0px)` : undefined,
           }}
         >
           {/* Top half: TL stays put, TR folds over it */}
@@ -248,7 +209,7 @@ export function SlipArt({ name, state }: { name: string; state: SlipState }) {
               position: "absolute",
               inset: 0,
               borderRadius: R,
-              background: `${FLAT_CREASES}, #fff`,
+              background: "#fff",
               transform: "translateZ(1px)",
               opacity: folded ? 0 : 1,
             }}
@@ -258,28 +219,11 @@ export function SlipArt({ name, state }: { name: string; state: SlipState }) {
         </div>
       </div>
 
-      {/* Three small gold diamonds around the open slip. */}
-      <div data-part="diamonds" className="pointer-events-none absolute inset-0" style={{ opacity: folded ? 0 : 1 }}>
-        {DIAMONDS.map((d, i) => (
-          <span
-            key={i}
-            className="absolute rotate-45 border-[1.5px] border-margarine-edge bg-margarine"
-            style={{ left: d.x, top: d.y, width: d.size, height: d.size }}
-          />
-        ))}
-      </div>
     </div>
   );
 }
 
-// Positions relative to the 300×160 stage.
-const DIAMONDS = [
-  { x: -14, y: 8, size: 10 },
-  { x: W - 6, y: -30, size: 11 },
-  { x: W + 6, y: H + 2, size: 10 },
-];
-
-const MAX_FONT = 64; // text-hand-xl
+const MAX_FONT = 72; // 64px on a phone panel (drawn at 0.887), 86px on a laptop (1.2)
 const MIN_FONT = 20;
 
 /**
@@ -288,7 +232,7 @@ const MIN_FONT = 20;
  * with transforms only (see unfold-controller.tsx).
  */
 function HandwrittenName({ name, open }: { name: string; open: boolean }) {
-  const text = `~ ${name.trim()} ~`;
+  const text = name.trim();
   const innerRef = useRef<HTMLSpanElement>(null);
   const [fontSize, setFontSize] = useState(MAX_FONT);
 
@@ -332,9 +276,8 @@ function HandwrittenName({ name, open }: { name: string; open: boolean }) {
         className="absolute inset-y-0 right-0"
         style={{
           width: FEATHER,
-          // Paper (with the crease that runs behind the name), faded in by a
-          // static mask so the moving edge never cuts a gap in the crease.
-          background: `${line("bottom")}, #fff`,
+          // Paper, faded in by a static mask: the soft edge of the wet ink.
+          background: "#fff",
           maskImage: "linear-gradient(to right, transparent, #000)",
           WebkitMaskImage: "linear-gradient(to right, transparent, #000)",
           opacity: open ? 0 : 1,

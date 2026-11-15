@@ -9,12 +9,13 @@ describe("bulbScale", () => {
     expect(bulbScale(3)).toEqual({ bulbs: 3, perBulb: 1 });
     expect(bulbScale(12)).toEqual({ bulbs: 12, perBulb: 1 });
     expect(bulbScale(24)).toEqual({ bulbs: 24, perBulb: 1 });
+    expect(bulbScale(60)).toEqual({ bulbs: 60, perBulb: 1 });
   });
 
   it("above the maximum each bulb stands for a share", () => {
-    expect(bulbScale(25)).toEqual({ bulbs: 13, perBulb: 2 });
-    expect(bulbScale(40)).toEqual({ bulbs: 20, perBulb: 2 });
-    expect(bulbScale(150)).toEqual({ bulbs: 22, perBulb: 7 });
+    expect(bulbScale(61)).toEqual({ bulbs: 31, perBulb: 2 });
+    expect(bulbScale(100)).toEqual({ bulbs: 50, perBulb: 2 });
+    expect(bulbScale(150)).toEqual({ bulbs: 50, perBulb: 3 });
   });
 
   it("never draws more than the maximum, and covers every member", () => {
@@ -50,19 +51,19 @@ describe("joinStates / openedStates", () => {
     expect(count(plan.states, "on")).toBe(8);
   });
 
-  it("join with 150 members: 22 bulbs of 7", () => {
+  it("join with 150 members: 50 bulbs of 3", () => {
     const plan = joinStates(150);
-    expect(plan).toMatchObject({ perBulb: 7 });
-    expect(plan.states).toHaveLength(22);
+    expect(plan).toMatchObject({ perBulb: 3 });
+    expect(plan.states).toHaveLength(50);
     expect(count(plan.states, "glow")).toBe(1);
   });
 
   it("opened: on, glow at the most recent, then off", () => {
     expect(openedStates(8, 12).states).toEqual([...Array(7).fill("on"), "glow", ...Array(4).fill("off")]);
     expect(openedStates(0, 3).states).toEqual(["off", "off", "off"]);
-    const big = openedStates(20, 40);
+    const big = openedStates(40, 80);
     expect(big.perBulb).toBe(2);
-    expect(count(big.states, "on") + count(big.states, "glow")).toBe(10);
+    expect(count(big.states, "on") + count(big.states, "glow")).toBe(20);
   });
 
   it("no members, no bulbs", () => {
@@ -77,18 +78,19 @@ describe("bulbRows", () => {
 
   it("keeps up to a full row on one wire", () => {
     expect(sizes(3)).toEqual([3]);
-    expect(sizes(MAX_PER_ROW)).toEqual([12]);
+    expect(sizes(12)).toEqual([12]);
+    expect(sizes(MAX_PER_ROW)).toEqual([30]);
   });
 
   it("wraps into even rows", () => {
-    expect(sizes(13)).toEqual([7, 6]);
-    expect(sizes(20)).toEqual([10, 10]);
-    expect(sizes(22)).toEqual([11, 11]);
-    expect(sizes(24)).toEqual([12, 12]);
+    expect(sizes(31)).toEqual([16, 15]);
+    expect(sizes(40)).toEqual([20, 20]);
+    expect(sizes(50)).toEqual([25, 25]);
+    expect(sizes(60)).toEqual([30, 30]);
   });
 
   it("keeps order and every item", () => {
-    expect(bulbRows(n(23)).flat()).toEqual(n(23));
+    expect(bulbRows(n(47)).flat()).toEqual(n(47));
     expect(bulbRows([])).toEqual([]);
   });
 });

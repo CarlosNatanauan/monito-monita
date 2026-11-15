@@ -1,59 +1,65 @@
-import { Card, CardDescription, CardTitle, DetailRow, DetailRows } from "@/components/ui/card";
-import { formatPartyDate, formatPeso, joinedCount } from "@/lib/format";
-import { cn } from "@/lib/utils";
+import { Art } from "@/components/art/symbols";
+import { Capiz, SectionTitle, Tag, Tags } from "@/components/ui/paper";
+import { formatPartyDate, formatPartyDay, formatPeso } from "@/lib/format";
 
-/** Party date, budget, and (optionally) how many have joined, as detail rows. */
+/**
+ * The group's facts as gift tags (docs/DESIGN.md, "Tags"): gold = party
+ * date, pink = budget, green = member count. One fact per tag.
+ */
 export function GroupFacts({
   partyDate,
   budget,
   memberCount,
+  year = false,
+  memberSuffix = " na",
+  className,
 }: {
   partyDate: string;
   budget: number;
   memberCount?: number;
+  /** "Sat, Dec 19, 2026" instead of "Sat, Dec 19". */
+  year?: boolean;
+  /** "12 na" while joining, "12" once it's closed. */
+  memberSuffix?: string;
+  className?: string;
 }) {
   return (
-    <DetailRows>
-      <DetailRow label="Party">{formatPartyDate(partyDate)}</DetailRow>
-      <DetailRow label="Budget">{formatPeso(budget)}</DetailRow>
-      {memberCount !== undefined && <DetailRow label="Kasali">{joinedCount(memberCount)}</DetailRow>}
-    </DetailRows>
+    <Tags className={className}>
+      <Tag tone="gold" label="Party">
+        {year ? formatPartyDate(partyDate) : formatPartyDay(partyDate)}
+      </Tag>
+      <Tag tone="pink" label="Budget">
+        {formatPeso(budget)}
+      </Tag>
+      {memberCount !== undefined && (
+        <Tag tone="green" label="Kasali">
+          {memberCount === 0 ? "Wala pa" : `${memberCount}${memberSuffix}`}
+        </Tag>
+      )}
+    </Tags>
+  );
+}
+
+/** A heading with the parol beside it (join, ready). */
+export function WithParol({ children }: { children: React.ReactNode }) {
+  return (
+    <header className="flex items-start justify-between gap-3">
+      <div className="min-w-0">{children}</div>
+      <Art name="parol" className="-mt-[18px] h-[102px] w-[72px] shrink-0 lg:-mt-10 lg:h-[170px] lg:w-[120px]" />
+    </header>
   );
 }
 
 /** Shown on the device of a member the organizer removed. No join button. */
 export function RemovedNotice({ className }: { className?: string }) {
   return (
-    <Card className={className}>
-      <CardTitle>Tinanggal ka ng organizer sa group na &apos;to.</CardTitle>
-      <CardDescription>Kung mali ito, kausapin ang organizer.</CardDescription>
-    </Card>
+    <Capiz className={className}>
+      <SectionTitle>Tinanggal ka ng organizer sa group na &apos;to.</SectionTitle>
+      <p className="text-ube-soft">Kung mali ito, kausapin ang organizer.</p>
+    </Capiz>
   );
 }
 
 export function PageFallback() {
   return <p className="text-ube-soft">Sandali lang…</p>;
 }
-
-/**
- * The join and come-back layout. Phones: the group info, then the form,
- * stacked (each part styles itself). From md: one centred white card in
- * two parts, the group info on the left and the form on the right, split
- * by the dashed row line.
- */
-export function SplitCard({ info, children, className }: { info: React.ReactNode; children: React.ReactNode; className?: string }) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col gap-4 md:mx-auto md:mt-6 md:grid md:w-full md:max-w-[880px] md:grid-cols-2 md:gap-0 md:rounded-3xl md:bg-niyog",
-        className,
-      )}
-    >
-      <div className="flex flex-col gap-4 md:border-r-[1.5px] md:border-dashed md:p-8 lg:p-10">{info}</div>
-      <div className="flex flex-col gap-4 md:p-8 lg:p-10">{children}</div>
-    </div>
-  );
-}
-
-/** A card that becomes a plain half inside SplitCard from md. */
-export const splitHalfClass = "md:rounded-none md:bg-transparent md:p-0";

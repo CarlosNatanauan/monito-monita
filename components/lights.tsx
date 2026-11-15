@@ -1,146 +1,124 @@
-import type { CSSProperties, ReactNode } from "react";
+import type { ReactNode } from "react";
 import { bulbRows, type BulbState, type LightsPlan } from "@/lib/lights";
 import { cn } from "@/lib/utils";
 
 export { joinStates, openedStates, type BulbState, type LightsPlan } from "@/lib/lights";
 
 /**
- * The lights (docs/DESIGN.md, "The lights"): one wire, a row of bulbs.
- * They show progress. A bulb's state never carries meaning alone, so every
- * progress row comes with its text count (the required `label`).
+ * The progress light string (docs/DESIGN.md, "Light string"): a sagging
+ * wire with one oval bulb per member, slightly different sizes and tilts.
+ * Off = white, on = ilaw, newest ("glow") = ilaw-lit with four short
+ * drawn rays. Over 12 bulbs they shrink to fit one string up to 30, then
+ * wrap to a second string. A bulb never carries meaning alone, so every
+ * string comes with its count in words (the required `label`).
  */
 
 export type LightsVariant = "light" | "dark";
 
-const SHAPE: Record<LightsVariant, string> = {
-  light: "h-4 w-3 rounded-[50%]", // 12×16 ellipse
-  dark: "size-7 rounded-full", // 28×28 circle (reveal, 1080p)
+const W = 360;
+const H = 44;
+// The reference string's bulbs: radii and tilts, cycled.
+const RX = [5, 6, 5.5, 6, 5, 6.5, 5.5, 6, 5, 6, 5.5, 6];
+const RY = [8, 7, 8.5, 8, 7.5, 8, 7, 8.5, 8, 7.5, 8, 7];
+const TILT = [8, -6, 5, -9, 4, -4, 7, -7, 6, -5, 9, -8];
+
+const INK: Record<LightsVariant, { wire: string; off: string }> = {
+  light: { wire: "#3F1F63", off: "#FFFFFF" },
+  dark: { wire: "#9C87C4", off: "#1E1238" },
+};
+const FILL: Record<Exclude<BulbState, "off">, string> = { on: "#F4C542", glow: "#FFE9A3" };
+
+/** The wire's height at x: the quadratic sag M0 6 Q180 30 360 6. */
+const wireY = (x: number) => {
+  const t = x / W;
+  return 6 + 48 * t * (1 - t);
 };
 
-const FILL: Record<LightsVariant, Record<BulbState, string>> = {
-  light: {
-    off: "border-[1.5px] border-ube-line bg-niyog",
-    on: "border-[1.5px] border-margarine-edge bg-margarine",
-    glow: "border-[1.5px] border-margarine-edge bg-margarine-core shadow-[0_0_10px_4px_rgb(244_197_66/0.9)]",
-  },
-  dark: {
-    off: "border-[1.5px] border-gabi-line bg-gabi-leaf",
-    on: "bg-margarine",
-    glow: "bg-margarine-core shadow-[0_0_28px_10px_rgb(244_197_66/0.9)]",
-  },
-};
-
-export function Bulb({
-  state,
+/** One string of bulbs, as SVG (scales with its box, keeps its shape). */
+export function LightRow({
+  states,
   variant = "light",
   className,
-  style,
 }: {
-  state: BulbState;
+  states: BulbState[];
   variant?: LightsVariant;
   className?: string;
-  style?: CSSProperties;
 }) {
+  const n = states.length;
+  const scale = Math.min(1, 18.6 / Math.max(n, 1));
+  const gap = n > 1 ? Math.min(29, 320 / (n - 1)) : 0;
+  const start = n > 1 ? (W - gap * (n - 1)) / 2 : W / 2;
+  const ink = INK[variant];
   return (
-    <span
-      aria-hidden
-      data-bulb={state}
-      className={cn("block shrink-0", SHAPE[variant], FILL[variant][state], className)}
-      style={style}
-    />
+    <svg viewBox={`0 0 ${W} ${H}`} className={className} aria-hidden focusable="false" data-lights-row>
+      <path d={`M0 6Q180 30 ${W} 6`} fill="none" stroke={ink.wire} strokeWidth="1.3" />
+      {states.map((state, i) => {
+        const cx = +(start + i * gap).toFixed(1);
+        const cy = +(wireY(cx) + 9 * Math.max(scale, 0.66)).toFixed(1);
+        const k = i % RX.length;
+        return (
+          <g key={i} data-bulb={state}>
+            <ellipse
+              cx={cx}
+              cy={cy}
+              rx={+(RX[k] * scale).toFixed(2)}
+              ry={+(RY[k] * scale).toFixed(2)}
+              transform={`rotate(${TILT[k]} ${cx} ${cy})`}
+              fill={state === "off" ? ink.off : FILL[state]}
+              stroke={variant === "light" ? "#3F1F63" : state === "off" ? "#9C87C4" : "#9C87C4"}
+              strokeWidth="1.2"
+            />
+            {state === "glow" && (
+              <path
+                d={`M${cx - 10} ${cy + 1.5}h-4M${cx + 10} ${cy + 1.5}h4M${cx - 7} ${cy + 10.5}l-3 3M${cx + 7} ${cy + 10.5}l3 3`}
+                fill="none"
+                stroke="#C99A1A"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            )}
+          </g>
+        );
+      })}
+    </svg>
   );
 }
 
-const WIRE: Record<LightsVariant, string> = {
-  light: "before:bg-ube-line",
-  dark: "before:bg-gabi-line",
-};
-// Room per bulb on the wire. Columns shrink below this on narrow screens,
-// so a full row of 12 still fits a 320px phone.
-const PITCH: Record<LightsVariant, number> = { light: 22, dark: 48 };
-const LEGEND: Record<LightsVariant, string> = { light: "text-ube-soft", dark: "text-gabi-mist" };
-
 /**
- * A progress string. Up to 24 bulbs, in balanced rows of at most 12, each
- * row on its own full-width wire; bigger groups get one bulb per share of
- * members (see lib/lights.ts) and a small legend. `label` is the exact text
- * count that always goes with it ("8 of 12 have opened their slip"); it
- * renders above the wire.
+ * A progress string. Up to 60 bulbs, one string up to 30 and then two
+ * balanced strings; bigger groups get one bulb per share of members (see
+ * lib/lights.ts) and the line "Bawat ilaw: N tao". `label` is the exact
+ * count in words that always goes with it; it renders above.
  */
 export function Lights({
   plan,
   label,
   variant = "light",
   className,
+  rowClassName = "h-9 w-full lg:h-[52px]",
 }: {
   plan: LightsPlan;
   label: ReactNode;
   variant?: LightsVariant;
   className?: string;
+  rowClassName?: string;
 }) {
   const rows = bulbRows(plan.states);
-  const columns = rows[0]?.length ?? 0;
   return (
-    <div className={cn("flex flex-col gap-3", className)}>
+    <div className={cn("flex flex-col gap-1.5", className)}>
       {label}
       {rows.length > 0 && (
-        <div aria-hidden data-lights={plan.states.length} className="flex flex-col gap-3">
+        <div aria-hidden data-lights={plan.states.length} className="flex flex-col">
           {rows.map((row, r) => (
-            <div
-              key={r}
-              data-lights-row
-              className={cn("relative grid pt-0.5 before:absolute before:inset-x-0 before:top-0 before:h-0.5", WIRE[variant])}
-              style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, ${PITCH[variant]}px))` }}
-            >
-              {row.map((state, i) => (
-                <span key={i} className="flex justify-center">
-                  <Bulb state={state} variant={variant} />
-                </span>
-              ))}
-            </div>
+            <LightRow key={r} states={row} variant={variant} className={cn("block", rowClassName)} />
           ))}
         </div>
       )}
       {plan.perBulb > 1 && (
-        <p className={cn("text-small font-medium", LEGEND[variant])}>Bawat ilaw: {plan.perBulb} tao</p>
+        <p className={cn("text-small", variant === "dark" ? "text-gabi-text" : "text-ube-soft")}>
+          Bawat ilaw: {plan.perBulb} tao
+        </p>
       )}
-    </div>
-  );
-}
-
-const HEADER_BULBS = 7;
-const TWINKLE_PERIOD = 3.3; // seconds: three groups, ~1.1s each
-
-/**
- * The header string (landing, join, /me): 7 bulbs under a full-width wire,
- * spread across the page column (480px on phones, 1120px from md),
- * all on, one in three glowing, the glow shifting every ~1.1s. Only the
- * opacity of a pre-glowing layer changes. Static under reduced motion.
- * Decoration only: hidden from screen readers.
- */
-export function HeaderLights() {
-  return (
-    <div aria-hidden className="pointer-events-none relative h-11 w-full shrink-0 overflow-hidden">
-      <span className="absolute inset-x-0 top-2.5 h-0.5 bg-ube-line" />
-      {/* Spans the page column: 480px on phones, the 1120px frame from md. */}
-      <div className="mx-auto flex max-w-[480px] justify-between px-[30px] pt-3 md:max-w-[calc(1120px+4rem)] md:px-12">
-        {Array.from({ length: HEADER_BULBS }, (_, i) => {
-          const phase = i % 3;
-          return (
-            <span key={i} className="relative">
-              <Bulb state="on" />
-              <Bulb
-                state="glow"
-                className="absolute inset-0 animate-[twinkle_3.3s_linear_infinite] motion-reduce:animate-none"
-                style={{
-                  opacity: phase === 0 ? 1 : 0,
-                  animationDelay: phase === 0 ? "0s" : `-${(TWINKLE_PERIOD * (3 - phase)) / 3}s`,
-                }}
-              />
-            </span>
-          );
-        })}
-      </div>
     </div>
   );
 }

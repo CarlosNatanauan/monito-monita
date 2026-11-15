@@ -15,9 +15,9 @@ export interface LightsPlan {
   perBulb: number;
 }
 
-export const MAX_BULBS = 24;
+export const MAX_BULBS = 60;
 /** At most this many bulbs on one wire; more wrap onto balanced rows. */
-export const MAX_PER_ROW = 12;
+export const MAX_PER_ROW = 30;
 
 /** How many bulbs to draw for `total` members, and how many members each stands for. */
 export function bulbScale(total: number): { bulbs: number; perBulb: number } {
@@ -38,13 +38,13 @@ export function litBulbs(done: number, total: number, bulbs: number): number {
   return Math.min(bulbs - 1, Math.max(1, lit));
 }
 
-/** Join progress: every bulb on, the newest one glowing. */
+/** Join progress: every bulb on, the newest one lit pale with rays. */
 export function joinStates(count: number): LightsPlan {
   const { bulbs, perBulb } = bulbScale(count);
   return { perBulb, states: Array.from({ length: bulbs }, (_, i) => (i === bulbs - 1 ? "glow" : "on")) };
 }
 
-/** After the draw: on = opened, off = not yet, the most recent opened glows. */
+/** After the draw: on = opened, off = not yet, the most recent opened is the newest (pale, with rays). */
 export function openedStates(opened: number, total: number): LightsPlan {
   const { bulbs, perBulb } = bulbScale(total);
   const lit = litBulbs(opened, total, bulbs);
@@ -54,7 +54,7 @@ export function openedStates(opened: number, total: number): LightsPlan {
   };
 }
 
-/** Splits bulbs into rows of at most MAX_PER_ROW, as even as possible (13 → 7 + 6). */
+/** Splits bulbs into rows of at most MAX_PER_ROW, as even as possible (31 → 16 + 15). */
 export function bulbRows<T>(items: T[], maxPerRow: number = MAX_PER_ROW): T[][] {
   if (items.length === 0) return [];
   const rows = Math.ceil(items.length / maxPerRow);

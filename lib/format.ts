@@ -19,6 +19,15 @@ export function formatPartyDate(date: string): string {
   }).format(new Date(Date.UTC(y, m - 1, d)));
 }
 
+/** "Sat, Dec 19" for a calendar date (gift tags where the year is plain). */
+export function formatPartyDay(date: string): string {
+  if (!isIsoDate(date)) return date;
+  const [y, m, d] = date.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-US", { timeZone: "UTC", weekday: "short", month: "short", day: "numeric" }).format(
+    new Date(Date.UTC(y, m - 1, d)),
+  );
+}
+
 /** "Nov 10, 3:42 PM" in the group's timezone. */
 export function formatJoinedAt(at: Date, timeZone: string): string {
   return new Intl.DateTimeFormat("en-US", {

@@ -1,11 +1,13 @@
 /** The dots that stand in for a secret token on screen. */
-export const MASK = "••••••";
+export const MASK = "••••••••••";
 
 /**
- * A personal or organizer link as it may appear on screen: the host and the end of the
- * path, with the token replaced by dots ("monitomonita-ph.vercel.app/…/me?t=••••••").
- * People screenshot their page, so the token itself is never shown; Copy
- * and Share still use the full link. Pure; works on paths too.
+ * A personal or organizer link as it may appear on screen: the real link
+ * with only the token replaced by dots
+ * ("monitomonita-ph.vercel.app/g/barkada-2026/me?t=••••••••••"). People
+ * screenshot their page, so the token itself is never shown until they
+ * tap "Ipakita"; Copy and Share still use the full link. The slug is the
+ * public share link, so it stays. Pure; works on paths too.
  */
 export function maskLink(link: string): string {
   let url: URL;
@@ -15,7 +17,11 @@ export function maskLink(link: string): string {
     return `…?t=${MASK}`;
   }
   const isAbsolute = /^https?:\/\//i.test(link);
-  const last = url.pathname.split("/").filter(Boolean).at(-1) ?? "";
   const host = isAbsolute ? url.host : "";
-  return `${host}/…/${last}?t=${MASK}`;
+  return `${host}${url.pathname}?t=${MASK}`;
+}
+
+/** The link as shown in full ("Ipakita"): without the scheme, like the masked one. */
+export function displayLink(link: string): string {
+  return link.replace(/^https?:\/\//i, "");
 }

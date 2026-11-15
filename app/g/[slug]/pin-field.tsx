@@ -7,19 +7,22 @@ const PIN_LENGTH = 4;
 const noopSubscribe = () => () => {};
 
 /**
- * The 4-digit PIN as four circles (docs/DESIGN.md, "PIN boxes").
+ * The 4-digit PIN as four square boxes (docs/DESIGN.md, "PIN boxes").
  *
- * One real input (name="pin") sits over the circles, so the form still
+ * One real input (name="pin") sits over the boxes, so the form still
  * posts before hydration, paste and password managers work, and focus
- * "moves" to the next circle as you type. Its text is invisible once React
- * runs; the circles show a dot per digit and a gold ring on the next one.
- * Before hydration the masked text shows through, spaced over the circles.
+ * "moves" to the next box as you type. Its text is invisible once React
+ * runs; the boxes show a dot per digit and the next one lit (ilaw-lit,
+ * 2.5px border). Before hydration the masked text shows through, spaced
+ * over the boxes.
  * Numeric keypad on phones (inputMode + pattern for iOS); never echoed back
  * by the server.
  */
 export function PinField({
   id,
   label,
+  labelClassName = "font-bold",
+  rowClassName,
   autoComplete,
   invalid,
   describedBy,
@@ -28,6 +31,10 @@ export function PinField({
 }: {
   id: string;
   label: ReactNode;
+  /** The listahan sets labels in dahon 14 bold on the rule. */
+  labelClassName?: string;
+  /** Wraps the boxes (a listahan two-line row). */
+  rowClassName?: string;
   autoComplete: "new-password" | "current-password";
   invalid?: boolean;
   describedBy?: string;
@@ -56,26 +63,24 @@ export function PinField({
   const active = focused ? Math.min(length, PIN_LENGTH - 1) : -1;
 
   return (
-    <div className="flex flex-col gap-2">
-      <label htmlFor={id} className="px-1.5 font-bold">
+    <>
+      <label htmlFor={id} className={labelClassName}>
         {label}
       </label>
+      <div className={rowClassName}>
       <div className="relative w-fit">
-        <div aria-hidden className="flex gap-3">
+        <div aria-hidden className="flex gap-2.5">
           {Array.from({ length: PIN_LENGTH }, (_, i) => (
             <span
               key={i}
               data-pin-box
               className={cn(
-                "flex size-[60px] items-center justify-center rounded-full border-[1.5px] border-ube-line bg-niyog",
-                invalid && "border-2 border-sili",
-                i === active &&
-                  (invalid
-                    ? "shadow-[0_0_0_4px_rgb(244_197_66/0.8)]"
-                    : "border-2 border-ube shadow-[0_0_0_4px_rgb(244_197_66/0.8)]"),
+                "flex h-[60px] w-[54px] items-center justify-center rounded-[4px] border-[1.5px] border-ube bg-papel",
+                i === active && "border-[2.5px] bg-ilaw-lit",
+                invalid && "border-[2.5px] border-sili",
               )}
             >
-              {hydrated && i < length && <span className="size-3.5 rounded-full bg-ube" />}
+              {hydrated && i < length && <span className="size-3 rounded-full bg-ube" />}
             </span>
           ))}
         </div>
@@ -102,15 +107,16 @@ export function PinField({
           }}
           required
           className={cn(
-            "absolute inset-0 h-full w-full cursor-pointer rounded-full bg-transparent outline-none",
+            "absolute inset-0 h-full w-full cursor-pointer rounded-[4px] bg-transparent outline-none focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-ilaw",
             // Keep the caret and selection out of sight; the circles show focus.
             "caret-transparent selection:bg-transparent [-webkit-tap-highlight-color:transparent]",
             hydrated
               ? "text-transparent"
-              : "pl-[23px] font-mono text-[18px] tracking-[57px] text-ube",
+              : "pl-[21px] font-mono text-[18px] tracking-[53px] text-ube",
           )}
         />
       </div>
-    </div>
+      </div>
+    </>
   );
 }
