@@ -114,7 +114,7 @@ async function shot(page: Page, name: string) {
 
 const stage = (page: Page) => page.locator(".rv-stage");
 const centre = (page: Page) => page.getByRole("region", { name: "Reveal" });
-const count = (page: Page, text: string) => page.getByText(text, { exact: true });
+const count = (page: Page, text: string) => page.getByText(text, { exact: true }).filter({ visible: true });
 const idle = (page: Page) => expect(stage(page)).not.toHaveAttribute("data-animating", /.*/, { timeout: 10_000 });
 
 /**
@@ -206,8 +206,8 @@ test("party reveal on a projector: ring, steps, phone as remote, a group of 30, 
   await test.step("start screen: a blank ring, no names or codenames; GSAP comes after the page, confetti not at all", async () => {
     const js = watchJs(page);
     await openAsOrganizer(page, small);
-    await expect(page.getByRole("heading", { name: "Party reveal" })).toBeVisible();
-    await expect(page.getByText("12 slips. Handa na?")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Handa na?" })).toBeVisible();
+    await expect(page.getByText("12 slips, 12 sikreto. Pindutin para simulan.")).toBeVisible();
     await expect(page.locator('[data-slip][data-face="blank"]')).toHaveCount(12);
     await expect(page.locator('[data-bulb][data-state="off"]')).toHaveCount(48);
     await page.waitForLoadState("networkidle");
@@ -239,7 +239,7 @@ test("party reveal on a projector: ring, steps, phone as remote, a group of 30, 
   }
 
   await test.step("Start, then Space and → for Next, ← for Previous, each one animated", async () => {
-    await page.getByRole("button", { name: "Start the reveal" }).click();
+    await page.getByRole("button", { name: "Simulan ang reveal" }).click();
     await page.getByRole("button", { name: "Oo, simulan na" }).click();
     await expectSmallStep(page, 1);
     await expect(stage(page)).toHaveAttribute("data-last-transition", "start");
@@ -325,7 +325,7 @@ test("party reveal on a projector: ring, steps, phone as remote, a group of 30, 
 
   await test.step("a group of 30: the window of 12 around the pair on screen; only its revealed pairs leave the server", async () => {
     await openAsOrganizer(page, big);
-    await page.getByRole("button", { name: "Start the reveal" }).click();
+    await page.getByRole("button", { name: "Simulan ang reveal" }).click();
     await page.getByRole("button", { name: "Oo, simulan na" }).click();
     await expectBigStep(page, 1);
     await setStep(big.slug, 14);
@@ -414,16 +414,16 @@ test("party reveal on a projector: ring, steps, phone as remote, a group of 30, 
     await expect(all).toBeVisible({ timeout: 10_000 });
     await expect(all.getByRole("listitem")).toHaveCount(30);
     for (const [i, pair] of bigOrder.entries()) {
-      await expect(all.getByRole("listitem").nth(i)).toHaveText(`${pair.giver} → ${pair.receiver}`);
+      await expect(all.getByRole("listitem").nth(i)).toHaveText(new RegExp(`^${pair.giver}\\s*→ kay ${pair.receiver}$`));
     }
-    await expect(page.locator("footer p")).toHaveText("E2E Office Party · Tapos na!");
+    await expect(page.locator("footer p").first()).toHaveText("E2E Office Party · 30 of 30");
     await shot(page, "all-pairs-30");
     await atProjectorSizes(page, "all pairs", "all-pairs");
     await page.getByRole("button", { name: "Balik sa parol" }).click();
     await expect(page.locator('[data-slip][data-halo="true"]')).toHaveCount(14);
     await expect(page.locator('[data-bulb][data-state="glow"]')).toHaveCount(56);
     // The phone follows to the end too.
-    await expect(phone!.page.locator("footer p")).toHaveText("E2E Office Party · Tapos na!", { timeout: 6_000 });
+    await expect(phone!.page.locator("footer p").first()).toHaveText("E2E Office Party · 30 of 30", { timeout: 6_000 });
     // A refresh after the end goes straight to the list.
     await page.reload();
     await expect(page.getByRole("list", { name: "All pairs" }).getByRole("listitem")).toHaveCount(30);

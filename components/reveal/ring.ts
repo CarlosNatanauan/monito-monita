@@ -28,7 +28,9 @@ const RY = 396;
 /** Bulb centres. */
 const BRX = 540;
 const BRY = 262;
-export const BULB_SIZE = 28;
+/** Oval bulbs (docs/design/svg/light-bulbs.svg), 22×30 at 1080p. */
+export const BULB_W = 22;
+export const BULB_H = 30;
 
 export interface RingGeometry {
   total: number;
@@ -143,7 +145,7 @@ export function slipTransform(pos: number, index: number, g: RingGeometry): stri
 
 export function bulbTransform(pos: number, g: RingGeometry): string {
   const { x, y } = bulbPoint(pos, g);
-  return `translate3d(${(x - BULB_SIZE / 2).toFixed(1)}px, ${(y - BULB_SIZE / 2).toFixed(1)}px, 0)`;
+  return `translate3d(${(x - BULB_W / 2).toFixed(1)}px, ${(y - BULB_H / 2).toFixed(1)}px, 0)`;
 }
 
 export type SlipFace = "blank" | "code" | "revealed";

@@ -13,7 +13,7 @@
 //   node scripts/perf/reveal-perf.mjs http://localhost:3100 [--gpu]
 //
 // Headless Chromium composites in software by default, which overstates
-// what full-screen layers (the finale's gold glow, the confetti canvas)
+// what full-screen layers (the finale's gold frame, the confetti canvas)
 // cost on a real laptop. --gpu turns GPU compositing on (ANGLE / D3D11 on
 // Windows), closer to a laptop driving a projector. Report both.
 import { chromium } from "@playwright/test";
@@ -92,7 +92,7 @@ await measure("Next, 12 members (flip + bulbs)", "n=12&step=6", "ArrowRight");
 await measure("Next, 30 members (window turns + flip + bulbs)", "n=30&step=15", "ArrowRight");
 await measure("Previous, 30 members", "n=30&step=15", "ArrowLeft");
 // The finale is a button press: "Enter" here means "click Ilawan ang parol".
-await measure("Finale, 12 members (sweep, haloes, glow, stars)", "n=12&step=12", "Enter");
+await measure("Finale, 12 members (sweep, gold outlines, frame, stars)", "n=12&step=12", "Enter");
 
 // 2. Lazy loading.
 {
@@ -167,7 +167,7 @@ async function ringState(page) {
       const page = await ctx.newPage();
       await page.goto(lab(`n=${n}&step=${step}`), { waitUntil: "networkidle" });
       await page.waitForTimeout(800);
-      if (kind === "start") await page.getByRole("button", { name: "Start the reveal" }).click();
+      if (kind === "start") await page.getByRole("button", { name: "Simulan ang reveal" }).click();
       else if (kind === "finale") await page.getByRole("button", { name: "Ilawan ang parol" }).click();
       else await page.keyboard.press(kind === "next" ? "ArrowRight" : "ArrowLeft");
       await page.waitForTimeout(100);

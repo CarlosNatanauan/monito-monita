@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { RevealScreen } from "@/components/reveal/reveal-screen";
+import "@/components/reveal/reveal.css";
 import { getCurrentOrganizer, isValidSlug } from "@/server/auth";
 import { getRevealView } from "@/server/reveal";
 import { RevealAutoRefresh } from "./auto-refresh";
@@ -13,12 +14,6 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-// Gabi with a soft green centre and faint leaf veins (docs/DESIGN.md, "Reveal screen").
-const NIGHT = {
-  backgroundColor: "var(--color-gabi)",
-  backgroundImage:
-    "repeating-linear-gradient(115deg, rgb(255 255 255 / 0.035) 0 1px, transparent 1px 16px), radial-gradient(ellipse at center, #18432f 0%, transparent 70%)",
-};
 
 /**
  * The party reveal (organizer only, signature moment 4): a ring of slips
@@ -38,7 +33,7 @@ export default function RevealPage({ params }: PageProps<"/g/[slug]/reveal">) {
 
 function Plain({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex flex-1 flex-col text-white" style={NIGHT}>
+    <div className="rv-screen flex flex-1 flex-col text-white">
       <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col gap-6 px-5 py-10 md:max-w-3xl">{children}</main>
     </div>
   );
@@ -52,8 +47,8 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
   if (!organizer) {
     return (
       <Plain>
-        <div className="flex flex-col gap-2 rounded-3xl bg-gabi-leaf p-5 text-gabi-mist">
-          <p className="text-title font-extrabold text-white">Para sa organizer lang ang page na &apos;to.</p>
+        <div className="flex flex-col gap-2 rounded-paper border-[1.5px] border-gabi-line bg-gabi p-5 text-gabi-text">
+          <p className="font-head text-section text-white">Para sa organizer lang ang page na &apos;to.</p>
           <p>Ang organizer ang magpapakita ng reveal sa party. Abangan mo na lang!</p>
         </div>
       </Plain>
@@ -69,12 +64,12 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
       <Plain>
         <Link
           href={backHref}
-          className="flex min-h-11 items-center self-start rounded-sm font-bold text-gabi-mist underline underline-offset-4 focus-ring"
+          className="flex min-h-11 items-center self-start rounded-paper font-bold text-gabi-text underline decoration-[1.5px] underline-offset-[3px] focus-ring"
         >
           Back to organizer page
         </Link>
-        <h1 className="font-display text-heading-lg">Party reveal</h1>
-        <p className="text-gabi-mist">Mag-draw muna ng names bago ang reveal.</p>
+        <h1 className="font-head text-display">Party reveal</h1>
+        <p className="text-gabi-text">Mag-draw muna ng names bago ang reveal.</p>
       </Plain>
     );
   }

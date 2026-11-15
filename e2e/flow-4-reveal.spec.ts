@@ -12,7 +12,7 @@
 import { expect, test, type Page, type Request } from "@playwright/test";
 import { closeDb } from "../server/db";
 import { deleteGroups } from "./db-cleanup";
-import { expectCardOrder, people, screenshotter, type Person } from "./flow";
+import { expectCardOrder, navigate, people, screenshotter, type Person } from "./flow";
 import {
   capturePage,
   expectJoinPageClean,
@@ -59,7 +59,7 @@ test("party reveal: start, steps, phone as remote, finale, leaks", async ({ brow
 
   /** The reveal screen shows exactly this pair, at this step: centre text, and its slip on the ring with the halo. */
   async function expectPair(page: Page, step: number, pair: { giver: string; receiver: string; codename: string }) {
-    await expect(page.getByText(`${step} of 3`, { exact: true })).toBeVisible();
+    await expect(page.getByText(`${step} of 3`, { exact: true }).filter({ visible: true })).toBeVisible();
     await expect(onScreen(page)).toContainText(`Si ${pair.codename} ay si…`);
     await expect(onScreen(page)).toContainText(`${pair.giver}!`);
     await expect(onScreen(page)).toContainText(`Ang monito niya: ${pair.receiver}`);
@@ -76,11 +76,11 @@ test("party reveal: start, steps, phone as remote, finale, leaks", async ({ brow
 
   await test.step("reveal: organizer only; a count before it starts", async () => {
     const { page } = organizer;
-    await page.goto(`/g/${slug}/admin`);
+    await navigate(page, `/g/${slug}/admin`);
     await page.getByRole("link", { name: "Open the reveal screen" }).click();
     await expect(page).toHaveURL(new RegExp(`${revealUrl}$`));
-    await expect(page.getByRole("heading", { name: "Party reveal" })).toBeVisible();
-    await expect(page.getByText("3 slips. Handa na?")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Handa na?" })).toBeVisible();
+    await expect(page.getByText(/^3 slips, 3 sikreto\./).filter({ visible: true })).toBeVisible();
     await shot(page, "reveal-ready");
 
     // A member (and a stranger) only sees "for the organizer", with no names.
@@ -99,7 +99,7 @@ test("party reveal: start, steps, phone as remote, finale, leaks", async ({ brow
 
   await test.step("start the reveal: first pair, redraw and remove are locked", async () => {
     const { page } = organizer;
-    await page.getByRole("button", { name: "Start the reveal" }).click();
+    await page.getByRole("button", { name: "Simulan ang reveal" }).click();
     await expect(page.getByText("hindi na puwedeng mag-redraw o magtanggal", { exact: false })).toBeVisible();
     await page.getByRole("button", { name: "Oo, simulan na" }).dblclick();
 
@@ -110,7 +110,7 @@ test("party reveal: start, steps, phone as remote, finale, leaks", async ({ brow
     await expect(page.getByRole("button", { name: "Previous", exact: true })).toBeDisabled();
     await shot(page, "reveal-step-1");
 
-    await page.goto(`/g/${slug}/admin`);
+    await navigate(page, `/g/${slug}/admin`);
     await expect(page.getByText("Nagre-reveal na")).toBeVisible();
     await expect(page.getByRole("button", { name: "Redraw" })).toHaveCount(0);
     await expect(page.getByRole("button", { name: /^Remove / })).toHaveCount(0);
@@ -162,10 +162,10 @@ test("party reveal: start, steps, phone as remote, finale, leaks", async ({ brow
 
   await test.step("Next / Previous; refreshing and another device resume at the same pair", async () => {
     const { page } = organizer;
-    await page.goto(revealUrl);
+    await navigate(page, revealUrl);
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await expectPair(page, 2, order[1]);
-    await page.reload();
+    await navigate(page);
     await expectPair(page, 2, order[1]);
     expectRevealPageClean(await capturePage(page, revealUrl), await getTruth(slug), order, 2);
     await page.getByRole("button", { name: "Previous", exact: true }).click();
@@ -175,8 +175,8 @@ test("party reveal: start, steps, phone as remote, finale, leaks", async ({ brow
 
     // The organizer link on a laptop (projector) opens at the same pair.
     laptop = await newPerson("Organizer laptop");
-    await laptop.page.goto(organizerUrl);
-    await laptop.page.goto(revealUrl);
+    await navigate(laptop.page, organizerUrl);
+    await navigate(laptop.page, revealUrl);
     await expectPair(laptop.page, 2, order[1]);
   });
 
@@ -190,7 +190,7 @@ test("party reveal: start, steps, phone as remote, finale, leaks", async ({ brow
     const before = Number(await stage(laptop.page).getAttribute("data-transitions"));
     await page.getByRole("button", { name: "Next", exact: true }).click();
     await expectPair(page, 3, order[2]);
-    await expect(laptop.page.getByText("3 of 3", { exact: true })).toBeVisible({ timeout: 6_000 });
+    await expect(laptop.page.getByText("3 of 3", { exact: true }).filter({ visible: true })).toBeVisible({ timeout: 6_000 });
     await expectPair(laptop.page, 3, order[2]);
     await expect(stage(laptop.page)).toHaveAttribute("data-last-transition", "next");
     expect(Number(await stage(laptop.page).getAttribute("data-transitions"))).toBe(before + 1);
@@ -200,9 +200,9 @@ test("party reveal: start, steps, phone as remote, finale, leaks", async ({ brow
     await laptop.page.keyboard.press("ArrowLeft");
     await expectPair(laptop.page, 2, order[1]);
     await expect(stage(laptop.page)).toHaveAttribute("data-last-transition", "previous");
-    await expect(page.getByText("2 of 3", { exact: true })).toBeVisible({ timeout: 6_000 });
+    await expect(page.getByText("2 of 3", { exact: true }).filter({ visible: true })).toBeVisible({ timeout: 6_000 });
     await page.getByRole("button", { name: "Next", exact: true }).click();
-    await expect(laptop.page.getByText("3 of 3", { exact: true })).toBeVisible({ timeout: 6_000 });
+    await expect(laptop.page.getByText("3 of 3", { exact: true }).filter({ visible: true })).toBeVisible({ timeout: 6_000 });
     expect(await laptop.page.evaluate(() => (window as unknown as { stayed?: boolean }).stayed)).toBe(true);
     expectRevealPageClean(await capturePage(laptop.page, revealUrl), await getTruth(slug), order, 3);
   });
@@ -225,10 +225,10 @@ test("party reveal: start, steps, phone as remote, finale, leaks", async ({ brow
 
     // Only the reveal screen polls.
     const { page } = organizer;
-    await page.goto(`/g/${slug}/admin`);
+    await navigate(page, `/g/${slug}/admin`);
     await page.waitForLoadState("networkidle");
     expect(await countRefreshes(page, () => page.waitForTimeout(5_000)), "refreshes on the organizer page").toBe(0);
-    await page.goto(revealUrl);
+    await navigate(page, revealUrl);
     await expectPair(page, 3, order[2]);
   });
 
@@ -239,11 +239,14 @@ test("party reveal: start, steps, phone as remote, finale, leaks", async ({ brow
     await expect(stage(page)).toHaveAttribute("data-last-transition", "finale");
     await expect(page.locator('[data-slip][data-halo="true"]')).toHaveCount(3);
     await expect(page.locator('[data-bulb][data-state="glow"]')).toHaveCount(await page.locator("[data-bulb]").count());
-    await page.getByRole("button", { name: "Lahat ng pairs" }).click();
+    // A phone held upright already lists every pair (the follow-along view);
+    // on a landscape screen, "Lahat ng pairs" swaps the ring for the list.
+    const { width, height } = page.viewportSize()!;
+    if (width > height) await page.getByRole("button", { name: "Lahat ng pairs" }).click();
     const all = page.getByRole("list", { name: "All pairs" });
     await expect(all.getByRole("listitem")).toHaveCount(3);
     for (const [i, pair] of order.entries()) {
-      await expect(all.getByRole("listitem").nth(i)).toHaveText(`${pair.giver} → ${pair.receiver}`);
+      await expect(all.getByRole("listitem").nth(i)).toHaveText(new RegExp(`^${pair.giver}\\s*→ kay ${pair.receiver}$`));
     }
     await shot(page, "reveal-done");
 
@@ -254,7 +257,7 @@ test("party reveal: start, steps, phone as remote, finale, leaks", async ({ brow
     expect(await countRefreshes(laptop.page, () => laptop.page.waitForTimeout(5_000)), "refreshes after the end").toBe(0);
     await laptop.context.close();
 
-    await page.goto(`/g/${slug}/admin`);
+    await navigate(page, `/g/${slug}/admin`);
     await expect(page.getByText("Reveal na!")).toBeVisible();
     await expect(page.getByRole("link", { name: "See all pairs" })).toHaveAttribute("href", revealUrl);
   });
@@ -264,9 +267,11 @@ test("party reveal: start, steps, phone as remote, finale, leaks", async ({ brow
     for (const { label, person } of stillIn) {
       const giver = order.find((p) => p.receiver === label)!;
       const text = await capturePage(person.page, `/g/${slug}/me`);
-      const card = person.page.locator('[data-slot="card"]').filter({ hasText: "Ang nagbigay sa'yo ay…" });
-      await expect(card).toContainText(`${giver.giver}!`);
-      await expect(card).toContainText(giver.codename);
+      // The giver on the slip in the sky panel, then "Si {codename} pala si {name}!".
+      const slip = person.page.getByRole("region", { name: "Ang nagbigay sa'yo" });
+      await expect(slip).toContainText("Ang nagbigay sa'yo ay…");
+      await expect(slip).toContainText(giver.giver);
+      await expect(person.page.getByText(`Si ${giver.codename} pala si ${giver.giver}!`)).toBeVisible();
       if (label === "Ben") await shot(person.page, "ben-me-revealed");
       expectMemberPageClean(text, truth, label, { revealed: true });
     }

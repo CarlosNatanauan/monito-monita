@@ -1,13 +1,13 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { ChevronLeft, Play } from "lucide-react";
 import { useActionState, useRef, useState, useTransition } from "react";
 import { GOLD_BUTTON, NIGHT_BUTTON, useRevealKeys } from "@/components/reveal/controls";
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { moveRevealFormAction, startRevealAction } from "./actions";
 
-/** "Start the reveal", with a confirm (redraws and removals lock after). */
+/** "Simulan ang reveal", with a confirm (redraws and removals lock after). */
 export function StartReveal({ slug }: { slug: string }) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -25,22 +25,22 @@ export function StartReveal({ slug }: { slug: string }) {
     <div className="flex flex-col gap-3 landscape:max-w-[min(560px,40vw)] landscape:items-end">
       <ErrorMessage>{error}</ErrorMessage>
       {!confirming ? (
-        <Button type="button" className={GOLD_BUTTON} onClick={() => setConfirming(true)}>
-          Start the reveal
+        <Button type="button" variant="gold" className={GOLD_BUTTON} onClick={() => setConfirming(true)}>
+          Simulan ang reveal
         </Button>
       ) : (
-        <div className="flex flex-col gap-3 rounded-3xl bg-gabi-leaf p-5" role="group" aria-label="Confirm reveal">
-          <p className="font-bold text-gabi-mist landscape:text-[clamp(16px,2.4vh,28px)]">
+        <div className="flex flex-col gap-3 rounded-paper border-[1.5px] border-gabi-line bg-gabi p-5" role="group" aria-label="Confirm reveal">
+          <p className="font-bold text-gabi-text landscape:text-[clamp(16px,2.4vh,28px)]">
             Pag sinimulan na, hindi na puwedeng mag-redraw o magtanggal ng member. Go?
           </p>
           <div className="flex flex-wrap gap-2">
-            <Button type="button" className={GOLD_BUTTON} disabled={pending} onClick={start}>
+            <Button type="button" variant="gold" className={GOLD_BUTTON} disabled={pending} onClick={start}>
               {pending ? "Sandali…" : "Oo, simulan na"}
             </Button>
             <Button
               type="button"
-              variant="ghost"
-              className="h-[58px] px-5 text-gabi-mist landscape:text-[clamp(16px,2.4vh,28px)]"
+              variant="link"
+              className="h-[58px] px-3 text-body text-gabi-text landscape:text-[clamp(16px,2.4vh,28px)]"
               disabled={pending}
               onClick={() => setConfirming(false)}
             >
@@ -97,18 +97,16 @@ export function RevealControls({ slug, step, total }: { slug: string; step: numb
           type="submit"
           name="move"
           value="next"
+          variant="gold"
           className={`flex-[2] ${GOLD_BUTTON}`}
           disabled={pending}
         >
           {last ? (
-            <>
-              <Sparkles aria-hidden />
-              Ilawan ang parol
-            </>
+            "Ilawan ang parol"
           ) : (
             <>
               Next
-              <ChevronRight aria-hidden />
+              <Play aria-hidden className="fill-current" />
             </>
           )}
         </Button>

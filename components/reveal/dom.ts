@@ -15,8 +15,31 @@ export const slipPart = (root: ParentNode, index: number, part: string) =>
 /** A segment's bulbs, in order toward the receiver. */
 export const segmentBulbs = (root: ParentNode, index: number) =>
   qa(root, `[data-seg="${index}"]`).sort((a, b) => Number(a.dataset.pos) - Number(b.dataset.pos));
-export const bulbLayers = (bulbs: HTMLElement[], part: "on" | "glow") =>
-  bulbs.map((b) => q(b, `[data-part="${part}"]`)).filter((el): el is HTMLElement => el !== null);
+export const bulbLayers = (bulbs: HTMLElement[]) =>
+  bulbs.map((b) => q(b, '[data-part="on"]')).filter((el): el is HTMLElement => el !== null);
+
+/**
+ * Bulbs light by their state attribute (React has already set it) with a
+ * CSS transition; this sets each one's delay, before the new state paints.
+ */
+export function delayBulbs(bulbs: HTMLElement[], delayAt: (n: number) => number) {
+  bulbs.forEach((bulb, n) => bulb.style.setProperty("--bulb-delay", `${delayAt(n).toFixed(3)}s`));
+}
+
+/** Clears every bulb delay (a later state change lights at once). */
+export function clearBulbDelays(root: ParentNode) {
+  for (const bulb of qa(root, "[data-bulb]")) bulb.style.removeProperty("--bulb-delay");
+}
+
+/**
+ * Another step came in: drop the waiting delays. Bulbs already on their
+ * way keep going to the same end state (or turn back smoothly), so no
+ * forced style pass is needed; one here would start the next step's bulbs
+ * before their delays are set.
+ */
+export function finishBulbs(root: HTMLElement) {
+  clearBulbDelays(root);
+}
 
 /**
  * Puts the name a slip showed back on its paper while it turns back over

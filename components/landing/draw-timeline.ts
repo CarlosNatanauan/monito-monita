@@ -9,10 +9,27 @@ import type { Sparkle } from "@/components/slip/sparkle";
  * part of the landing page's first load. Transforms and opacity only.
  */
 
-/** How far below its resting place the slip starts (inside the bowl), in the
- * stage's own px (the stage is drawn at 0.6 scale, so ~129px on screen). */
-export const RISE = 215;
-const UNFOLD_AT = 0.42;
+/** When the slip starts to rise, after the slips jiggle (200ms). */
+const RISE_AT = 0.2;
+const UNFOLD_AT = RISE_AT + 0.35;
+
+/**
+ * Where the slip starts (inside the bowl), relative to where it ends (top
+ * left of the sky), in the slip stage's own px. Measured once, while the
+ * slip waits, never on the tap.
+ */
+function measureRise(stage: HTMLElement): { x: number; y: number } {
+  const sky = stage.closest("section");
+  const bowl = sky?.querySelector<HTMLElement>('[data-part="bowl"]');
+  if (!bowl) return { x: 0, y: 215 };
+  const s = stage.getBoundingClientRect();
+  const b = bowl.getBoundingClientRect();
+  const scale = s.width / stage.offsetWidth || 1;
+  return {
+    x: (b.left + b.width / 2 - (s.left + s.width / 2)) / scale,
+    y: (b.top + b.height * 0.45 - (s.top + s.height / 2)) / scale,
+  };
+}
 
 export type Drawer = {
   /**
@@ -45,6 +62,7 @@ export function createDrawer(): Drawer {
   const sparkleLoaded = import("@/components/slip/sparkle").then((m) => (sparkleModule = m));
   let ctx: gsap.Context | null = null;
   let timeline: gsap.core.Timeline | null = null;
+  let rise = { x: 0, y: 215 };
 
   const drawer: Drawer = {
     prepare(stage, onDone) {
@@ -53,14 +71,24 @@ export function createDrawer(): Drawer {
       ctx = gsap.context(() => {
         const riser = stage.querySelector<HTMLElement>('[data-part="riser"]');
         if (!riser) return;
+        rise = measureRise(stage);
+        const bowls = stage.closest("section")?.querySelectorAll<HTMLElement>('[data-part="bowl"]') ?? [];
         const unfold = buildUnfoldTimeline(stage, { sparkle: () => sparkle, onDone });
         const tl = gsap.timeline({ paused: true });
+        // The slips jiggle (200ms), then one rises out (350ms, ease-out).
+        if (bowls.length) {
+          tl.to(bowls, { rotation: 2.5, duration: 0.05, ease: "sine.inOut", yoyo: true, repeat: 3, transformOrigin: "50% 100%" }, 0).set(
+            bowls,
+            { clearProps: "transform" },
+            RISE_AT,
+          );
+        }
         tl.fromTo(
           riser,
-          { y: RISE, scale: 0.5, rotation: 8 },
-          { y: 0, scale: 1, rotation: 0, duration: 0.62, ease: "power2.out" },
-          0,
-        ).fromTo(riser, { opacity: 0 }, { opacity: 1, duration: 0.14, ease: "none" }, 0);
+          { x: rise.x, y: rise.y, scale: 0.5, rotation: 8 },
+          { x: 0, y: 0, scale: 1, rotation: 0, duration: 0.35, ease: "power2.out" },
+          RISE_AT,
+        ).fromTo(riser, { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, RISE_AT);
         tl.add(unfold.paused(false), UNFOLD_AT);
         timeline = tl;
       }, stage);
@@ -92,7 +120,8 @@ export function createDrawer(): Drawer {
         const riser = stage.querySelector<HTMLElement>('[data-part="riser"]');
         if (!riser) return resolve();
         gsap.to(riser, {
-          y: RISE * 0.7,
+          x: rise.x * 0.7,
+          y: rise.y * 0.7,
           scale: 0.55,
           opacity: 0,
           duration: 0.3,

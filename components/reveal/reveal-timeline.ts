@@ -9,8 +9,10 @@
  */
 import gsap from "gsap";
 import {
-  bulbLayers,
+  clearBulbDelays,
   clearGhost,
+  delayBulbs,
+  finishBulbs,
   fillGhost,
   placeRing,
   q,
@@ -29,9 +31,29 @@ export function playTransition(root: HTMLElement, t: StepTransition, g: RingGeom
   const tl = gsap.timeline({
     onComplete: () => {
       if (t.unflip) clearGhost(root, t.unflip.index);
+      clearBulbDelays(root);
       done();
     },
   });
+  // Bulbs are CSS transitions: their delays follow the timeline's speed.
+  const sec = (at: number) => at / speed;
+
+  // Set the bulb delays before any tween is built: GSAP reads computed
+  // styles while building, and that style pass starts the bulbs' CSS
+  // transitions (React has already set their new state).
+  const stepAt = t.shift ? TURN - 0.1 : t.kind === "start" ? 0.6 : 0;
+  const lightStart = stepAt + FLIP - 0.05;
+  let lightGap = BULB_GAP;
+  let lightCount = 0;
+  if ((t.kind === "start" || t.kind === "next") && t.light !== undefined) {
+    const bulbs = segmentBulbs(root, t.light);
+    lightCount = bulbs.length;
+    lightGap = Math.min(BULB_GAP, (BULB_GAP * 4) / Math.max(bulbs.length, 1));
+    delayBulbs(bulbs, (n) => sec(lightStart + n * lightGap));
+  } else if (t.kind === "previous" && t.dim !== undefined) {
+    // Back toward the giver, one after another.
+    delayBulbs(segmentBulbs(root, t.dim).reverse(), (n) => sec(n * 0.08));
+  }
 
   const centre = q(root, '[data-part="centre"]');
   const halo = (i: number) => slipPart(root, i, "halo");
@@ -47,17 +69,13 @@ export function playTransition(root: HTMLElement, t: StepTransition, g: RingGeom
   };
 
   if (t.kind === "start" || t.kind === "next") {
-    let at = 0;
+    const at = stepAt;
     if (t.kind === "start") {
       // Codenames appear on the blank slips first.
       const codes = qa(root, '[data-part="code"]');
       tl.fromTo(codes, { opacity: 0 }, { opacity: 1, duration: 0.35, stagger: 0.03, clearProps: "opacity" }, 0);
-      at = 0.6;
     }
-    if (t.shift) {
-      turn(0);
-      at = TURN - 0.1;
-    }
+    if (t.shift) turn(0);
     for (const i of t.haloOut) {
       const el = halo(i);
       if (el) tl.fromTo(el, { opacity: 1 }, { opacity: 0, duration: 0.3, clearProps: "opacity" }, at);
@@ -76,28 +94,14 @@ export function playTransition(root: HTMLElement, t: StepTransition, g: RingGeom
       const el = halo(i);
       if (el) tl.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.4, clearProps: "opacity" }, at + FLIP - 0.2);
     }
-    for (const i of t.settle) {
-      tl.fromTo(bulbLayers(segmentBulbs(root, i), "glow"), { opacity: 1 }, { opacity: 0, duration: 0.4, clearProps: "opacity" }, at + FLIP - 0.1);
-    }
-    if (t.light !== undefined) {
-      const bulbs = segmentBulbs(root, t.light);
-      const gap = Math.min(BULB_GAP, (BULB_GAP * 4) / bulbs.length);
-      bulbs.forEach((bulb, n) => {
-        const when = at + FLIP - 0.05 + n * gap;
-        const [on, glow] = [bulbLayers([bulb], "on"), bulbLayers([bulb], "glow")];
-        tl.fromTo(on, { opacity: 0 }, { opacity: 1, duration: 0.12, clearProps: "opacity" }, when);
-        tl.fromTo(glow, { opacity: 0 }, { opacity: 1, duration: 0.25, clearProps: "opacity" }, when);
-        if (n < 5) tl.call(() => cue({ kind: "bulb", n }), [], when);
-      });
+    if (lightCount > 0) {
+      // The bulbs toward the receiver light one after another (their
+      // state is already "on"; each waits for its delay, set above).
+      for (let n = 0; n < Math.min(lightCount, 5); n++) tl.call(() => cue({ kind: "bulb", n }), [], lightStart + n * lightGap);
+      // Keep the timeline (and `done`) running until the last bulb is on.
+      tl.set({}, {}, lightStart + lightCount * lightGap + 0.12);
     }
   } else if (t.kind === "previous") {
-    if (t.dim !== undefined) {
-      const bulbs = segmentBulbs(root, t.dim).reverse();
-      bulbs.forEach((bulb, n) => {
-        const layers = [...bulbLayers([bulb], "on"), ...bulbLayers([bulb], "glow")];
-        tl.fromTo(layers, { opacity: 1 }, { opacity: 0, duration: 0.2, clearProps: "opacity" }, n * 0.08);
-      });
-    }
     for (const i of t.haloOut) {
       const el = halo(i);
       if (el) tl.fromTo(el, { opacity: 1 }, { opacity: 0, duration: 0.3, clearProps: "opacity" }, 0);
@@ -117,37 +121,32 @@ export function playTransition(root: HTMLElement, t: StepTransition, g: RingGeom
       turn(at);
       at += TURN - 0.1;
     }
-    if (t.reglow !== undefined && t.reglow >= 0) {
-      tl.fromTo(bulbLayers(segmentBulbs(root, t.reglow), "glow"), { opacity: 0 }, { opacity: 1, duration: 0.35, clearProps: "opacity" }, at);
-    }
     for (const i of t.haloIn) {
       const el = halo(i);
       if (el) tl.fromTo(el, { opacity: 0 }, { opacity: 1, duration: 0.35, clearProps: "opacity" }, at);
     }
     if (centre) tl.fromTo(centre, { opacity: 0 }, { opacity: 1, duration: 0.45, clearProps: "opacity" }, 0.25);
   } else {
-    // Finale: "Ilawan ang parol". Every bulb glows in a sweep around the
-    // ring, every slip gets its halo, the gold glow fades in, then stars.
+    // Finale: "Ilawan ang parol". Every bulb lights in a sweep around the
+    // ring (all go dark at once, then come back on one after another),
+    // every slip gets its gold outline, the frame turns gold, the paper
+    // banner comes in, then the gold stars.
     tl.call(() => cue({ kind: "finale" }), [], 0);
-    const bulbs = qa(root, "[data-bulb]")
-      .filter((b) => b.dataset.seg !== String(t.finaleFrom))
-      .sort((a, b) => Number(a.dataset.pos) - Number(b.dataset.pos));
     const sweep = 1.6;
-    tl.fromTo(
-      bulbLayers(bulbs, "glow"),
-      { opacity: 0 },
-      { opacity: 1, duration: 0.3, stagger: sweep / Math.max(bulbs.length, 1), clearProps: "opacity" },
-      0,
-    );
+    const bulbs = qa(root, "[data-bulb]").sort((a, b) => Number(a.dataset.pos) - Number(b.dataset.pos));
+    root.dataset.sweep = "";
+    void root.offsetWidth; // all dark now, without a transition
+    delayBulbs(bulbs, (n) => sec((sweep * n) / Math.max(bulbs.length, 1)));
+    delete root.dataset.sweep;
+    tl.set({}, {}, sweep + 0.15);
     const halos = qa(root, "[data-slip]")
       .filter((s) => s.dataset.slip !== String(t.finaleFrom))
       .sort((a, b) => Number(a.dataset.pos) - Number(b.dataset.pos))
       .map((s) => q(s, '[data-part="halo"]'))
       .filter((el): el is HTMLElement => el !== null);
     tl.fromTo(halos, { opacity: 0 }, { opacity: 1, duration: 0.4, stagger: sweep / Math.max(halos.length, 1), clearProps: "opacity" }, 0.1);
-    const glow = q(root, '[data-part="parol-glow"]');
-    // After the sweep, so the big glow never fades while the bulbs and haloes do.
-    if (glow) tl.fromTo(glow, { opacity: 0 }, { opacity: 1, duration: 1.2, ease: "sine.out", clearProps: "opacity" }, sweep);
+    const frame = q(root, ".rv-frame-gold");
+    if (frame) tl.fromTo(frame, { opacity: 0 }, { opacity: 1, duration: 0.9, ease: "sine.out", clearProps: "opacity" }, sweep * 0.5);
     if (centre) {
       tl.fromTo(centre, { opacity: 0, scale: 0.92 }, { opacity: 1, scale: 1, duration: 0.8, ease: "back.out(1.6)", clearProps: "opacity,transform" }, sweep * 0.6);
     }
@@ -157,6 +156,7 @@ export function playTransition(root: HTMLElement, t: StepTransition, g: RingGeom
   tl.timeScale(speed);
   return {
     finish: () => {
+      finishBulbs(root);
       if (tl.progress() < 1) tl.progress(1);
       tl.kill();
     },

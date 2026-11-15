@@ -8,7 +8,7 @@ import { SLIP } from "@/components/slip/slip-art";
  * opacity only.
  */
 
-const { W, H } = SLIP;
+const { W } = SLIP;
 
 /** How far the slip drops, in the slip stage's own px (drawn at 0.6 scale). */
 export const DROP = 222;
@@ -26,14 +26,14 @@ export function buildDropTimeline(root: HTMLElement, onDone: () => void): gsap.c
 
   // Start from SlipArt's open values.
   gsap.set(moved, { clearProps: "transform" });
+  gsap.set([...placers, ...footprints], { transformOrigin: "50% 0%" });
   gsap.set(placers, { rotation: SLIP.OPEN_ROT, scale: 1 });
   gsap.set(moved, { willChange: "transform" });
 
   const tl = gsap.timeline({ defaults: { ease: "power3.inOut" }, onComplete: onDone });
 
-  // The gold finish and the name go; plain paper is left to fold.
-  tl.to(q('[data-part="rim"], [data-part="glow"], [data-part="diamonds"]'), { opacity: 0, duration: 0.2 }, 0.2)
-    .to(one("flat"), { opacity: 0, duration: 0.12, ease: "none" }, 0.28);
+  // The name goes; plain paper is left to fold.
+  tl.to(one("flat"), { opacity: 0, duration: 0.12, ease: "none" }, 0.28);
 
   // Fold 1: the right half closes over the left like a book.
   tl.to(turners, { rotationY: -180, z: 1, duration: 0.34 }, 0.3)
@@ -48,7 +48,6 @@ export function buildDropTimeline(root: HTMLElement, onDone: () => void): gsap.c
 
   // Fold 2: the bottom half folds up over the top.
   tl.to(one("bottom"), { rotationX: 180, z: 2, duration: 0.32 }, 0.6)
-    .to(one("centerer"), { y: H / 4, duration: 0.32 }, 0.6)
     .to(footprints, { scaleY: 0.5, duration: 0.32 }, 0.6)
     .to(placers, { rotation: SLIP.FOLD_ROT, scale: SLIP.FOLD_SCALE, duration: 0.32 }, 0.6)
     .to(one("br-back-shade"), { opacity: 1, duration: 0.2 }, 0.72);

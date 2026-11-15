@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { BowlBack, BowlFront } from "@/components/bowl/bowl-art";
+import { Art } from "@/components/art/symbols";
+import { Bilao, BowlBack, BowlFront } from "@/components/bowl/bowl-art";
 import { SlipArt } from "@/components/slip/slip-art";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 
@@ -92,18 +93,17 @@ export function JoinDrop({ name, href }: { name: string; href: string }) {
         left.current = true;
       }}
       aria-label="Kasali ka na! Tuloy sa page mo."
-      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-leaf-wash bg-[repeating-linear-gradient(115deg,rgb(31_107_69/0.08)_0_1px,transparent_1px_14px)] px-5 pb-10 outline-none [-webkit-tap-highlight-color:transparent]"
+      className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-takipsilim px-5 pb-10 outline-none [-webkit-tap-highlight-color:transparent]"
     >
-      <div className="leaf-panel relative h-[400px] w-full max-w-[440px] overflow-hidden rounded-3xl text-white">
-        <p className="absolute inset-x-0 top-7 text-center font-display text-heading">Kasali ka na!</p>
+      <div className="sky relative h-[400px] w-full max-w-[440px] overflow-hidden rounded-sky [--rx:82%] [--ry:14%]">
+        <Art name="parol" className="pointer-events-none absolute top-0 right-2.5 h-[119px] w-[84px]" />
+        <p className="absolute top-6 left-[18px] font-head text-[28px] leading-[1.15]">Kasali ka na!</p>
 
-        <div
-          data-part="bowl"
-          className="pointer-events-none absolute inset-x-0 bottom-[46px] mx-auto h-[163px] w-[236px]"
-        >
+        <Bilao className="pointer-events-none absolute top-[338px] left-[calc(50%-118px)] h-[49px] w-[236px]" />
+        <div data-part="bowl" className="pointer-events-none absolute top-[210px] left-[calc(50%-98px)] h-[147px] w-[196px]">
           <BowlBack className="absolute inset-0 size-full" />
         </div>
-        <div className="pointer-events-none absolute top-24 left-1/2 h-[160px] w-[300px] origin-top -translate-x-1/2 scale-[0.6]">
+        <div className="pointer-events-none absolute top-[90px] left-1/2 h-[160px] w-[300px] origin-top -translate-x-1/2 scale-[0.6]">
           <div
             data-part="riser"
             className="absolute inset-0"
@@ -113,14 +113,11 @@ export function JoinDrop({ name, href }: { name: string; href: string }) {
             <SlipArt name={name} state={reduced ? "folded" : "open"} />
           </div>
         </div>
-        <div
-          data-part="bowl"
-          className="pointer-events-none absolute inset-x-0 bottom-[46px] mx-auto h-[163px] w-[236px]"
-        >
+        <div data-part="bowl" className="pointer-events-none absolute top-[210px] left-[calc(50%-98px)] h-[147px] w-[196px]">
           <BowlFront className="absolute inset-0 size-full" />
         </div>
 
-        <p className="absolute inset-x-0 bottom-3 text-center text-small font-bold">Tap para tumuloy</p>
+        <p className="absolute bottom-3 left-[18px] text-small font-bold">Tap para tumuloy</p>
       </div>
     </Link>
   );

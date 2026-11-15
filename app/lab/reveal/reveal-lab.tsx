@@ -51,8 +51,8 @@ export function RevealLab() {
 
   const controls =
     step === 0 ? (
-      <Button type="button" className={GOLD_BUTTON} onClick={next}>
-        Start the reveal
+      <Button type="button" variant="gold" className={GOLD_BUTTON} onClick={next}>
+        Simulan ang reveal
       </Button>
     ) : step > total ? (
       <Button type="button" variant="secondary" className={NIGHT_BUTTON} onClick={() => setStep(0)}>
@@ -63,7 +63,8 @@ export function RevealLab() {
         <Button type="button" variant="secondary" className={`flex-1 ${NIGHT_BUTTON}`} disabled={step <= 1} onClick={previous}>
           <ChevronLeft aria-hidden /> Previous
         </Button>
-        <Button type="button" className={`flex-[2] ${GOLD_BUTTON}`} onClick={next}>
+        <Button type="button" variant="gold"
+          className={`flex-[2] ${GOLD_BUTTON}`} onClick={next}>
           {step === total ? (
             <>
               <Sparkles aria-hidden /> Ilawan ang parol

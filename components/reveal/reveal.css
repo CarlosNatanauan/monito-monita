@@ -1,12 +1,27 @@
 /*
- * The party reveal stage (docs/DESIGN.md, "Reveal screen"). Drawn at
+ * The party reveal stage (docs/DESIGN.md, section 8, "Reveal"). Drawn at
  * 1920×1080 and scaled to fit. Final states come from data attributes;
- * timelines only animate transform and opacity between them, from
- * pre-painted layers (glows and halos are never animated box-shadows).
+ * motion only plays the change between them, with transform and opacity.
+ * No blur, no glow: gold outlines are flat, the night is flat rays.
+ *
+ * Bulbs light by their state attribute: the lit layer's opacity has a CSS
+ * transition, and the timeline sets a per-bulb delay (--bulb-delay) before
+ * React's new state paints. No script runs per frame for them.
  *
  * Plain CSS with an rv- prefix, loaded only by the reveal stage: the
  * project's Turbopack rule compiles every .css as global (no CSS modules).
  */
+
+/* The dark ube night: flat rays from the centre of the stage (landscape),
+   from the parol top right on a phone. */
+.rv-screen {
+  background: repeating-conic-gradient(from 0deg at 82% 12%, var(--color-gabi) 0 9deg, var(--color-gabi-2) 9deg 18deg);
+}
+@media (orientation: landscape) {
+  .rv-screen {
+    background: repeating-conic-gradient(from 0deg at 50% 48.4%, var(--color-gabi) 0 9deg, var(--color-gabi-2) 9deg 18deg);
+  }
+}
 
 .rv-stage {
   position: absolute;
@@ -22,54 +37,66 @@
   opacity: 0;
 }
 
-/* The gold radial glow behind everything at the finale. */
-.rv-parol-glow {
-  /* Only as big as the lit area (the gradient is clear beyond it): a
-     full-frame layer cost ~15fps while fading at 2x CPU throttling. */
+/* The parol's bamboo frame behind the centre text: dim during the reveal,
+   gold at the finale (the gold copy fades in on top). */
+.rv-frame {
   position: absolute;
-  left: 250px;
-  top: 120px;
-  width: 1420px;
-  height: 840px;
-  background: radial-gradient(closest-side, rgb(244 197 66 / 0.34) 0%, rgb(244 197 66 / 0.12) 60%, transparent 100%);
-  opacity: 0;
+  left: 635px;
+  top: 198px;
+  width: 651px;
+  height: 651px;
   pointer-events: none;
 }
-.rv-stage[data-finale="true"] .rv-parol-glow {
+.rv-frame-dim {
+  color: #3d2a68;
+}
+.rv-frame-gold {
+  color: var(--color-ilaw);
+  opacity: 0;
+}
+.rv-stage[data-finale="true"] .rv-frame-gold {
   opacity: 1;
 }
 
-/* --- Bulbs ------------------------------------------------------------------ */
+/* The church along the bottom, centred. */
+.rv-simbahan {
+  position: absolute;
+  left: 750px;
+  bottom: 0;
+  width: 420px;
+  height: 126px;
+  pointer-events: none;
+}
+
+/* --- Bulbs: off = gabi with a gabi-line outline; on = ilaw ------------------ */
 
 .rv-bulb {
   position: absolute;
   left: 0;
   top: 0;
-  width: 28px;
-  height: 28px;
-  border-radius: 999px;
-  background: var(--color-gabi-leaf);
-  box-shadow: inset 0 0 0 1.5px var(--color-gabi-line);
-}
-.rv-bulb-on,
-.rv-bulb-glow {
-  position: absolute;
-  inset: 0;
-  border-radius: 999px;
-  opacity: 0;
+  width: 22px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--color-gabi);
+  box-shadow: inset 0 0 0 2px var(--color-gabi-line);
 }
 .rv-bulb-on {
-  background: var(--color-margarine);
-}
-.rv-bulb-glow {
-  background: var(--color-margarine-core);
-  box-shadow: 0 0 28px 10px rgb(244 197 66 / 0.9);
-  will-change: opacity;
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: var(--color-ilaw);
+  opacity: 0;
+  transition: opacity 120ms ease-out;
+  transition-delay: var(--bulb-delay, 0s);
 }
 .rv-bulb[data-state="on"] .rv-bulb-on,
-.rv-bulb[data-state="glow"] .rv-bulb-on,
-.rv-bulb[data-state="glow"] .rv-bulb-glow {
+.rv-bulb[data-state="glow"] .rv-bulb-on {
   opacity: 1;
+}
+/* The finale sweep starts from dark, at once. */
+.rv-stage[data-sweep] .rv-bulb-on {
+  opacity: 0;
+  transition: none;
 }
 
 /* --- Slips ------------------------------------------------------------------ */
@@ -99,22 +126,25 @@
   justify-content: center;
   gap: 2px;
   padding: 8px 14px;
-  border-radius: 12px;
   backface-visibility: hidden;
   -webkit-backface-visibility: hidden;
   text-align: center;
   overflow: hidden;
 }
+/* Hidden slip: ube paper with a dashed ube-line edge, the codename in gabi text. */
 .rv-front {
-  background: var(--color-gabi-leaf);
-  color: var(--color-gabi-mist);
-  box-shadow: 0 6px 18px rgb(0 0 0 / 0.25);
+  background: var(--color-ube);
+  color: var(--color-gabi-text);
+  border: 2px dashed var(--color-ube-line);
 }
 .rv-back {
-  background: var(--color-niyog);
+  background: var(--color-papel);
   color: var(--color-ube);
   transform: rotateY(180deg);
-  box-shadow: 0 8px 22px rgb(0 0 0 / 0.3);
+}
+/* The pair on screen: lit paper. */
+.rv-slip[aria-current="step"] .rv-back {
+  background: var(--color-ilaw-lit);
 }
 .rv-slip[data-face="blank"] .rv-code {
   opacity: 0;
@@ -133,25 +163,29 @@
 }
 .rv-to {
   font-weight: 700;
-  font-size: 24px;
+  font-size: 26px;
   line-height: 1.25;
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+.rv-to .nm {
+  font-weight: 400;
+}
 
-/* Gold outline and halo: a pre-painted layer, faded in. */
+/* The gold outline: flat, a pre-painted layer, faded in. 4px, 8px out on
+   the pair on screen; 3px, 5px out on every slip at the finale. */
 .rv-halo {
   position: absolute;
-  inset: -1px;
-  border-radius: 13px;
-  box-shadow:
-    0 0 0 4px var(--color-margarine),
-    0 0 50px 10px rgb(244 197 66 / 0.6);
+  inset: -12px;
+  border: 4px solid var(--color-ilaw);
   opacity: 0;
   pointer-events: none;
-  will-change: opacity;
+}
+.rv-stage[data-finale="true"] .rv-halo {
+  inset: -8px;
+  border-width: 3px;
 }
 .rv-slip[data-halo="true"] .rv-halo {
   opacity: 1;
@@ -176,6 +210,15 @@
 .rv-centre-line {
   max-width: 860px;
   overflow-wrap: anywhere;
+}
+/* The finale: "Maligayang Pasko!" on white paper, ube text, readable over the gold frame. */
+.rv-banner {
+  background: var(--color-papel);
+  color: var(--color-ube);
+  padding: 38px 56px 42px;
+  max-width: 1280px;
+  transform: rotate(-2deg);
+  box-shadow: 6px 7px 0 rgb(0 0 0 / 0.45);
 }
 
 /* --- All pairs (large groups after the finale, or on request) ---------------- */
@@ -207,7 +250,7 @@
   align-items: baseline;
   column-gap: 12px;
   padding: 6px 0;
-  border-bottom: 1.5px dashed rgb(220 235 221 / 0.18);
+  border-bottom: 1.5px dashed rgb(156 135 196 / 0.4);
 }
 
 /* --- Reduced motion: no flip or travel, faces cross-fade --------------------- */
@@ -225,5 +268,8 @@
   }
   .rv-slip[data-face="revealed"] .rv-front {
     opacity: 0;
+  }
+  .rv-bulb-on {
+    transition-delay: 0s !important;
   }
 }

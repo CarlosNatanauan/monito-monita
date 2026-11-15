@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { BowlBack, BowlFront } from "@/components/bowl/bowl-art";
+import { Art } from "@/components/art/symbols";
+import { Bilao, BowlBack, BowlFront } from "@/components/bowl/bowl-art";
 import { SlipArt } from "@/components/slip/slip-art";
 import { FIRST_SAMPLE, nextSample } from "@/lib/sample-names";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
@@ -18,9 +19,10 @@ const loadDrawer = () => import("./draw-timeline").then((m) => m.createDrawer())
 type Phase = "idle" | "ready" | "drawing" | "shown";
 
 /**
- * Signature moment #1 (docs/DESIGN.md): the bowl on the bilao inside the
- * dahon arch. Tap the bowl, a sample slip rises out of it and unfolds with
- * a sample name (the same unfold as /me). Tap again for another name.
+ * Signature moment #1 (docs/DESIGN.md): the bowl on the bilao on the
+ * evening sky, the parol top right. Tap the bowl: the slips jiggle, a
+ * sample slip rises out and unfolds with a sample name (the same unfold
+ * as /me), top left, clear of the parol. Tap again for another name.
  * Reduced motion: the opened slip fades in, no GSAP.
  */
 export function TryBunutan({ className }: { className?: string }) {
@@ -144,62 +146,66 @@ export function TryBunutan({ className }: { className?: string }) {
     <section
       ref={sectionRef}
       aria-label="Try a bunutan"
-      className={cn("group relative rounded-t-[166px] rounded-b-[30px] bg-niyog/45 p-1.5", className)}
+      className={cn("group sky relative isolate h-[350px] overflow-hidden rounded-sky [--rx:76%] [--ry:22%] lg:h-[500px] lg:rounded-sky-lg", className)}
     >
+      {/* The church along the bottom, the parol top right (it sways slowly). */}
+      <Art name="simbahan" className="pointer-events-none absolute bottom-0 left-0 h-[104px] w-full lg:h-[126px]" />
+      <Art
+        name="parol"
+        className="pointer-events-none absolute top-0 right-3 h-[176px] w-[124px] origin-top animate-[parol-sway_6s_ease-in-out_infinite] motion-reduce:animate-none lg:right-[22px] lg:h-[241px] lg:w-[170px]"
+      />
+
+      {/* The bilao, the bowl's back glass, the drawn slip, the front glass. */}
+      <Bilao className="pointer-events-none absolute top-[286px] left-1.5 h-[49px] w-[236px] lg:top-[410px] lg:left-2.5 lg:h-[66px] lg:w-[320px]" />
       <div
-        className="leaf-panel relative isolate h-[340px] overflow-hidden rounded-t-[160px] rounded-b-3xl shadow-[inset_0_0_0_2px_var(--color-margarine)]"
+        data-part="bowl"
+        className="pointer-events-none absolute top-[158px] left-[26px] h-[147px] w-[196px] origin-bottom transition-transform duration-150 group-has-[button:active]:scale-[0.98] lg:top-[232px] lg:left-9 lg:h-[202px] lg:w-[270px]"
       >
-        {/* Before the first draw, the space the slip will rise into invites a tap. */}
-        <p
-          aria-hidden
-          className={cn(
-            "pointer-events-none absolute inset-x-0 top-[72px] text-center font-display text-heading text-white transition-opacity duration-200",
-            tapped && "opacity-0",
-          )}
-        >
-          Try a bunutan!
-        </p>
-
-        {/* Bowl, the drawn slip between its back and front glass, then the caption */}
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-[46px] mx-auto h-[163px] w-[236px] transition-transform duration-150 group-has-[button:active]:scale-[0.98]"
-        >
-          <BowlBack className="absolute inset-0 size-full" />
-        </div>
-
-        <div
-          ref={stageRef}
-          data-sample-slip={tapped && name ? name : undefined}
-          className="pointer-events-none absolute top-10 left-1/2 h-[160px] w-[300px] origin-top -translate-x-1/2 scale-[0.6] max-[359px]:scale-[0.52]"
-        >
-          {name && (
-            <div key={draw} data-part="riser" className="absolute inset-0" style={{ opacity: reduced ? 1 : 0 }}>
-              <SlipArt name={name} state={reduced ? "open" : "folded"} />
-            </div>
-          )}
-        </div>
-
-        <div className="pointer-events-none absolute inset-x-0 bottom-[46px] mx-auto h-[163px] w-[236px] transition-transform duration-150 group-has-[button:active]:scale-[0.98]">
-          <BowlFront className="absolute inset-0 size-full" />
-        </div>
-
-        <button
-          type="button"
-          onClick={tap}
-          onPointerEnter={() => void load()?.then((d) => d.warmSparkle())}
-          onPointerDown={() => void load()}
-          onFocus={() => void load()}
-          className={cn(
-            "absolute inset-x-0 bottom-0 flex h-[46px] items-start justify-center text-body font-bold text-white outline-none select-none",
-            // Stretched: the whole arch is the tap target.
-            "after:absolute after:inset-x-0 after:bottom-0 after:h-[340px] after:rounded-t-[160px] after:rounded-b-3xl after:content-['']",
-            "focus-visible:after:shadow-[0_0_0_2px_var(--color-ube),0_0_0_6px_rgb(244_197_66/0.8)]",
-            "cursor-pointer [-webkit-tap-highlight-color:transparent]",
-          )}
-        >
-          {shown ? "Tap ulit para bumunot ng iba" : "Tap the bowl para bumunot"}
-        </button>
+        <BowlBack className="absolute inset-0 size-full" />
       </div>
+
+      <div
+        ref={stageRef}
+        data-sample-slip={tapped && name ? name : undefined}
+        className="pointer-events-none absolute top-5 left-4 h-[160px] w-[300px] origin-top-left scale-50 lg:top-[30px] lg:left-6 lg:scale-[0.65]"
+      >
+        {name && (
+          <div key={draw} data-part="riser" className="absolute inset-0" style={{ opacity: reduced ? 1 : 0 }}>
+            <SlipArt name={name} state={reduced ? "open" : "folded"} />
+          </div>
+        )}
+      </div>
+
+      <div
+        data-part="bowl"
+        className="pointer-events-none absolute top-[158px] left-[26px] h-[147px] w-[196px] origin-bottom transition-transform duration-150 group-has-[button:active]:scale-[0.98] lg:top-[232px] lg:left-9 lg:h-[202px] lg:w-[270px]"
+      >
+        <BowlFront className="absolute inset-0 size-full" />
+      </div>
+
+      <button
+        type="button"
+        onClick={tap}
+        onPointerEnter={() => void load()?.then((d) => d.warmSparkle())}
+        onPointerDown={() => void load()}
+        onFocus={() => void load()}
+        className={cn(
+          // Stretched: the whole sky is the tap target; the words sit under the slip.
+          "absolute inset-0 cursor-pointer rounded-sky text-left font-bold text-white outline-none select-none lg:rounded-sky-lg [-webkit-tap-highlight-color:transparent]",
+          "focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-ilaw",
+        )}
+      >
+        <span className="absolute top-[112px] left-4 lg:top-[152px] lg:left-6">
+          {shown ? (
+            "Tap ulit para bumunot ng iba"
+          ) : (
+            <>
+              <span className="lg:hidden">Tap</span>
+              <span className="hidden lg:inline">Click</span> the bowl para bumunot
+            </>
+          )}
+        </span>
+      </button>
       <p className="sr-only" aria-live="polite">
         {shown && name ? `Nabunot mo si ${name}. Sample lang ito.` : ""}
       </p>

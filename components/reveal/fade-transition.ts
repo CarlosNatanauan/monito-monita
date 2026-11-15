@@ -7,11 +7,11 @@
  * As with the GSAP timelines, the stage already shows the new state; each
  * fade starts from the old value ("backwards" fill) and ends on the CSS.
  */
-import { bulbLayers, clearGhost, fillGhost, q, qa, segmentBulbs, slipPart } from "./dom";
+import { bulbLayers, clearBulbDelays, clearGhost, fillGhost, q, qa, segmentBulbs, slipPart } from "./dom";
 import type { RingGeometry } from "./ring";
 import type { PlayOptions, Playing, StepTransition } from "./transition";
 
-const D = 400;
+const D = 150; // docs/DESIGN.md: states cross-fade in 150ms
 
 export function playFade(root: HTMLElement, t: StepTransition, g: RingGeometry, { cue, done }: PlayOptions): Playing {
   const running: Animation[] = [];
@@ -29,7 +29,7 @@ export function playFade(root: HTMLElement, t: StepTransition, g: RingGeometry, 
   const centre = q(root, '[data-part="centre"]');
 
   // Large groups: the window swaps slips with a cross-fade, no rotation.
-  if (t.shift) fade([q(root, '[data-part="ring"]')], 0.2, 1, 0, 500);
+  if (t.shift) fade([q(root, '[data-part="ring"]')], 0.2, 1, 0, D);
 
   if (t.kind === "start" || t.kind === "next") {
     if (t.kind === "start") fade(qa(root, '[data-part="code"]'), 0, 1);
@@ -39,14 +39,12 @@ export function playFade(root: HTMLElement, t: StepTransition, g: RingGeometry, 
       fade([back(t.flip)], 0, 1);
     }
     fade(t.haloOut.map(halo), 1, 0);
-    fade(t.haloIn.map(halo), 0, 1, 200);
-    for (const i of t.settle) fade(bulbLayers(segmentBulbs(root, i), "glow"), 1, 0, 200);
+    fade(t.haloIn.map(halo), 0, 1);
     if (t.light !== undefined) {
-      const bulbs = segmentBulbs(root, t.light);
-      fade([...bulbLayers(bulbs, "on"), ...bulbLayers(bulbs, "glow")], 0, 1, 200);
+      fade(bulbLayers(segmentBulbs(root, t.light)), 0, 1);
       cue({ kind: "bulb", n: 0 });
     }
-    fade([centre], 0, 1, 100);
+    fade([centre], 0, 1);
   } else if (t.kind === "previous") {
     if (t.unflip) {
       cue({ kind: "back" });
@@ -55,23 +53,17 @@ export function playFade(root: HTMLElement, t: StepTransition, g: RingGeometry, 
       fade([front(t.unflip.index)], 0, 1);
     }
     fade(t.haloOut.map(halo), 1, 0);
-    fade(t.haloIn.map(halo), 0, 1, 200);
-    if (t.dim !== undefined) {
-      const bulbs = segmentBulbs(root, t.dim);
-      fade([...bulbLayers(bulbs, "on"), ...bulbLayers(bulbs, "glow")], 1, 0);
-    }
-    if (t.reglow !== undefined && t.reglow >= 0) fade(bulbLayers(segmentBulbs(root, t.reglow), "glow"), 0, 1, 200);
-    fade([centre], 0, 1, 100);
+    fade(t.haloIn.map(halo), 0, 1);
+    if (t.dim !== undefined) fade(bulbLayers(segmentBulbs(root, t.dim)), 1, 0);
+    fade([centre], 0, 1);
   } else {
     cue({ kind: "finale" });
-    const bulbs = qa(root, "[data-bulb]").filter((b) => b.dataset.seg !== String(t.finaleFrom));
-    fade(bulbLayers(bulbs, "glow"), 0, 1, 0, 700);
     const halos = qa(root, "[data-slip]")
       .filter((s) => s.dataset.slip !== String(t.finaleFrom))
       .map((s) => q(s, '[data-part="halo"]'));
-    fade(halos, 0, 1, 0, 700);
-    fade([q(root, '[data-part="parol-glow"]')], 0, 1, 200, 900);
-    fade([centre], 0, 1, 300, 600);
+    fade(halos, 0, 1);
+    fade([q(root, ".rv-frame-gold")], 0, 1);
+    fade([centre], 0, 1);
   }
 
   let finished = false;
@@ -79,6 +71,7 @@ export function playFade(root: HTMLElement, t: StepTransition, g: RingGeometry, 
     if (finished) return;
     finished = true;
     if (t.unflip) clearGhost(root, t.unflip.index);
+    clearBulbDelays(root);
     done();
   };
   Promise.all(running.map((a) => a.finished.catch(() => undefined))).then(end);

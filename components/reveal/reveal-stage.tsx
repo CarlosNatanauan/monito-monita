@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useLayoutEffect, useRef } from "react";
+import { Art } from "@/components/art/symbols";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import type { RevealSlip } from "@/server/reveal-window";
@@ -176,7 +177,10 @@ export function RevealStage({
         data-finale={finale}
         data-transitions="0"
       >
-        <div className="rv-parol-glow" data-part="parol-glow" aria-hidden />
+        {/* The parol's frame behind the centre text: dim, then gold at the finale. */}
+        <Art name="parol-outline" className="rv-frame rv-frame-dim" />
+        <Art name="parol-outline" className="rv-frame rv-frame-gold" />
+        <Art name="simbahan" className="rv-simbahan" />
         <div data-part="ring" hidden={showList}>
           <div aria-hidden>
             {model.segments.flatMap((seg) =>
@@ -194,7 +198,6 @@ export function RevealStage({
                     style={{ transform: bulbTransform(pos, g), opacity: segmentOpacity(seg.pos, g) }}
                   >
                     <div className="rv-bulb-on" data-part="on" />
-                    <div className="rv-bulb-glow" data-part="glow" />
                   </div>
                 );
               }),
@@ -255,7 +258,7 @@ function SlipBack({ slip, g }: { slip: { face: string; giverName?: string; recei
           {slip.giverName}
         </span>
         <span key="to" className="rv-to">
-          → kay {slip.receiverName}
+          → kay <span className="nm">{slip.receiverName}</span>
         </span>
       </>
     );
@@ -273,39 +276,36 @@ function Centre({ view }: { view: StageView }) {
   if (view.status === "DRAWN") {
     return (
       <>
-        <h1 className="font-display text-[96px] leading-none">Party reveal</h1>
-        <p className="text-[40px] leading-tight font-bold text-margarine">{view.total} slips. Handa na?</p>
-        <p className={cn("rv-centre-line", "text-[28px] leading-snug font-medium text-balance text-gabi-mist")}>
-          Isa-isa nating ipapakita kung sino ang nagbigay kanino, <span className="whitespace-nowrap">sunod-sunod</span> sa bunutan.
+        <h1 className="font-head text-[118px] leading-[1.05]">Handa na?</h1>
+        <p className={cn("rv-centre-line", "text-[45px] leading-[1.2] font-bold text-balance")}>
+          {view.total} slips, {view.total} sikreto. Pindutin para simulan.
         </p>
       </>
     );
   }
   if (view.status === "REVEALED") {
     return (
-      <>
-        <h1 className="font-display text-[120px] leading-none text-margarine">Maligayang Pasko!</h1>
-        <p className={cn("rv-centre-line", "text-[36px] leading-tight font-bold text-gabi-mist")}>
-          Revealed na ang lahat ng {view.total} slips.
-        </p>
-      </>
+      <div className="rv-banner">
+        <h1 className="font-head text-[101px] leading-[1.05]">Maligayang Pasko!</h1>
+        <p className="mt-3 text-[37px] leading-[1.2] font-bold">Buo na ang parol. Bigayan na ng regalo!</p>
+      </div>
     );
   }
   const pair = view.pair;
   if (!pair) return null;
   return (
     <>
-      <p className={cn("rv-centre-line", "font-display leading-none text-white")} style={{ fontSize: centreLeadSize(pair.giverCodename) }}>
+      <p className={cn("rv-centre-line", "font-bold leading-[1.15] text-gabi-text")} style={{ fontSize: centreLeadSize(pair.giverCodename) }}>
         Si {pair.giverCodename} ay si…
       </p>
       <p
-        className={cn("rv-centre-line", "max-w-[1000px] font-hand leading-[1.05] text-margarine")}
+        className={cn("rv-centre-line", "max-w-[1000px] font-hand leading-[1.05] text-ilaw")}
         style={{ fontSize: centreNameSize(pair.giverName) }}
       >
         {pair.giverName}!
       </p>
-      <p className={cn("rv-centre-line", "text-[40px] leading-tight font-bold text-white")}>
-        Ang monito niya: {pair.receiverName}
+      <p className={cn("rv-centre-line", "font-head text-[45px] leading-[1.2] text-white")}>
+        Ang monito niya: <span className="nm">{pair.receiverName}</span>
       </p>
     </>
   );
@@ -316,13 +316,15 @@ function PairList({ pairs }: { pairs: StagePair[] }) {
   const columns = Math.min(4, Math.max(1, Math.ceil(pairs.length / 15)));
   return (
     <div className="rv-list">
-      <h2 className="mb-6 text-center font-display text-[64px] leading-none text-white">Lahat ng pairs</h2>
+      <h2 className="mb-6 text-center font-head text-[64px] leading-none text-white">Lahat ng pairs</h2>
       <div className="rv-list-scroll">
         <ol aria-label="All pairs" className="rv-list-items" style={{ columnCount: columns }}>
           {pairs.map((p, i) => (
             <li key={i} className="rv-list-item">
-              <span className="font-hand text-[32px] leading-tight text-margarine">{p.giverName}</span>{" "}
-              <span className="text-[24px] leading-tight font-bold text-gabi-mist">→ {p.receiverName}</span>
+              <span className="font-hand text-[34px] leading-tight text-ilaw">{p.giverName}</span>{" "}
+              <span className="text-[24px] leading-tight font-bold text-gabi-text">
+                → kay <span className="nm text-[30px]">{p.receiverName}</span>
+              </span>
             </li>
           ))}
         </ol>

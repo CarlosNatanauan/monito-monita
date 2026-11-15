@@ -7,7 +7,7 @@ import { fitFont, type RingGeometry } from "./ring";
 
 // Average glyph widths, as a share of the font size.
 const GOCHI_EM = 0.5;
-const SERIF_EM = 0.42;
+const BOLD_EM = 0.54; // Atkinson Hyperlegible 700
 
 const inner = (g: RingGeometry) => g.slipW - 28;
 
@@ -22,5 +22,5 @@ export const slipCodeSize = (codename: string, g: RingGeometry) =>
 /** The giver's name in the centre: ~184px, smaller for long names. */
 export const centreNameSize = (name: string) => fitFont(`${name}!`, 1000, 184, 80, GOCHI_EM);
 
-/** "Si {codename} ay si…": 64px, smaller for long codenames. */
-export const centreLeadSize = (codename: string) => fitFont(`Si ${codename} ay si…`, 860, 64, 44, SERIF_EM);
+/** "Si {codename} ay si…": 40px Atkinson bold, smaller for long codenames, never under 28. */
+export const centreLeadSize = (codename: string) => fitFont(`Si ${codename} ay si…`, 900, 40, 28, BOLD_EM);
