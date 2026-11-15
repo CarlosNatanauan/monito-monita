@@ -8,6 +8,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { addDays, todayIn } from "../lib/theme-weeks";
 import { closeDb } from "../server/db";
 import { deleteGroups, E2E_PREFIX } from "./db-cleanup";
+import { readLink } from "./flow";
 import { readMyLink } from "./links";
 
 const createdSlugs: string[] = [];
@@ -36,7 +37,7 @@ test("reduced motion: landing slip and join drop without GSAP", async ({ page },
 
   await test.step("landing: tapping the bowl shows the open sample slip", async () => {
     await page.goto("/");
-    await page.getByRole("button", { name: "Tap the bowl para bumunot" }).click();
+    await page.getByRole("button", { name: /^(Tap|Click) the bowl para bumunot$/ }).click();
     const sample = page.locator("[data-sample-slip]");
     await expect(sample).toHaveAttribute("data-sample-slip", "Ate Joy");
     // Straight to the open slip: the name is on it, no unfold to wait for.
@@ -50,13 +51,11 @@ test("reduced motion: landing slip and join drop without GSAP", async ({ page },
   let shareUrl = "";
   await test.step("create a group", async () => {
     await page.getByRole("link", { name: "Create your group" }).click();
-    await page.getByLabel("Group name").fill(`${E2E_PREFIX}Reduced (${testInfo.project.name})`);
-    await page.getByLabel("Budget per gift").fill("300");
-    await page.getByLabel("Party date").fill(addDays(todayIn("Asia/Manila"), 30));
+    await page.getByLabel("Pangalan ng group").fill(`${E2E_PREFIX}Reduced (${testInfo.project.name})`);
+    await page.getByLabel("Budget", { exact: true }).fill("300");
+    await page.getByLabel("Petsa ng party").fill(addDays(todayIn("Asia/Manila"), 30));
     await page.getByRole("button", { name: "Create group" }).click();
-    const box = page.locator("p.select-all").filter({ hasText: /\/g\/[a-z0-9]+$/ });
-    await expect(box).toHaveText(/^https?:\/\//);
-    shareUrl = (await box.textContent())!.trim();
+    shareUrl = await readLink(page, /\/g\/[a-z0-9]+$/);
     createdSlugs.push(new URL(shareUrl).pathname.split("/")[2]);
   });
 

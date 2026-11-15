@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { joinStates, Lights, openedStates } from "@/components/lights";
-import { Card, CardTitle } from "@/components/ui/card";
+import { Capiz, SectionTitle } from "@/components/ui/paper";
 
 // The organizer's progress lights at different group sizes. Not linked
 // from anywhere, no database.
@@ -9,20 +9,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-const SIZES = [3, 12, 13, 24, 40, 150];
+const SIZES = [3, 12, 13, 30, 31, 60, 61, 150];
 
 export default function LightsLabPage() {
   return (
     <main className="mx-auto flex w-full max-w-[480px] flex-1 flex-col gap-4 px-5 pt-8 pb-14">
       {SIZES.map((n) => (
-        <Card key={`join-${n}`}>
-          <Lights plan={joinStates(n)} label={<CardTitle>{n} na ang sumali</CardTitle>} />
-        </Card>
+        <Capiz key={`join-${n}`}>
+          <Lights plan={joinStates(n)} label={<SectionTitle>{n} na ang sumali</SectionTitle>} />
+        </Capiz>
       ))}
       {SIZES.map((n) => {
         const opened = Math.round(n * 0.6);
         return (
-          <Card key={`opened-${n}`}>
+          <Capiz key={`opened-${n}`}>
             <Lights
               plan={openedStates(opened, n)}
               label={
@@ -31,7 +31,7 @@ export default function LightsLabPage() {
                 </p>
               }
             />
-          </Card>
+          </Capiz>
         );
       })}
     </main>

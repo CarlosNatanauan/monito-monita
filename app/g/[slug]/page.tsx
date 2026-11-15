@@ -3,9 +3,8 @@ import Link from "next/link";
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
-import { HeaderLights } from "@/components/lights";
-import { buttonVariants } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardTitle } from "@/components/ui/card";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Capiz, SectionTitle } from "@/components/ui/paper";
 import { cn } from "@/lib/utils";
 import { getMemberSession, isValidSlug } from "@/server/auth";
 import { getGroupSummary, MAX_MEMBERS } from "@/server/members";
@@ -13,8 +12,9 @@ import { getGroupPreview } from "@/server/groups";
 import { formatPartyDate } from "@/lib/format";
 import { OG_SIZE } from "@/components/og/share-card";
 import { ComeBackForm } from "./come-back-form";
-import { Eyebrow, widePageClass } from "@/components/page";
-import { GroupFacts, PageFallback, RemovedNotice, SplitCard, splitHalfClass } from "./group-facts";
+import { Brand } from "@/components/brand";
+import { colClass, colsClass, LightString, pageClass } from "@/components/page";
+import { GroupFacts, PageFallback, RemovedNotice, WithParol } from "./group-facts";
 import { JoinForm } from "./join-form";
 
 /**
@@ -40,8 +40,9 @@ export async function generateMetadata({ params }: PageProps<"/g/[slug]">): Prom
 export default function JoinPage({ params, searchParams }: PageProps<"/g/[slug]">) {
   return (
     <>
-      <HeaderLights />
-      <main className={cn(widePageClass, "pt-3")}>
+      <LightString />
+      <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
+        <Brand />
         <Suspense fallback={<PageFallback />}>
           <JoinContent params={params} searchParams={searchParams} />
         </Suspense>
@@ -64,9 +65,23 @@ function isActionRender(h: Headers): boolean {
 /** Opens the come-back form (name + PIN). A plain link, so it works before hydration. */
 function ComeBackLink({ slug, className }: { slug: string; className?: string }) {
   return (
-    <Link href={`/g/${slug}?bumalik=1`} className={cn(buttonVariants({ variant: "link", size: "inline" }), className)}>
+    <Link href={`/g/${slug}?bumalik=1`} className={cn(buttonVariants({ variant: "link" }), "w-fit px-0 text-body", className)}>
       Kasali ka na? Bumalik dito
     </Link>
+  );
+}
+
+/**
+ * The join, come-back and closed layout (docs/design/04–07): phones stack
+ * the left part over the right; laptops put the group (or the greeting)
+ * left and the listahan form right, starting a little lower.
+ */
+function JoinLayout({ left, right }: { left: React.ReactNode; right: React.ReactNode }) {
+  return (
+    <div className={cn(colsClass, "lg:pt-2.5")}>
+      <div className={cn(colClass, "lg:col-start-1 lg:row-start-1")}>{left}</div>
+      <div className={cn(colClass, "lg:col-start-2 lg:row-start-1")}>{right}</div>
+    </div>
   );
 }
 
@@ -94,60 +109,94 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
   const comingBack = query.bumalik !== undefined && session.kind !== "removed";
 
   if (comingBack) {
+    const newHref = isOpen && !isFull ? `/g/${slug}` : undefined;
     return (
-      <SplitCard
-        info={
-          <header className="flex flex-col gap-2 pt-2 md:pt-0">
-            <Eyebrow>{group.name}</Eyebrow>
-            <h1 className="font-display text-heading-lg break-words">Welcome back!</h1>
-            <p className="mt-2">Ilagay ang pangalan at PIN mo para makita ang slip mo.</p>
-          </header>
+      <JoinLayout
+        left={
+          <>
+            <header>
+              <h1 className="font-head text-display lg:text-display-lg">Welcome back!</h1>
+              <p className="mt-1 text-ube-soft">{group.name}</p>
+            </header>
+            <p className="lg:mt-4">Ilagay ang pangalan at PIN mo para makita ang slip mo.</p>
+            {newHref && (
+              <Link href={newHref} className={cn(buttonVariants({ variant: "link" }), "hidden w-fit px-0 text-body lg:mt-4 lg:inline-flex")}>
+                Bago ka? Sumali dito
+              </Link>
+            )}
+          </>
         }
-      >
-        <ComeBackForm slug={slug} newHref={isOpen && !isFull ? `/g/${slug}` : undefined} />
-      </SplitCard>
+        right={<ComeBackForm slug={slug} newHref={newHref} showNewLink="phone" />}
+      />
+    );
+  }
+
+  if (session.kind === "removed") {
+    return (
+      <JoinLayout
+        left={<h1 className="font-head text-display break-words lg:text-display-lg">{group.name}</h1>}
+        right={<RemovedNotice />}
+      />
+    );
+  }
+
+  if (!isOpen || isFull) {
+    return (
+      <JoinLayout
+        left={
+          <>
+            <header className="flex flex-col gap-2">
+              <h1 className="font-head text-display lg:text-display-lg">
+                {isOpen ? "Puno na ang group" : "Tapos na ang bunutan"}
+              </h1>
+              <p>
+                {isOpen ? (
+                  <>
+                    Umabot na sa {MAX_MEMBERS} members ang <strong>{group.name}</strong>.
+                  </>
+                ) : (
+                  <>
+                    Nabunot na ang names sa <strong>{group.name}</strong>, kaya sarado na ang pagsali.
+                  </>
+                )}
+              </p>
+            </header>
+            <GroupFacts partyDate={group.partyDate} budget={group.budget} memberCount={group.memberCount} memberSuffix="" />
+          </>
+        }
+        right={
+          <>
+            <Capiz aria-labelledby="closed-title">
+              <SectionTitle id="closed-title">Kasali ka na?</SectionTitle>
+              <p>Buksan ang slip mo gamit ang pangalan at PIN mo.</p>
+              <Button asChild className="w-full lg:w-fit">
+                <Link href={`/g/${slug}?bumalik=1`}>Bumalik sa slip ko</Link>
+              </Button>
+            </Capiz>
+            <p className="text-ube-soft">
+              {isOpen
+                ? "Kausapin ang organizer kung may dapat tanggalin."
+                : "Hindi ka nakasali? I-message ang organizer ng group."}
+            </p>
+          </>
+        }
+      />
     );
   }
 
   return (
-    <SplitCard
-      info={
-        <Card className={cn("gap-6 pt-7", splitHalfClass)}>
-          <header className="flex flex-col gap-3">
-            <p className="font-medium text-ube-soft">Inimbitahan ka sa bunutan ng</p>
-            <h1 className="font-display text-heading-lg break-words">{group.name}</h1>
-          </header>
+    <JoinLayout
+      left={
+        <>
+          <WithParol>
+            <p className="font-bold">Sali na sa bunutan ng</p>
+            <h1 className="mt-1 font-head text-display break-words lg:text-display-lg">{group.name}</h1>
+          </WithParol>
           <GroupFacts partyDate={group.partyDate} budget={group.budget} memberCount={group.memberCount} />
-        </Card>
+          <ComeBackLink slug={slug} className="hidden lg:mt-4 lg:inline-flex" />
+        </>
       }
-    >
-      {session.kind === "removed" ? (
-        <RemovedNotice className={splitHalfClass} />
-      ) : !isOpen ? (
-        <Card className={splitHalfClass}>
-          <CardTitle>Sarado na ang sali.</CardTitle>
-          <CardContent>
-            <CardDescription>
-              Na-draw na ang names para sa group na &apos;to. Kung kasali ka, bumalik gamit ang pangalan at PIN mo.
-            </CardDescription>
-            <ComeBackLink slug={slug} className="self-start" />
-          </CardContent>
-        </Card>
-      ) : isFull ? (
-        <Card className={splitHalfClass}>
-          <CardTitle>Puno na ang group.</CardTitle>
-          <CardContent>
-            <CardDescription>
-              Umabot na sa {MAX_MEMBERS} members. Kausapin ang organizer kung may dapat tanggalin.
-            </CardDescription>
-            <ComeBackLink slug={slug} className="self-start" />
-          </CardContent>
-        </Card>
-      ) : (
-        <div className="pt-2 md:pt-0">
-          <JoinForm slug={slug} footer={<ComeBackLink slug={slug} className="self-center" />} />
-        </div>
-      )}
-    </SplitCard>
+      right={<JoinForm slug={slug} footer={<ComeBackLink slug={slug} className="lg:hidden" />} />}
+    />
   );
 }

@@ -52,6 +52,9 @@ const TEXT_TYPES = /text\/html|text\/x-component|application\/json|text\/plain/;
 /** Loads `url` and returns everything the page received, as text. */
 export async function capturePage(page: Page, url: string): Promise<string> {
   const origin = new URL(page.url() === "about:blank" ? url : page.url(), "http://localhost:3000").origin;
+  // Leave the current page first, so a late response of the page before
+  // (the reveal screen's 2-second refresh) isn't counted as this page's.
+  await page.goto("about:blank");
   const pending: Promise<string>[] = [];
   const onResponse = (response: Response) => {
     const type = response.headers()["content-type"] ?? "";

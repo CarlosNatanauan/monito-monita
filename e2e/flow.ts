@@ -92,11 +92,31 @@ export function screenshotter(testInfo: TestInfo, spec: string) {
   };
 }
 
-/** The selectable link text in a LinkBox, once it has become an absolute URL. */
+/**
+ * Navigates (or reloads, with no url), retrying once when WebKit reports the
+ * load as interrupted: the reveal screen's 2-second router.refresh() can
+ * start a navigation at the same moment as the test's own. Harmless for
+ * people; only the test sees the race.
+ */
+export async function navigate(page: Page, url?: string) {
+  const go = () => (url ? page.goto(url) : page.reload());
+  try {
+    await go();
+  } catch (error) {
+    if (!/interrupted/i.test(String(error))) throw error;
+    await go();
+  }
+}
+
+/**
+ * The selectable link text in a LinkBox, once it shows the host (the box
+ * shows links without the scheme, like the reference: "host/g/abc"). Returns
+ * the absolute URL.
+ */
 export async function readLink(page: Page, pattern: RegExp): Promise<string> {
   const box = page.locator("p.select-all").filter({ hasText: pattern });
-  await expect(box).toHaveText(/^https?:\/\//);
-  return (await box.textContent())!.trim();
+  await expect(box).toHaveText(/^[a-z0-9.-]+(:\d+)?\//);
+  return `${new URL(page.url()).protocol}//${(await box.textContent())!.trim()}`;
 }
 
 export async function join(page: Page, shareUrl: string, name: string, pin = "1234") {
@@ -161,10 +181,10 @@ export async function checkReminder(
 ) {
   const preview = page.getByLabel("Reminder preview");
   // Copy is enabled once the browser has filled in the full share link.
-  await expect(page.getByRole("button", { name: "Copy reminder" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: /^Copy (reminder|announcement)$/ })).toBeEnabled();
   for (const text of expected) await expect(preview).toContainText(text);
   for (const text of absent) await expect(preview).not.toContainText(text);
-  await page.getByRole("button", { name: "Copy reminder" }).click();
+  await page.getByRole("button", { name: /^Copy (reminder|announcement)$/ }).click();
   await expect(page.getByRole("button", { name: "Copied!" })).toBeVisible();
   if (browser.browserType().name() === "chromium") {
     // The Windows clipboard turns \n into \r\n; compare the text itself.

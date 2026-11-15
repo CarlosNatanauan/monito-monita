@@ -8,7 +8,7 @@ import { allowRequest, clientIp, RATE_LIMITED_MESSAGE } from "@/server/rate-limi
 export type CreateGroupState =
   | { status: "idle" }
   | { status: "error"; message: string; fieldErrors: Record<string, string> }
-  | { status: "success"; groupName: string; slug: string; organizerToken: string };
+  | { status: "success"; groupName: string; slug: string; organizerToken: string; budget: number; partyDate: string };
 
 export async function createGroupAction(
   _previous: CreateGroupState,
@@ -27,7 +27,14 @@ export async function createGroupAction(
     const { groupId, slug, organizerToken } = await createGroup(validation.data);
     await setAuthCookie("organizer", slug, organizerToken);
     track("group_created", groupId, { themes: validation.data.themes.length });
-    return { status: "success", groupName: validation.data.name, slug, organizerToken };
+    return {
+      status: "success",
+      groupName: validation.data.name,
+      slug,
+      organizerToken,
+      budget: validation.data.budget,
+      partyDate: validation.data.partyDate,
+    };
   } catch (error) {
     console.error("createGroupAction failed", error);
     return {

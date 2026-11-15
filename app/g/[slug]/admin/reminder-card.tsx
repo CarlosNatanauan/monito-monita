@@ -2,61 +2,54 @@
 
 import { useState } from "react";
 import { CopyButton, useOrigin } from "@/components/copy-link";
-import { SegmentedButtons } from "@/components/segmented";
+import { FolderTabs } from "@/components/ui/folder-tabs";
+import { Bubble, SectionTitle } from "@/components/ui/paper";
 import { buildGcReminder, type ReminderInput, type ReminderKind } from "@/lib/reminder";
+import { cn } from "@/lib/utils";
 import { reminderCopiedAction } from "./actions";
 
-const KINDS: { kind: ReminderKind; label: string }[] = [
-  { kind: "drawn", label: "Na-draw na" },
-  { kind: "theme", label: "Theme reminder" },
+const KINDS: { value: ReminderKind; label: string }[] = [
+  { value: "drawn", label: "Na-draw na" },
+  { value: "theme", label: "Theme reminder" },
 ];
 
 /**
- * Preview of the GC reminder, with a Copy button. After the draw there are
- * two versions: "Na-draw na!" (the default until most have opened their
- * slip) and the weekly theme reminder.
+ * The GC message, exactly as it will be pasted (a GC bubble), with Copy.
+ * After the draw there are two versions, as folder tabs: "Na-draw na!"
+ * (the default until most have opened their slip, titled "I-announce sa
+ * GC") and the weekly theme reminder ("Paalala para sa GC").
  */
 export function ReminderCard({
   slug,
   defaultKind = "theme",
   prominent = false,
+  className,
   ...data
 }: Omit<ReminderInput, "shareUrl" | "kind"> & {
   slug: string;
   defaultKind?: ReminderKind;
   /** The main action on the page: a filled Copy button. */
   prominent?: boolean;
+  className?: string;
 }) {
   const origin = useOrigin();
   const [kind, setKind] = useState<ReminderKind>(defaultKind);
   const message = buildGcReminder({ ...data, kind, shareUrl: `${origin}/g/${slug}` });
   const drawn = data.status !== "OPEN";
+  const announce = drawn && kind === "drawn";
 
   return (
-    <div className="flex flex-col gap-4">
-      {drawn && (
-        <SegmentedButtons
-          label="Reminder type"
-          value={kind}
-          options={KINDS.map((k) => ({ value: k.kind, label: k.label }))}
-          onChange={setKind}
-          className="bg-leaf-wash"
-        />
-      )}
-      <pre
-        aria-label="Reminder preview"
-        className="rounded-2xl bg-leaf-wash px-5 py-4 font-sans text-body whitespace-pre-wrap break-words"
-        translate="no"
-      >
-        {message}
-      </pre>
+    <section aria-labelledby="reminder-title" className={cn("flex min-w-0 flex-col gap-3", className)}>
+      <SectionTitle id="reminder-title">{announce ? "I-announce sa GC" : "Paalala para sa GC"}</SectionTitle>
+      {drawn && <FolderTabs label="Reminder type" items={KINDS} value={kind} onSelect={setKind} />}
+      <Bubble aria-label="Reminder preview">{message}</Bubble>
       <CopyButton
         text={origin ? message : ""}
-        label="Copy reminder"
+        label={announce ? "Copy announcement" : "Copy reminder"}
         variant={prominent ? "default" : "secondary"}
-        className="w-full"
+        className={prominent ? "w-full lg:w-fit" : "self-start"}
         onCopied={() => void reminderCopiedAction({ slug, kind: drawn ? kind : "invite" }).catch(() => {})}
       />
-    </div>
+    </section>
   );
 }

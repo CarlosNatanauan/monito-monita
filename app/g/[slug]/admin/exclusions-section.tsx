@@ -1,9 +1,11 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Name } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { Select } from "@/components/ui/input";
+import { Listahan } from "@/components/ui/paper";
 import { addExclusionAction, removeExclusionAction } from "./actions";
 
 export interface ExclusionView {
@@ -53,76 +55,69 @@ export function ExclusionsSection({
   };
 
   return (
-    <div className="flex flex-col gap-3">
+    <div className="flex flex-col gap-2.5">
       <ErrorMessage>{warning}</ErrorMessage>
-      <ErrorMessage>{error}</ErrorMessage>
+      <Listahan title="Bawal magkabunot" titleId="exclusions-title">
+        {pairs.length === 0 ? (
+          <p className="lst-row text-ube-soft">Wala pang bawal.</p>
+        ) : (
+          <ul aria-label="Exclusion pairs">
+            {pairs.map((pair) => (
+              <li key={pair.id} className="lst-row">
+                <span className="min-w-0 truncate">
+                  <Name>{pair.memberAName}</Name> at <Name>{pair.memberBName}</Name>
+                </span>
+                {editable && (
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="-mr-1.5"
+                    disabled={pending}
+                    onClick={() => run(() => removeExclusionAction({ slug, exclusionId: pair.id }))}
+                    aria-label={`Remove pair ${pair.memberAName} and ${pair.memberBName}`}
+                  >
+                    Alisin
+                  </Button>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
 
-      {pairs.length === 0 ? (
-        <p className="text-small font-medium text-ube-soft">Wala pang bawal.</p>
-      ) : (
-        <ul className="flex flex-col gap-2" aria-label="Exclusion pairs">
-          {pairs.map((pair) => (
-            <li key={pair.id} className="flex min-h-14 items-center justify-between gap-3 rounded-2xl bg-leaf-wash px-5 py-2">
-              <span className="min-w-0 truncate">
-                <strong>{pair.memberAName}</strong> at <strong>{pair.memberBName}</strong>
-              </span>
-              {editable && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="xs"
-                  className="-mr-2"
-                  disabled={pending}
-                  onClick={() => run(() => removeExclusionAction({ slug, exclusionId: pair.id }))}
-                  aria-label={`Remove pair ${pair.memberAName} and ${pair.memberBName}`}
-                >
-                  Alisin
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {editable && members.length >= 2 && (
-        <div className="flex gap-2">
-          <label className="min-w-0 flex-1">
-            <span className="sr-only">Unang tao</span>
-            <Select value={first} onChange={(e) => setFirst(e.target.value)} disabled={pending}>
-              <option value="">Pumili</option>
-              {members.map((m) => (
-                <option key={m.id} value={m.id}>
-                  {m.displayName}
-                </option>
-              ))}
-            </Select>
-          </label>
-          <label className="min-w-0 flex-1">
-            <span className="sr-only">Pangalawang tao</span>
-            <Select value={second} onChange={(e) => setSecond(e.target.value)} disabled={pending}>
-              <option value="">Pumili</option>
-              {members
-                .filter((m) => m.id !== first)
-                .map((m) => (
+        {editable && members.length >= 2 && (
+          <div className="lst-row2">
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">Unang tao</span>
+              <Select value={first} onChange={(e) => setFirst(e.target.value)} disabled={pending}>
+                <option value="">Pumili</option>
+                {members.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.displayName}
                   </option>
                 ))}
-            </Select>
-          </label>
-          <Button
-            type="button"
-            variant="secondary"
-            size="sm"
-            className="h-[52px] px-5"
-            onClick={add}
-            disabled={pending || !first || !second}
-            aria-label="Add pair"
-          >
-            {pending ? "…" : "Add"}
-          </Button>
-        </div>
-      )}
+              </Select>
+            </label>
+            <label className="min-w-0 flex-1">
+              <span className="sr-only">Pangalawang tao</span>
+              <Select value={second} onChange={(e) => setSecond(e.target.value)} disabled={pending}>
+                <option value="">Pumili</option>
+                {members
+                  .filter((m) => m.id !== first)
+                  .map((m) => (
+                    <option key={m.id} value={m.id}>
+                      {m.displayName}
+                    </option>
+                  ))}
+              </Select>
+            </label>
+            <Button type="button" variant="secondary" onClick={add} disabled={pending || !first || !second} aria-label="Add pair">
+              {pending ? "…" : "Add"}
+            </Button>
+          </div>
+        )}
+        {error && <ErrorMessage className="my-2">{error}</ErrorMessage>}
+      </Listahan>
+      <p className="text-small text-ube-soft">Hindi sila magkakabunutan, halimbawa mag-asawa o magkapatid.</p>
     </div>
   );
 }

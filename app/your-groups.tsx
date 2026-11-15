@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useSyncExternalStore } from "react";
-import { cn } from "@/lib/utils";
+import { Listahan } from "@/components/ui/paper";
 import { groupsSnapshot, parseGroups, readGroups, subscribeGroups, writeGroups } from "@/lib/your-groups";
 import { checkGroupsAction } from "./actions";
 
@@ -10,7 +10,8 @@ const serverSnapshot = () => "[]";
 
 /**
  * "Your groups" on the home page: groups this device created or joined,
- * from localStorage (no tokens). Groups that no longer exist are dropped.
+ * from localStorage (no tokens), on a listahan. Groups that no longer
+ * exist are dropped.
  */
 export function YourGroups({ className }: { className?: string }) {
   const raw = useSyncExternalStore(subscribeGroups, groupsSnapshot, serverSnapshot);
@@ -39,23 +40,20 @@ export function YourGroups({ className }: { className?: string }) {
   if (!hasGroups) return null;
 
   return (
-    <section aria-labelledby="your-groups" className={cn("flex flex-col gap-3 rounded-3xl bg-niyog p-5", className)}>
-      <h2 id="your-groups" className="text-title font-extrabold">
-        Your groups
-      </h2>
-      <ul className="flex flex-col rows-dashed">
+    <Listahan title="Your groups" titleId="your-groups" className={className} role="region">
+      <ul>
         {groups.map((g) => (
-          <li key={g.slug} className="py-1 first:pt-0 last:pb-0">
+          <li key={g.slug} className="lst-row">
             <Link
               href={g.roles.includes("organizer") ? `/g/${g.slug}/admin` : `/g/${g.slug}/me`}
-              className="-mx-2 flex min-h-12 flex-col justify-center rounded-xl px-2 py-2 focus-ring"
+              className="flex min-h-10 min-w-0 items-center rounded-paper font-bold underline decoration-[1.5px] underline-offset-[3px] focus-ring"
             >
-              <span className="font-bold underline underline-offset-4">Continue: {g.name}</span>
-              <span className="text-small font-medium text-ube-soft">{g.roles.join(", ")}</span>
+              <span className="truncate">Continue: {g.name}</span>
             </Link>
+            <span className="shrink-0 text-small text-ube-soft">{g.roles.join(", ")}</span>
           </li>
         ))}
       </ul>
-    </section>
+    </Listahan>
   );
 }

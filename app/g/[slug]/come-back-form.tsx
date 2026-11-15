@@ -4,10 +4,10 @@ import Link from "next/link";
 import { useActionState, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
-import { Input } from "@/components/ui/input";
 import { submitWithoutReset } from "@/lib/forms";
 import { cn } from "@/lib/utils";
 import { comeBackAction, type ComeBackState } from "./actions";
+import { NameLine } from "./name-line";
 import { PinField } from "./pin-field";
 
 const initialState: ComeBackState = { status: "idle" };
@@ -30,6 +30,7 @@ export function ComeBackForm({
   intro,
   onNew,
   newHref,
+  showNewLink = "always",
 }: {
   slug: string;
   presetName?: string;
@@ -38,6 +39,8 @@ export function ComeBackForm({
   onNew?: () => void;
   /** "Bago ka?": back to the join form (as a link). */
   newHref?: string;
+  /** "phone": the link shows here only on phones (laptops show it in the left column). */
+  showNewLink?: "always" | "phone";
 }) {
   const [state, formAction, pending] = useActionState(comeBackAction, initialState);
   // The error hides as soon as a field is edited, until the next submit.
@@ -46,58 +49,58 @@ export function ComeBackForm({
   const edited = () => {
     if (editedAfter !== state) setEditedAfter(state);
   };
-  const linkClass = cn(buttonVariants({ variant: "link", size: "inline" }), "self-center");
+  const linkClass = cn(buttonVariants({ variant: "link" }), "w-fit px-0 text-body");
 
   return (
-    <div className="flex flex-col gap-4">
+    <>
       {intro && <p>{intro}</p>}
       <form
         action={formAction}
         onSubmit={submitWithoutReset(formAction)}
-        className="flex flex-col gap-6"
+        className="flex flex-col gap-[18px] lg:gap-[22px]"
         aria-label="Bumalik"
         noValidate
       >
         <input type="hidden" name="slug" value={slug} />
-        {presetName !== undefined ? (
-          <input type="hidden" name="displayName" value={presetName} />
-        ) : (
-          <div className="flex flex-col gap-2">
-            <label htmlFor="comeback-name" className="px-1.5 font-bold">
-              Pangalan mo
-            </label>
-            <Input
+        <div className="listahan">
+          <p className="lst-row font-bold">Hanapin ang pangalan mo</p>
+          {presetName !== undefined ? (
+            <>
+              <input type="hidden" name="displayName" value={presetName} />
+              <p className="lst-label">Pangalan mo</p>
+              <p className="h-10 truncate font-hand text-[30px] leading-[38px]">{presetName}</p>
+            </>
+          ) : (
+            <NameLine
               id="comeback-name"
               name="displayName"
-              hand
               placeholder="Hal. Joy"
               maxLength={40}
               autoComplete="username"
               onChange={edited}
-              aria-invalid={error ? true : undefined}
+              invalid={Boolean(error)}
               aria-describedby={error ? "comeback-error" : undefined}
               required
             />
-          </div>
-        )}
-        <div className="flex flex-col gap-2">
+          )}
           <PinField
             id="comeback-pin"
             label="4-digit PIN"
+            labelClassName="lst-label block"
+            rowClassName="lst-row2"
             autoComplete="current-password"
             autoFocus={presetName !== undefined}
             invalid={Boolean(error)}
             describedBy={error ? "comeback-error" : "comeback-hint"}
             onChange={edited}
           />
-          {error ? (
-            <ErrorMessage id="comeback-error">{error.message}</ErrorMessage>
-          ) : (
-            <p id="comeback-hint" className="px-1.5 text-small font-medium text-ube-soft">
-              Nakalimutan ang PIN? Hingin sa organizer ang bagong link mo.
+          {!error && (
+            <p id="comeback-hint" className="lst-row text-small text-ube-soft">
+              Nakalimutan ang PIN? Hingin sa organizer.
             </p>
           )}
         </div>
+        {error && <ErrorMessage id="comeback-error">{error.message}</ErrorMessage>}
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Sandali…" : "Buksan ang slip ko"}
         </Button>
@@ -108,10 +111,10 @@ export function ComeBackForm({
         </button>
       )}
       {newHref && (
-        <Link href={newHref} className={linkClass}>
+        <Link href={newHref} className={cn(linkClass, showNewLink === "phone" && "lg:hidden")}>
           {NEW_LABEL}
         </Link>
       )}
-    </div>
+    </>
   );
 }

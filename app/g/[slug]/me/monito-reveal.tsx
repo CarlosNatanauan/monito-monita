@@ -1,11 +1,8 @@
 "use client";
 
-import { LazyMotion, MotionConfig, m } from "motion/react";
-import { createContext, useContext, useState } from "react";
+import { createContext, useContext, useLayoutEffect, useRef, useState } from "react";
 import { BunutanSlip } from "@/components/slip/bunutan-slip";
 import { markSlipOpenedAction } from "./actions";
-
-const loadMotionFeatures = () => import("@/lib/motion-features").then((mod) => mod.default);
 
 interface RevealState {
   receiverName: string;
@@ -50,9 +47,7 @@ export function MonitoReveal({
 
   return (
     <RevealContext value={{ receiverName, alreadyOpened, opened, onOpened }}>
-      <LazyMotion features={loadMotionFeatures} strict>
-        <MotionConfig reducedMotion="user">{children}</MotionConfig>
-      </LazyMotion>
+      {children}
     </RevealContext>
   );
 }
@@ -63,18 +58,30 @@ export function MonitoSlip() {
   return <BunutanSlip name={receiverName} initiallyOpened={alreadyOpened} onOpened={onOpened} />;
 }
 
-/** Shown once the slip is open; fades in right after the unfold. */
+/**
+ * Shown once the slip is open; fades in right after the unfold (Web
+ * Animations, transform and opacity; a plain cross-fade with reduced motion).
+ */
 export function WhenOpened({ children }: { children: React.ReactNode }) {
   const { alreadyOpened, opened } = useReveal();
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (!opened || alreadyOpened) return;
+    const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    ref.current?.animate(
+      reduced
+        ? [{ opacity: 0 }, { opacity: 1 }]
+        : [
+            { opacity: 0, transform: "translateY(12px)" },
+            { opacity: 1, transform: "none" },
+          ],
+      { duration: reduced ? 150 : 400, delay: reduced ? 0 : 100, easing: "ease-out", fill: "backwards" },
+    );
+  }, [opened, alreadyOpened]);
   if (!opened) return null;
   return (
-    <m.div
-      className="w-full"
-      initial={alreadyOpened ? false : { opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.4, ease: "easeOut", delay: 0.1 }}
-    >
+    <div ref={ref} className="w-full">
       {children}
-    </m.div>
+    </div>
   );
 }

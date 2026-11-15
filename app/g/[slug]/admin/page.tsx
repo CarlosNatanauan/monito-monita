@@ -5,10 +5,12 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CopyLink } from "@/components/copy-link";
 import { joinStates, Lights } from "@/components/lights";
+import { Brand } from "@/components/brand";
+import { Narrow, pageClass } from "@/components/page";
 import { RememberGroup } from "@/components/remember-group";
 import { RoleSwitch } from "@/components/role-switch";
 import { Button } from "@/components/ui/button";
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Capiz, Listahan, SectionTitle } from "@/components/ui/paper";
 import { formatJoinedAt, joinedCount } from "@/lib/format";
 import { mostHaveOpened } from "@/lib/reminder";
 import { getThemeStatus } from "@/lib/theme-status";
@@ -20,7 +22,6 @@ import { checkDrawFeasibility } from "@/server/draw-check";
 import { countAssignments, countSlipsOpened, hasOpenedOwnSlip } from "@/server/draw-service";
 import { getDrawSetup, toExclusions } from "@/server/exclusions";
 import { getOrganizerView } from "@/server/members";
-import { Eyebrow, Narrow, widePageClass } from "@/components/page";
 import { GroupFacts, PageFallback } from "../group-facts";
 import { DrawSection } from "./draw-section";
 import { ExclusionsSection } from "./exclusions-section";
@@ -38,13 +39,36 @@ const STATUS_LABEL: Record<GroupStatus, string> = {
   REVEALED: "Reveal na!",
 };
 
+/** From 840px the organizer page gets two columns, so it needs the wide frame earlier than other pages. */
+const organizerPageClass = cn(pageClass, "pt-[22px] min-[840px]:max-w-[calc(1120px+4rem)] min-[840px]:px-8 lg:pt-[42px]");
+
 export default function OrganizerPage({ params }: PageProps<"/g/[slug]/admin">) {
   return (
-    <main className={cn(widePageClass, "pt-4 md:pt-8")}>
-      <Suspense fallback={<PageFallback />}>
-        <OrganizerContent params={params} />
-      </Suspense>
-    </main>
+    <Suspense
+      fallback={
+        <main className={organizerPageClass}>
+          <PageFallback />
+        </main>
+      }
+    >
+      <OrganizerContent params={params} />
+    </Suspense>
+  );
+}
+
+/**
+ * The header line (docs/design/12–14): the wordmark, and for someone who
+ * is also a member the folder tabs, on a 1.5px ube line. Phones with tabs
+ * show only the tabs.
+ */
+function HeaderLine({ slug, tabs }: { slug: string; tabs: boolean }) {
+  return (
+    <div className="border-b-[1.5px] border-ube">
+      <div className="mx-auto flex items-end justify-between gap-4 px-5 pt-3.5 min-[600px]:max-w-[600px] min-[840px]:max-w-[calc(1120px+4rem)] min-[840px]:px-8 lg:pt-4">
+        <Brand className={cn("mb-3", tabs && "hidden lg:block")} />
+        {tabs && <RoleSwitch slug={slug} current="organizer" />}
+      </div>
+    </div>
   );
 }
 
@@ -55,17 +79,22 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
   const organizer = await getCurrentOrganizer(slug);
   if (!organizer) {
     return (
-      <Narrow>
-        {/* This device's organizer link no longer works: drop it from "Your groups". */}
-        <RememberGroup slug={slug} name="" role="organizer" forget />
-        <Card className="mt-6">
-          <CardTitle>Para sa organizer lang ang page na &apos;to.</CardTitle>
-          <CardDescription>
-            Kung ikaw ang organizer, buksan ang organizer link mo (yung binigay nang ginawa mo ang group). Kung member
-            ka, gamitin ang personal link mo.
-          </CardDescription>
-        </Card>
-      </Narrow>
+      <>
+        <HeaderLine slug={slug} tabs={false} />
+        <main className={organizerPageClass}>
+          <Narrow>
+            {/* This device's organizer link no longer works: drop it from "Your groups". */}
+            <RememberGroup slug={slug} name="" role="organizer" forget />
+            <Capiz>
+              <SectionTitle>Para sa organizer lang ang page na &apos;to.</SectionTitle>
+              <p className="text-ube-soft">
+                Kung ikaw ang organizer, buksan ang organizer link mo (yung binigay nang ginawa mo ang group). Kung member
+                ka, gamitin ang personal link mo.
+              </p>
+            </Capiz>
+          </Narrow>
+        </main>
+      </>
     );
   }
 
@@ -80,7 +109,8 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
   const { group, themes } = view;
   const isOpen = group.status === "OPEN";
   // Right after the draw (until most have opened their slip), the GC
-  // reminder defaults to "Na-draw na!" and the organizer's own slip is offered.
+  // message defaults to "Na-draw na!" (inside the Names drawn card) and the
+  // organizer's own slip is offered.
   const justDrawn = group.status === "DRAWN" && !mostHaveOpened(slipsOpened);
   const ownSlipWaiting = Boolean(member) && justDrawn && !(await hasOpenedOwnSlip(member!.id));
   // Same algorithm as the real draw, so the warning always matches.
@@ -102,249 +132,219 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
   // --- Sections, ordered by stage below ------------------------------------
 
   const joinAsMember = !member && isOpen && (
-    <Card>
-      <CardHeader>
-        <CardTitle>Kasali ka rin ba?</CardTitle>
-        <CardDescription>Are you joining too? Sali ka rin para makabunot ka.</CardDescription>
-      </CardHeader>
-      <Button asChild variant="secondary">
+    <section className="flex flex-col gap-2.5">
+      <SectionTitle>Kasali ka rin ba?</SectionTitle>
+      <p className="text-ube-soft">Are you joining too? Sali ka rin para makabunot ka.</p>
+      <Button asChild variant="secondary" className="self-start">
         <Link href={`/g/${slug}`}>Join as a member</Link>
       </Button>
-    </Card>
+    </section>
   );
 
-  // Before the draw: the join count with one bulb per member (newest glows).
+  // Before the draw: the join count with one bulb per member (newest lit
+  // pale with rays), on the capiz card with the link.
   const shareLink = isOpen ? (
-    <Card>
-      <Lights plan={joinStates(memberCount)} label={<CardTitle>{joinedCount(memberCount)}</CardTitle>} />
-      <p>I-paste sa GC para makasali ang lahat.</p>
-      <CopyLink path={`/g/${slug}`} label="Copy link" variant="secondary" />
-    </Card>
-  ) : (
-    <Card>
-      <CardHeader>
-        <CardTitle>Share link (para sa GC)</CardTitle>
-        <CardDescription>Sarado na ang sali, pero dadalhin nito ang members sa slip nila.</CardDescription>
-      </CardHeader>
-      <CopyLink path={`/g/${slug}`} label="Copy link" variant="secondary" />
-    </Card>
-  );
-
-  const bunutan = (
-    <Card>
-      {isOpen && <CardTitle>Bunutan</CardTitle>}
-      <DrawSection
-        slug={slug}
-        status={group.status}
-        drawnCount={drawnCount}
-        slipsOpened={slipsOpened}
-        blockedReason={
-          feasibility.status === "ok"
-            ? null
-            : feasibility.status === "too_few"
-              ? feasibility.message
-              : "Ayusin muna ang mga bawal magkabunot."
-        }
+    <Capiz aria-label="Share link">
+      <Lights
+        plan={joinStates(memberCount)}
+        label={<SectionTitle as="h2">{joinedCount(memberCount)}</SectionTitle>}
+        rowClassName="mx-auto h-9 w-full max-w-[420px] lg:h-[52px]"
       />
-    </Card>
+      <p className="text-small text-ube-soft">I-paste sa GC para makasali ang lahat.</p>
+      <CopyLink path={`/g/${slug}`} label="Copy link" />
+    </Capiz>
+  ) : (
+    <section aria-labelledby="share-title" className="flex flex-col gap-2.5">
+      <SectionTitle id="share-title">Share link (para sa GC)</SectionTitle>
+      <p className="text-small text-ube-soft">Sarado na ang sali, pero dadalhin nito ang members sa slip nila.</p>
+      <CopyLink path={`/g/${slug}`} label="Copy link" />
+    </section>
   );
 
   const reminder = (
-    <Card>
-      <CardTitle>Paalala para sa GC</CardTitle>
-      <ReminderCard
-        // A fresh default ("Na-draw na!") once the names are drawn.
-        key={isOpen ? "open" : "drawn"}
-        {...reminderData}
-        defaultKind={justDrawn ? "drawn" : "theme"}
-        prominent={group.status === "DRAWN"}
-      />
-    </Card>
+    <ReminderCard
+      // A fresh default ("Na-draw na!") once the names are drawn.
+      key={isOpen ? "open" : justDrawn ? "just-drawn" : "drawn"}
+      {...reminderData}
+      defaultKind={justDrawn ? "drawn" : "theme"}
+      prominent={group.status === "DRAWN"}
+    />
+  );
+
+  const bunutan = (
+    <DrawSection
+      slug={slug}
+      status={group.status}
+      drawnCount={drawnCount}
+      slipsOpened={slipsOpened}
+      blockedReason={
+        feasibility.status === "ok"
+          ? null
+          : feasibility.status === "too_few"
+            ? feasibility.message
+            : "Ayusin muna ang mga bawal magkabunot."
+      }
+      announce={justDrawn ? reminder : undefined}
+    />
   );
 
   const ownSlip = ownSlipWaiting && (
-    <Card>
-      <CardHeader>
-        <CardTitle>Kasali ka rin, kaya may slip ka.</CardTitle>
-        <CardDescription>Buksan mo na rin ang sa&apos;yo.</CardDescription>
-      </CardHeader>
-      <Button asChild variant="secondary">
+    <section className="flex flex-col gap-2.5">
+      <SectionTitle>Kasali ka rin, kaya may slip ka.</SectionTitle>
+      <p className="text-ube-soft">Buksan mo na rin ang sa&apos;yo.</p>
+      <Button asChild variant="secondary" className="self-start">
         <Link href={`/g/${slug}/me`}>Buksan ang slip mo</Link>
       </Button>
-    </Card>
+    </section>
   );
 
   const membersCard = (
-    <Card>
-      <CardTitle>Members ({memberCount})</CardTitle>
-      {/* From md: scrolls inside the card past ~11 rows, so a big group doesn't push the rest far down. */}
-      <div className="md:-mx-2 md:max-h-[40rem] md:overflow-y-auto md:px-2 md:py-0.5">
-        <MemberList
-          slug={slug}
-          canRemove={group.status === "OPEN" || group.status === "DRAWN"}
-          drawn={!isOpen}
-          members={view.members.map((m) => ({
-            id: m.id,
-            displayName: m.displayName,
-            joinedLabel: formatJoinedAt(m.joinedAt, group.timezone),
-            linkStatus: m.linkStatus,
-            pinLocked: m.pinLocked,
-            slipOpened: m.slipOpened,
-          }))}
-        />
-      </div>
-    </Card>
+    <MemberList
+      slug={slug}
+      canRemove={group.status === "OPEN" || group.status === "DRAWN"}
+      drawn={!isOpen}
+      members={view.members.map((m) => ({
+        id: m.id,
+        displayName: m.displayName,
+        joinedLabel: formatJoinedAt(m.joinedAt, group.timezone),
+        linkStatus: m.linkStatus,
+        pinLocked: m.pinLocked,
+        slipOpened: m.slipOpened,
+      }))}
+    />
   );
 
   const exclusions = (
-    <Card>
-      <CardHeader>
-        <CardTitle>Bawal magkabunot</CardTitle>
-        <p>Can&apos;t draw each other, halimbawa mag-asawa o magkapatid.</p>
-      </CardHeader>
-      <ExclusionsSection
-        slug={slug}
-        members={setup.members}
-        pairs={setup.pairs.map((p) => ({ id: p.id, memberAName: p.memberAName, memberBName: p.memberBName }))}
-        editable={isOpen}
-        warning={isOpen && feasibility.status === "impossible" ? feasibility.message : null}
-      />
-    </Card>
+    <ExclusionsSection
+      slug={slug}
+      members={setup.members}
+      pairs={setup.pairs.map((p) => ({ id: p.id, memberAName: p.memberAName, memberBName: p.memberBName }))}
+      editable={isOpen}
+      warning={isOpen && feasibility.status === "impossible" ? feasibility.message : null}
+    />
   );
 
-  // The party reveal (plain for now). Links only: no pairs on this page.
+  // The party reveal. Links only: no pairs on this page.
   const reveal = !isOpen && (
-    <Card>
-      <CardHeader>
-        <CardTitle>Party reveal</CardTitle>
-        <CardDescription>
-          {group.status === "DRAWN" &&
-            "Sa party: buksan sa laptop o TV at isa-isang ipakita kung sino ang nagbigay kanino."}
-          {group.status === "REVEALING" && "Ongoing ang reveal. Ituloy kung saan ka huminto."}
-          {group.status === "REVEALED" && "Tapos na! Makikita na ng lahat kung sino ang nagbigay sa kanila."}
-        </CardDescription>
-      </CardHeader>
-      <Button asChild variant={group.status === "REVEALING" ? "default" : "secondary"}>
+    <section aria-labelledby="reveal-title" className="flex flex-col gap-2.5">
+      <SectionTitle id="reveal-title">Party reveal</SectionTitle>
+      <p className="text-ube-soft">
+        {group.status === "DRAWN" && "Sa party: buksan sa laptop o TV at isa-isang ipakita kung sino ang nagbigay kanino."}
+        {group.status === "REVEALING" && "Ongoing ang reveal. Ituloy kung saan ka huminto."}
+        {group.status === "REVEALED" && "Tapos na! Makikita na ng lahat kung sino ang nagbigay sa kanila."}
+      </p>
+      <Button
+        asChild
+        variant={group.status === "REVEALING" ? "default" : "secondary"}
+        className={group.status === "REVEALING" ? "w-full lg:w-fit" : "self-start"}
+      >
         <Link href={`/g/${slug}/reveal`}>
           {group.status === "DRAWN" && "Open the reveal screen"}
           {group.status === "REVEALING" && "Continue the reveal"}
           {group.status === "REVEALED" && "See all pairs"}
         </Link>
       </Button>
-    </Card>
-  );
-
-  const details = (
-    <Card>
-      <GroupFacts partyDate={group.partyDate} budget={group.budget} />
-    </Card>
+    </section>
   );
 
   const themeWeeks = themes.length > 0 && (
-    <Card>
-      <CardTitle>Theme weeks</CardTitle>
-      <ol className="flex flex-col rows-dashed">
-        {themes.map((theme) => (
-          <li
-            key={`${theme.startDate}-${theme.title}`}
-            className="flex justify-between gap-3 py-3 first:pt-0 last:pb-0"
-          >
-            <span>{theme.title}</span>
-            <span className="shrink-0 text-small font-medium text-ube-soft">{formatShortDate(theme.startDate)}</span>
+    <Listahan title="Weekly themes" titleId="themes-title">
+      <ol aria-labelledby="themes-title">
+        {themes.map((theme, i) => (
+          <li key={`${theme.startDate}-${theme.title}`} className="lst-row">
+            <span className="min-w-0 truncate">
+              <strong>Week {i + 1}</strong> · {theme.title}
+            </span>
+            <span className="shrink-0 text-small text-ube-soft">{formatShortDate(theme.startDate)}</span>
           </li>
         ))}
       </ol>
-    </Card>
+    </Listahan>
   );
 
-  // Theme weeks, then the party details: one cell on wider screens.
-  const setupCell = (
-    <div className="flex flex-col gap-4 md:gap-6">
-      {themeWeeks}
-      {details}
-    </div>
-  );
+  const details = <GroupFacts partyDate={group.partyDate} budget={group.budget} year />;
 
-  // Phones: one column, in the order below for each stage. From md: a
-  // dashboard (status and lights, the draw, the GC reminder on the left;
-  // members on the right; the rest in two columns below).
+  // Phones: one column, in the order below for each stage. From 840px:
+  // the members listahan on the right; everything else, in the same
+  // order, on the left.
   const sections: Section[] = isOpen
     ? // Before the draw: get everyone in, set the bawal pairs, then draw.
       [
-        { key: "share", area: "left", node: shareLink },
-        { key: "join", area: "below", node: joinAsMember },
-        { key: "exclusions", area: "below", node: exclusions },
-        { key: "bunutan", area: "left", node: bunutan },
-        { key: "members", area: "right", node: membersCard },
-        { key: "reminder", area: "left", node: reminder },
-        { key: "setup", area: "below", node: setupCell },
+        { key: "share", node: shareLink },
+        { key: "join", node: joinAsMember },
+        { key: "exclusions", node: exclusions },
+        { key: "bunutan", node: bunutan },
+        { key: "members", right: true, node: membersCard },
+        { key: "reminder", node: reminder },
+        { key: "themes", node: themeWeeks },
+        { key: "details", node: details },
       ]
     : // After the draw: track slips, remind the GC, then the rest.
       [
-        { key: "reveal-now", area: "left", node: group.status === "REVEALING" && reveal },
-        { key: "bunutan", area: "left", node: bunutan },
-        { key: "reminder", area: "left", node: reminder },
-        { key: "own-slip", area: "left", node: ownSlip },
-        { key: "members", area: "right", node: membersCard },
-        { key: "reveal", area: "below", node: group.status !== "REVEALING" && reveal },
-        { key: "share", area: "below", node: shareLink },
-        { key: "exclusions", area: "below", node: exclusions },
-        { key: "setup", area: "below", node: setupCell },
+        { key: "reveal-now", node: group.status === "REVEALING" && reveal },
+        { key: "bunutan", node: bunutan },
+        { key: "reminder", node: !justDrawn && reminder },
+        { key: "own-slip", node: ownSlip },
+        { key: "members", right: true, node: membersCard },
+        { key: "reveal", node: group.status !== "REVEALING" && reveal },
+        { key: "share", node: shareLink },
+        { key: "exclusions", node: exclusions },
+        { key: "themes", node: themeWeeks },
+        { key: "details", node: details },
       ];
 
   return (
     <>
       <RememberGroup slug={slug} name={group.name} role="organizer" />
-      {member && <RoleSwitch slug={slug} current="organizer" />}
-      <header className="flex flex-col gap-2 pt-2 pb-1 md:pb-3">
-        <Eyebrow>Organizer</Eyebrow>
-        <h1 className="font-display text-heading-lg break-words">{group.name}</h1>
-        <p className="mt-2 font-bold text-dahon">{STATUS_LABEL[group.status]}</p>
-      </header>
-
-      <Dashboard sections={sections} />
+      <HeaderLine slug={slug} tabs={Boolean(member)} />
+      <main className={organizerPageClass}>
+        <Dashboard
+          header={
+            <header className="flex flex-col gap-1.5">
+              <p className="sr-only">Organizer</p>
+              <h1 className="font-head text-title break-words lg:text-title-lg">{group.name}</h1>
+              <p className="font-bold text-dahon">{STATUS_LABEL[group.status]}</p>
+            </header>
+          }
+          sections={sections}
+        />
+      </main>
     </>
   );
 }
 
-type Area = "left" | "right" | "below";
 interface Section {
   key: string;
-  area: Area;
+  /** The members listahan: the right column from 840px. */
+  right?: boolean;
   node: ReactNode;
 }
 
 /**
  * The organizer page's sections in phone order (the DOM order, so phones
- * and screen readers read them as listed). From md each one gets a cell:
- * "left" sections stack in the first column; "right" (the members) spans
- * them in the second column, plus a flexible row so a long list doesn't
- * spread the left cards apart; "below" sections fill two columns
- * underneath, row by row.
+ * and screen readers read them as listed). From 840px the members
+ * listahan sits in the right column, spanning every row plus a flexible
+ * one so a long list doesn't spread the left cards apart; the rest stack
+ * in the left column in the same order.
  */
-function Dashboard({ sections }: { sections: Section[] }) {
+function Dashboard({ header, sections }: { header: ReactNode; sections: Section[] }) {
   const shown = sections.filter((s) => Boolean(s.node));
-  const leftCount = shown.filter((s) => s.area === "left").length;
-  let left = 0;
-  let below = 0;
-  const cell = (area: Area): { col: string; row: string } => {
-    if (area === "left") return { col: "1", row: String(++left) };
-    if (area === "right") return { col: "2", row: `1 / span ${leftCount + 1}` };
-    const i = below++;
-    return { col: String(1 + (i % 2)), row: String(leftCount + 2 + Math.floor(i / 2)) };
-  };
+  const leftCount = shown.filter((s) => !s.right).length + 1;
+  let left = 1;
   return (
     <div
-      className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-6 md:[grid-template-rows:var(--rows)] lg:gap-x-8"
+      className="flex flex-col gap-[18px] min-[840px]:grid min-[840px]:grid-cols-[minmax(0,1fr)_340px] min-[840px]:items-start min-[840px]:gap-x-8 min-[840px]:gap-y-[22px] min-[840px]:[grid-template-rows:var(--rows)] lg:grid-cols-[minmax(0,1fr)_420px] lg:gap-x-12"
       style={{ "--rows": `repeat(${leftCount}, auto) 1fr` } as CSSProperties}
     >
+      <div className="min-[840px]:col-start-1 min-[840px]:row-start-1">{header}</div>
       {shown.map((s) => {
-        const { col, row } = cell(s.area);
+        const col = s.right ? "2" : "1";
+        const row = s.right ? `1 / span ${leftCount + 1}` : String(++left);
         return (
           <div
             key={s.key}
-            data-area={s.area}
-            className="flex flex-col md:[grid-column:var(--col)] md:[grid-row:var(--row)]"
+            data-area={s.right ? "right" : "left"}
+            className="flex min-w-0 flex-col gap-[18px] min-[840px]:[grid-column:var(--col)] min-[840px]:[grid-row:var(--row)] lg:gap-[22px]"
             style={{ "--col": col, "--row": row } as CSSProperties}
           >
             {s.node}

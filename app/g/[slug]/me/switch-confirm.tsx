@@ -1,8 +1,9 @@
 "use client";
 
 import { useTransition } from "react";
+import { Name } from "@/components/page";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Capiz, SectionTitle } from "@/components/ui/paper";
 import { confirmSwitchAction, staySwitchAction } from "./actions";
 
 /**
@@ -18,29 +19,21 @@ export function SwitchConfirm({ slug, current, other }: { slug: string; current:
     });
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>
-          Naka-login ka bilang {current} sa device na &apos;to. Ikaw ba talaga si {other}?
-        </CardTitle>
-        <CardDescription>
-          Personal link ni {other} ang binuksan mo. Kung hindi ikaw si {other}, manatili ka lang.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="flex flex-col gap-3">
+    <Capiz>
+      <SectionTitle>
+        Naka-login ka bilang <Name>{current}</Name> sa device na &apos;to. Ikaw ba talaga si <Name>{other}</Name>?
+      </SectionTitle>
+      <p className="text-ube-soft">
+        Personal link ni <Name>{other}</Name> ang binuksan mo. Kung hindi ikaw si <Name>{other}</Name>, manatili ka lang.
+      </p>
+      <div className="flex flex-col gap-2.5 self-stretch">
         <Button type="button" className="w-full" disabled={pending} onClick={() => run(staySwitchAction)}>
           Stay as {current}
         </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          className="w-full"
-          disabled={pending}
-          onClick={() => run(confirmSwitchAction)}
-        >
+        <Button type="button" variant="secondary" className="w-full" disabled={pending} onClick={() => run(confirmSwitchAction)}>
           Oo, ako si {other}
         </Button>
-      </CardContent>
-    </Card>
+      </div>
+    </Capiz>
   );
 }

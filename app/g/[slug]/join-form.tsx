@@ -1,12 +1,12 @@
 "use client";
 
 import { useActionState, useState, type ReactNode } from "react";
-import { JoinDrop, preloadDrop } from "@/components/bowl/join-drop";
+import { JoinDrop, preloadDrop } from "@/components/bowl/lazy-join-drop";
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
-import { Input } from "@/components/ui/input";
 import { joinAction, type JoinState } from "./actions";
 import { ComeBackForm } from "./come-back-form";
+import { NameLine } from "./name-line";
 import { PinField } from "./pin-field";
 
 const initialState: JoinState = { status: "idle" };
@@ -57,58 +57,55 @@ export function JoinForm({
   };
 
   return (
-    <div className="flex flex-col gap-4">
+    <>
       <form
         action={formAction}
-        className="flex flex-col gap-6"
+        className="flex flex-col gap-[18px] lg:gap-[22px]"
         aria-label="Sumali"
         noValidate
         // Fetch the drop animation while they type, so it's ready on submit.
         onFocus={preloadDrop}
       >
         <input type="hidden" name="slug" value={slug} />
-        <div className="flex flex-col gap-2">
-          <label htmlFor="displayName" className="px-1.5 font-bold">
-            Pangalan mo
-          </label>
-          <Input
+        <div className="listahan">
+          <p className="lst-row font-bold">
+            <span className="lg:hidden">Isulat ang pangalan mo</span>
+            <span className="hidden lg:inline">Isulat ang pangalan mo sa listahan</span>
+          </p>
+          <NameLine
             id="displayName"
             name="displayName"
-            hand
             defaultValue={submittedName}
             onChange={edited}
             placeholder="Hal. Joy"
             maxLength={40}
             autoComplete="username"
-            aria-invalid={error?.field === "displayName" ? true : undefined}
+            invalid={error?.field === "displayName"}
             aria-describedby={error?.field === "displayName" ? "join-error" : undefined}
             required
           />
-          {error?.field === "displayName" && <ErrorMessage id="join-error">{error.message}</ErrorMessage>}
-        </div>
-        <div className="flex flex-col gap-2">
           <PinField
             id="pin"
             label="4-digit PIN"
+            labelClassName="lst-label block"
+            rowClassName="lst-row2"
             autoComplete="new-password"
             invalid={error?.field === "pin"}
             describedBy={error?.field === "pin" ? "pin-error" : "pin-hint"}
             onChange={edited}
           />
-          {error?.field === "pin" ? (
-            <ErrorMessage id="pin-error">{error.message}</ErrorMessage>
-          ) : (
-            <p id="pin-hint" className="px-1.5 text-small font-medium text-ube-soft">
-              Tandaan mo &apos;to. Ito ang gamit mo pagbalik, kahit sa ibang phone.
-            </p>
-          )}
+          <p id="pin-hint" className="lst-row text-small text-ube-soft">
+            Tandaan mo &apos;to. Gamit mo pagbalik.
+          </p>
         </div>
+        {error?.field === "displayName" && <ErrorMessage id="join-error">{error.message}</ErrorMessage>}
+        {error?.field === "pin" && <ErrorMessage id="pin-error">{error.message}</ErrorMessage>}
         {error && error.field === null && <ErrorMessage>{error.message}</ErrorMessage>}
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Sumasali…" : "Join the group"}
         </Button>
       </form>
       {footer}
-    </div>
+    </>
   );
 }

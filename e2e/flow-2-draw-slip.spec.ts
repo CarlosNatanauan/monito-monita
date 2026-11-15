@@ -63,12 +63,13 @@ test("draw and slip: draw, unfold, lost link, redraw, leaks", async ({ browser }
     await expect(page.getByText("0 of 4 have opened their slip")).toBeVisible();
     await expectCardOrder(page, [
       "Names drawn",
-      "Paalala para sa GC",
+      "I-announce sa GC",
       "Kasali ka rin, kaya may slip ka.",
       "Members",
       "Share link (para sa GC)",
     ]);
-    await expect(page.getByText("Paalala para sa GC", { exact: true })).toHaveCount(1);
+    // The announcement sits inside the "Names drawn" card, right after the draw.
+    await expect(page.getByText("I-announce sa GC", { exact: true })).toHaveCount(1);
     // The organizer is a member too, with an unopened slip.
     await expect(page.getByRole("link", { name: "Buksan ang slip mo" })).toHaveAttribute("href", `/g/${slug}/me`);
     // "Na-draw na!" is the default GC message…
@@ -191,9 +192,9 @@ test("draw and slip: draw, unfold, lost link, redraw, leaks", async ({ browser }
   await test.step("joining is closed after the draw", async () => {
     const late = await newPerson("Late Larry");
     await late.page.goto(shareUrl);
-    await expect(late.page.getByText("Sarado na ang sali.")).toBeVisible();
+    await expect(late.page.getByText("Tapos na ang bunutan")).toBeVisible();
     await expect(late.page.getByLabel("Pangalan mo")).toHaveCount(0);
-    await expect(late.page.getByRole("link", { name: "Kasali ka na? Bumalik dito" })).toBeVisible();
+    await expect(late.page.getByRole("link", { name: "Bumalik sa slip ko" })).toBeVisible();
     await shot(late.page, "join-closed");
     await late.context.close();
   });

@@ -15,6 +15,7 @@ import { addDays, todayIn } from "../lib/theme-weeks";
 import { closeDb, db } from "../server/db";
 import { members } from "../server/db/schema";
 import { deleteGroups, E2E_PREFIX } from "./db-cleanup";
+import { readLink } from "./flow";
 import { readMaskedLink, readMyLink } from "./links";
 import { capturePage, expectJoinPageClean, getTruth } from "./leak";
 
@@ -60,12 +61,6 @@ async function newPerson(
   });
   page.on("pageerror", (error) => problems.push(`[${label}] uncaught error on ${page.url()}: ${error.message}`));
   return { context, page };
-}
-
-async function readLink(page: Page, pattern: RegExp): Promise<string> {
-  const box = page.locator("p.select-all").filter({ hasText: pattern });
-  await expect(box).toHaveText(/^https?:\/\//);
-  return (await box.textContent())!.trim();
 }
 
 const isAction = (r: { request(): { method(): string; headers(): Record<string, string> } }) =>
@@ -115,10 +110,10 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     await page.goto("/new");
     // Fill after hydration: WebKit otherwise loses the first field.
     await page.waitForLoadState("networkidle");
-    await page.getByLabel("Group name").fill(groupName);
-    await expect(page.getByLabel("Group name")).toHaveValue(groupName);
-    await page.getByLabel("Budget per gift").fill("300");
-    await page.getByLabel("Party date").fill(addDays(todayIn("Asia/Manila"), 30));
+    await page.getByLabel("Pangalan ng group").fill(groupName);
+    await expect(page.getByLabel("Pangalan ng group")).toHaveValue(groupName);
+    await page.getByLabel("Budget", { exact: true }).fill("300");
+    await page.getByLabel("Petsa ng party").fill(addDays(todayIn("Asia/Manila"), 30));
     await page.getByRole("button", { name: "Create group" }).click();
     await expect(page.getByRole("heading", { name: "Ready na ang group mo!" })).toBeVisible();
     shareUrl = await readLink(page, /\/g\/[a-z0-9]+$/);
@@ -144,13 +139,13 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     const pin = page.getByLabel("4-digit PIN");
     await expect(pin).toHaveAttribute("inputmode", "numeric");
     await expect(pin).toHaveAttribute("type", "password");
-    await expect(page.getByText("Ito ang gamit mo pagbalik", { exact: false })).toBeVisible();
+    await expect(page.getByText("Gamit mo pagbalik", { exact: false })).toBeVisible();
     await joinWith(page, shareUrl, "Ana", "1234");
     await expect(page.getByRole("heading", { name: "Hi, Ana!" })).toBeVisible();
 
     // Right after joining: the link card comes first, Share is the main button.
     const titles = await page.locator('[data-slot="card-title"]').allTextContents();
-    expect(titles[0]).toBe("Save this link!");
+    expect(titles[0]).toBe("I-save ang link mo!");
     const share = page.getByRole("button", { name: "I-send sa sarili mo" });
     await expect(share).toHaveAttribute("data-variant", "default");
     await expect(page.getByRole("button", { name: "Copy my link" })).toHaveAttribute("data-variant", "secondary");
@@ -165,7 +160,7 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     // Later visits: the link card sits at the bottom, not highlighted.
     await page.reload();
     const later = await page.locator('[data-slot="card-title"]').allTextContents();
-    expect(later.at(-1)).toBe("Your personal link");
+    expect(later.at(-1)).toBe("Personal link mo");
   });
 
   await test.step("without the Web Share API, Copy is the main button", async () => {
@@ -333,9 +328,9 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     const late = await newPerson(browser, testInfo, "Ana (after draw)");
     const truth = await getTruth(slug);
     expectJoinPageClean(await capturePage(late.page, shareUrl), truth);
-    await expect(late.page.getByText("Sarado na ang sali.")).toBeVisible();
+    await expect(late.page.getByText("Tapos na ang bunutan")).toBeVisible();
     await expect(late.page.getByLabel("4-digit PIN")).toHaveCount(0);
-    await late.page.getByRole("link", { name: "Kasali ka na? Bumalik dito" }).click();
+    await late.page.getByRole("link", { name: "Bumalik sa slip ko" }).click();
     await expect(late.page.getByRole("form", { name: "Bumalik" })).toBeVisible();
     // Closed: no "Bago ka?".
     await expect(late.page.getByText("Bago ka? Sumali dito")).toHaveCount(0);

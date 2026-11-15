@@ -1,8 +1,8 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
 /**
- * Reads a masked link the way a person gets it: the box shows
- * "host/…/{page}?t=••••••", and `copy` puts the real link on the
+ * Reads a masked link the way a person gets it: the box shows the real
+ * link with the token as dots ("host/g/{slug}/{page}?t=••••••••••"), and `copy` puts the real link on the
  * clipboard. The copy is caught in the page (no OS clipboard), and the
  * token must not appear anywhere in the visible text.
  */
@@ -11,9 +11,10 @@ export async function readMaskedLink(
   { scope, copyLabel, pageName }: { scope?: Locator; copyLabel: string; pageName: "me" | "admin" },
 ): Promise<string> {
   const within = scope ?? page.locator("body");
-  const box = within.locator("[data-masked-link]");
-  // Host, then dots, once the origin is known ("localhost:3000/…/me?t=••••••").
-  await expect(box).toHaveText(new RegExp(`^[a-z0-9.-]+(:\\d+)?/…/${pageName}\\?t=•{6}`));
+  // Only the visible box (/me draws the card in one of two places per screen size).
+  const box = within.locator("[data-masked-link]").filter({ visible: true });
+  // Host, the real path, then dots, once the origin is known ("localhost:3000/g/abc/me?t=••••••••••").
+  await expect(box).toHaveText(new RegExp(`^[a-z0-9.-]+(:\\d+)?/g/[a-z0-9]+/${pageName}\\?t=•{10}`));
 
   await page.evaluate(() => {
     const w = window as unknown as { __copied?: string };

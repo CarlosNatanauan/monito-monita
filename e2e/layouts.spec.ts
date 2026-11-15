@@ -57,12 +57,11 @@ let stickyGroup: SeededGroup;
 
 // The sticky-slip check unfolds a slip, so each size gets its own member.
 const STICKY_PEOPLE: Record<string, string> = {
-  "768x1024-ipad": "Andoy",
   "1024x768-ipad-landscape": "Bebeng",
   "1366x768-laptop": "Celso",
   "1920x1080-laptop": "Dindo",
 };
-const LONG_WISHLIST = Array.from({ length: 8 }, (_, i) => ({
+const LONG_WISHLIST = Array.from({ length: 10 }, (_, i) => ({
   title: `Gift idea ${i + 1}`,
   note: "Kahit anong kulay, basta cute. Puwede rin sa Shopee.",
 }));
@@ -152,12 +151,13 @@ async function box(locator: Locator) {
 }
 
 /**
- * From 768px, `right` sits in a column to the right of `left`; below that
- * (phones), it sits underneath it.
+ * From `from` px (laptops, 1024; the organizer page, 840), `right` sits in a
+ * column to the right of `left`; below that it sits underneath it
+ * (docs/DESIGN.md, "Layout").
  */
-async function expectColumns(size: Size, left: Locator, right: Locator, label: string) {
+async function expectColumns(size: Size, left: Locator, right: Locator, label: string, from = 1024) {
   const [a, b] = [await box(left), await box(right)];
-  if (size.width >= 768) {
+  if (size.width >= from) {
     expect(b.x, `${label}: side by side at ${size.name}`).toBeGreaterThanOrEqual(a.x + a.width - 1);
   } else {
     expect(b.y, `${label}: stacked at ${size.name}`).toBeGreaterThanOrEqual(a.y + a.height - 1);
@@ -179,14 +179,14 @@ for (const size of SIZES) {
     const visitor = await contextFor(browser, size);
     const page = await visitor.newPage();
     await page.goto("/");
-    await expect(page.getByRole("heading", { name: "Monito Monita" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Isang link lang para sa buong bunutan." })).toBeVisible();
     await settle(page);
-    await expectColumns(size, page.getByRole("heading", { name: "Monito Monita" }), page.getByRole("region", { name: "Try a bunutan" }), "landing hero | arch");
-    // The 3 steps: a row of three from 768px, a list on phones.
-    const steps = page.getByRole("list", { name: "How it works" }).getByRole("listitem");
+    await expectColumns(size, page.getByRole("heading", { name: "Isang link lang para sa buong bunutan." }), page.getByRole("region", { name: "Try a bunutan" }), "landing hero | arch");
+    // "Paano 'to?": three lines on the listahan, at every width.
+    const steps = page.getByRole("list", { name: "Paano 'to?" }).getByRole("listitem");
+    await expect(steps).toHaveCount(3);
     const [s1, s3] = [await box(steps.first()), await box(steps.last())];
-    if (size.width >= 768) expect(Math.abs(s1.y - s3.y), "steps in a row").toBeLessThan(2);
-    else expect(s3.y).toBeGreaterThan(s1.y);
+    expect(s3.y - s1.y, "steps on the 40px rules").toBe(80);
     await shot(page, "landing");
 
     // Returning visitor: "Your groups" under the main button.
@@ -204,26 +204,23 @@ for (const size of SIZES) {
     await shot(page, "landing-your-groups");
 
     await page.goto("/new");
-    await expect(page.getByRole("heading", { name: "Create your group" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Gumawa ng group" })).toBeVisible();
     await settle(page);
-    await expectColumns(size, page.getByLabel("Group name"), page.getByRole("group", { name: "Theme weeks" }), "new details | themes");
+    await expectColumns(size, page.getByLabel("Pangalan ng group"), page.getByText("Preview sa GC"), "new form | GC preview");
     // Said once until there is a date, then each theme's own start date.
     await expect(page.getByText("Starts once you pick the party date.")).toHaveCount(1);
     await expect(page.getByText(/^Starts [A-Z][a-z]{2} \d{1,2}$/)).toHaveCount(0);
-    // The live reminder preview: tablets and laptops only.
-    const preview = page.getByLabel("Reminder preview");
-    if (size.width >= 768) await expect(preview).toContainText("✨ Ngayong linggo: Something soft");
-    else await expect(preview).toBeHidden();
+    // The live GC preview: the invite, at every width.
+    const preview = page.getByLabel("Invite preview");
+    await expect(preview).toContainText("Sali na sa exchange gift natin!");
     await shot(page, "new");
-    await page.getByLabel("Group name").fill("Barkada Christmas Party");
-    await page.getByLabel("Budget per gift").fill("500");
-    await page.getByLabel("Party date").fill(open.partyDate);
+    await page.getByLabel("Pangalan ng group").fill("Barkada Christmas Party");
+    await page.getByLabel("Budget", { exact: true }).fill("500");
+    await page.getByLabel("Petsa ng party").fill(open.partyDate);
     await expect(page.getByText("Starts once you pick the party date.")).toHaveCount(0);
     await expect(page.getByText(/^Starts [A-Z][a-z]{2} \d{1,2}$/)).toHaveCount(4);
-    if (size.width >= 768) {
-      await expect(preview).toContainText("🎁 Barkada Christmas Party reminder!");
-      await expect(preview).toContainText("💸 Budget: ₱500");
-    }
+    await expect(preview).toContainText("🎁 Monito Monita: Barkada Christmas Party");
+    await expect(preview).toContainText("Budget: ₱500");
     await shot(page, "new-filled");
 
     // --- Join and come back ---
@@ -238,7 +235,7 @@ for (const size of SIZES) {
     await expectColumns(size, page.getByRole("heading", { name: "Welcome back!" }), page.getByRole("form", { name: "Bumalik" }), "come-back info | form");
     await shot(page, "come-back");
     await page.goto(drawn.sharePath);
-    await expect(page.getByText("Sarado na ang sali.")).toBeVisible();
+    await expect(page.getByText("Tapos na ang bunutan")).toBeVisible();
     await shot(page, "join-closed");
     await visitor.close();
 
@@ -297,13 +294,13 @@ for (const size of SIZES) {
     await admin.goto(open.organizerPath);
     await expect(admin.getByRole("heading", { name: open.name })).toBeVisible();
     await settle(admin);
-    await expectColumns(size, admin.getByRole("button", { name: "Draw names" }), admin.getByRole("list", { name: "Members" }), "admin draw | members");
+    await expectColumns(size, admin.getByRole("button", { name: "Draw names" }), admin.getByRole("list", { name: "Members" }), "admin draw | members", 840);
     await shot(admin, "admin-before-draw");
 
     await admin.goto(drawn.organizerPath);
     await expect(admin.getByText("1 of 8 have opened their slip")).toBeVisible();
     await settle(admin);
-    await expectColumns(size, admin.getByText("1 of 8 have opened their slip"), admin.getByRole("list", { name: "Members" }), "admin lights | members");
+    await expectColumns(size, admin.getByText("1 of 8 have opened their slip"), admin.getByRole("list", { name: "Members" }), "admin lights | members", 840);
     await shot(admin, "admin-just-drawn");
 
     await admin.goto(settled.organizerPath);

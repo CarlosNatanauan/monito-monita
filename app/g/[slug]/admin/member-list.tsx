@@ -1,11 +1,12 @@
 "use client";
 
-import { ChevronDown } from "lucide-react";
 import { useState, useTransition } from "react";
-import { CopyLink } from "@/components/copy-link";
+import { PrivateLink } from "@/components/copy-link";
+import { Name } from "@/components/page";
 import { Button } from "@/components/ui/button";
-import { EmptyState, Inset } from "@/components/ui/card";
 import { ErrorMessage } from "@/components/ui/error-message";
+import { Listahan } from "@/components/ui/paper";
+import { ConfirmBox } from "./draw-section";
 import { cn } from "@/lib/utils";
 import type { LinkStatus } from "@/server/members";
 import { reissueMemberLinkAction, removeMemberAction, unlockPinAction } from "./actions";
@@ -20,6 +21,14 @@ export interface MemberRow {
   pinLocked: boolean;
   /** Has opened their own slip. Never who they drew. */
   slipOpened: boolean;
+}
+
+function ChevronDownIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" className={className} aria-hidden focusable="false" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="m6 9 6 6 6-6" />
+    </svg>
+  );
 }
 
 const LINK_STATUS: Record<Exclude<LinkStatus, "none">, string> = {
@@ -53,8 +62,14 @@ export function MemberList({
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const title = `Members (${members.length})`;
   if (members.length === 0) {
-    return <EmptyState>Wala pang sumali. I-share ang link sa GC!</EmptyState>;
+    return (
+      <Listahan title={title} titleId="members-title">
+        <p className="lst-row text-ube-soft">Wala pang sumali.</p>
+        <p className="lst-row text-ube-soft">I-share ang link sa GC!</p>
+      </Listahan>
+    );
   }
 
   const close = () => {
@@ -108,68 +123,61 @@ export function MemberList({
   };
 
   return (
-    <div className="flex flex-col gap-3">
-      {error && <ErrorMessage>{error}</ErrorMessage>}
-      <ul className="flex flex-col rows-dashed" aria-label="Members">
+    <Listahan title={title} titleId="members-title">
+      {error && <ErrorMessage className="my-2">{error}</ErrorMessage>}
+      {/* Laptops: scrolls inside the card past 14 rows, so a big group
+          doesn't push the page down. The rules scroll with the rows. */}
+      <ul
+        aria-label="Members"
+        className="lg:max-h-[560px] lg:overflow-y-auto lg:bg-[repeating-linear-gradient(#fff_0_39px,var(--color-rule-blue)_39px_40px)] lg:[background-attachment:local]"
+      >
         {members.map((member) => {
           const isOpen = openId === member.id;
           const isConfirming = confirming?.id === member.id;
           const statusId = `member-${member.id}-status`;
           return (
-            <li key={member.id} className="flex flex-col gap-2 py-1 first:pt-0 last:pb-0">
+            <li key={member.id}>
               <button
                 type="button"
                 aria-expanded={isOpen}
                 aria-label={`Manage ${member.displayName}`}
                 aria-describedby={drawn ? statusId : undefined}
                 onClick={() => toggle(member.id)}
-                className="-mx-2 flex min-h-12 cursor-pointer items-center justify-between gap-3 rounded-xl px-2 py-1.5 text-left focus-ring [-webkit-tap-highlight-color:transparent]"
+                className="lst-row w-full cursor-pointer rounded-paper text-left focus-ring [-webkit-tap-highlight-color:transparent]"
               >
-                <span className="flex min-w-0 flex-col">
-                  <span className="truncate font-bold">{member.displayName}</span>
-                  {(!drawn || isOpen) && (
-                    <span className="text-small font-medium text-ube-soft">Joined {member.joinedLabel}</span>
-                  )}
-                  {member.linkStatus !== "none" && (
-                    <span className="text-small font-bold">{LINK_STATUS[member.linkStatus]}</span>
-                  )}
-                </span>
+                <Name className="min-w-0 truncate text-list">{member.displayName}</Name>
                 <span className="flex shrink-0 items-center gap-1.5">
-                  {drawn && (
-                    <span
-                      id={statusId}
-                      className={cn("text-small", member.slipOpened ? "font-bold text-dahon" : "font-medium text-ube-soft")}
-                    >
-                      {member.slipOpened ? "Opened" : "Hindi pa"}
+                  {drawn ? (
+                    <span id={statusId} className={member.slipOpened ? "font-bold text-dahon" : "text-ube-soft"}>
+                      {member.slipOpened ? "✓ Opened" : "Hindi pa"}
                     </span>
+                  ) : (
+                    <span className="text-ube-soft">Sumali na</span>
                   )}
-                  <ChevronDown
-                    aria-hidden
-                    className={cn("size-4 text-ube-soft transition-transform duration-150", isOpen && "rotate-180")}
-                  />
+                  <ChevronDownIcon className={cn("size-4 text-ube-soft transition-transform duration-150", isOpen && "rotate-180")} />
                 </span>
               </button>
 
+              {isOpen && <p className="lst-row text-small text-ube-soft">Joined {member.joinedLabel}</p>}
+              {member.linkStatus !== "none" && (
+                <p className="lst-row text-small font-bold">{LINK_STATUS[member.linkStatus]}</p>
+              )}
+
               {member.pinLocked && (
-                <Inset
-                  className="flex flex-wrap items-center justify-between gap-2 bg-sili-wash px-3 py-2"
-                  role="group"
-                  aria-label={`PIN lock for ${member.displayName}`}
-                >
-                  <p className="text-small font-bold text-sili">Na-lock ang PIN ni {member.displayName}</p>
-                  <Button type="button" variant="secondary" size="xs" disabled={pending} onClick={() => unlock(member.id)}>
+                <div className="lst-row" role="group" aria-label={`PIN lock for ${member.displayName}`}>
+                  <p className="min-w-0 truncate text-small font-bold text-sili">Na-lock ang PIN ni {member.displayName}</p>
+                  <Button type="button" variant="link" className="-mr-1.5" disabled={pending} onClick={() => unlock(member.id)}>
                     Unlock
                   </Button>
-                </Inset>
+                </div>
               )}
 
               {isOpen && !isConfirming && (
-                <div className="flex flex-wrap gap-2 pb-2">
+                <div className="lst-row justify-start gap-3">
                   <Button
                     type="button"
-                    variant="secondary"
-                    size="xs"
-                    className="px-4"
+                    variant="link"
+                    className="-ml-1.5"
                     onClick={() => start(member.id, "link")}
                     aria-label={`Get new link for ${member.displayName}`}
                   >
@@ -178,9 +186,7 @@ export function MemberList({
                   {canRemove && (
                     <Button
                       type="button"
-                      variant="secondary"
-                      size="xs"
-                      className="px-4"
+                      variant="link"
                       onClick={() => start(member.id, "remove")}
                       aria-label={`Remove ${member.displayName}`}
                     >
@@ -191,117 +197,104 @@ export function MemberList({
               )}
 
               {isConfirming && confirming.kind === "link" && (
-                <Inset
-                  className="mb-2 flex flex-col gap-3 p-4"
-                  role="group"
-                  aria-label={`Confirm new link for ${member.displayName}`}
-                >
-                  <p className="text-small font-medium">
-                    Gawan ng bagong personal link si <strong>{member.displayName}</strong>? Hindi na gagana ang luma
-                    niyang link, pati sa phone niya.
-                  </p>
-                  <label className="flex items-start gap-2 text-small font-medium">
-                    <input
-                      type="checkbox"
-                      checked={resetPin}
-                      onChange={(event) => setResetPin(event.target.checked)}
-                      className="mt-0.5 size-4 accent-ube"
-                    />
-                    <span>
-                      <strong>Reset PIN</strong> din (kung nakalimutan niya). Magse-set siya ng bago pagbukas ng link.
-                    </span>
-                  </label>
-                  <div className="flex gap-2">
-                    <Button type="button" variant="secondary" size="xs" className="px-4" disabled={pending} onClick={() => reissue(member.id)}>
-                      {pending ? "Gumagawa…" : "Oo, gumawa ng bago"}
-                    </Button>
-                    <Button type="button" variant="ghost" size="xs" disabled={pending} onClick={close}>
-                      Huwag
-                    </Button>
-                  </div>
-                </Inset>
+                <div className="my-2">
+                  <ConfirmBox label={`Confirm new link for ${member.displayName}`}>
+                    <p className="text-small">
+                      Gawan ng bagong personal link si <Name>{member.displayName}</Name>? Hindi na gagana ang luma niyang
+                      link, pati sa phone niya.
+                    </p>
+                    <label className="flex items-start gap-2 text-small">
+                      <input
+                        type="checkbox"
+                        checked={resetPin}
+                        onChange={(event) => setResetPin(event.target.checked)}
+                        className="mt-0.5 size-4 accent-ube"
+                      />
+                      <span>
+                        <strong>Reset PIN</strong> din (kung nakalimutan niya). Magse-set siya ng bago pagbukas ng link.
+                      </span>
+                    </label>
+                    <div className="flex flex-wrap gap-2.5">
+                      <Button type="button" variant="secondary" disabled={pending} onClick={() => reissue(member.id)}>
+                        {pending ? "Gumagawa…" : "Oo, gumawa ng bago"}
+                      </Button>
+                      <Button type="button" variant="link" disabled={pending} onClick={close}>
+                        Huwag
+                      </Button>
+                    </div>
+                  </ConfirmBox>
+                </div>
               )}
 
               {newLink?.id === member.id && (
-                <Inset className="mb-2 flex flex-col gap-3 p-4" role="group" aria-label={`New link for ${member.displayName}`}>
-                  <p className="text-small font-medium">
-                    Bagong link ni <strong>{member.displayName}</strong>. I-send sa kanya nang private (huwag sa GC, at
-                    huwag buksan sa phone mo).
-                    {newLink.pinReset && " Na-reset ang PIN niya: magse-set siya ng bago pagbukas ng link."}
-                  </p>
-                  <CopyLink
-                    path={newLink.path}
-                    label="Copy link"
-                    variant="secondary"
-                    maskedLabel={`Bagong link ni ${member.displayName} (nakatago). Gamitin ang Copy link.`}
-                  />
-                </Inset>
+                <div className="my-2">
+                  <ConfirmBox label={`New link for ${member.displayName}`}>
+                    <p className="text-small">
+                      Bagong link ni <Name>{member.displayName}</Name>. I-send sa kanya nang private (huwag sa GC, at huwag
+                      buksan sa phone mo).
+                      {newLink.pinReset && " Na-reset ang PIN niya: magse-set siya ng bago pagbukas ng link."}
+                    </p>
+                    <PrivateLink
+                      path={newLink.path}
+                      copyLabel="Copy link"
+                      maskedLabel={`Bagong link ni ${member.displayName} (nakatago). Gamitin ang Copy link.`}
+                    />
+                  </ConfirmBox>
+                </div>
               )}
 
               {isConfirming && confirming.kind === "remove" && needsRedrawId !== member.id && (
-                <Inset
-                  className="mb-2 flex flex-col gap-3 p-4"
-                  role="group"
-                  aria-label={`Confirm removing ${member.displayName}`}
-                >
-                  <p className="text-small font-medium">
-                    Tanggalin si <strong>{member.displayName}</strong> sa group?{" "}
-                    {drawn
-                      ? "Ang nakabunot sa kanya ay bibigyan ng bagong monito; walang ibang magbabago."
-                      : "Hindi na gagana ang personal link niya."}
-                  </p>
-                  <div className="flex gap-2">
-                    <Button type="button" variant="secondary" size="xs" className="px-4" disabled={pending} onClick={() => remove(member.id)}>
-                      {pending ? "Tinatanggal…" : "Oo, tanggalin"}
-                    </Button>
-                    <Button type="button" variant="ghost" size="xs" disabled={pending} onClick={close}>
-                      Huwag
-                    </Button>
-                  </div>
-                </Inset>
+                <div className="my-2">
+                  <ConfirmBox label={`Confirm removing ${member.displayName}`}>
+                    <p className="text-small">
+                      Tanggalin si <Name>{member.displayName}</Name> sa group?{" "}
+                      {drawn
+                        ? "Ang nakabunot sa kanya ay bibigyan ng bagong monito; walang ibang magbabago."
+                        : "Hindi na gagana ang personal link niya."}
+                    </p>
+                    <div className="flex flex-wrap gap-2.5">
+                      <Button type="button" variant="secondary" disabled={pending} onClick={() => remove(member.id)}>
+                        {pending ? "Tinatanggal…" : "Oo, tanggalin"}
+                      </Button>
+                      <Button type="button" variant="link" disabled={pending} onClick={close}>
+                        Huwag
+                      </Button>
+                    </div>
+                  </ConfirmBox>
+                </div>
               )}
 
               {needsRedrawId === member.id && (
-                <Inset
-                  className="mb-2 flex flex-col gap-3 p-4"
-                  role="group"
-                  aria-label={`Remove ${member.displayName} and redraw`}
-                >
-                  <p className="text-small font-bold">Magbabago ang monito ng lahat.</p>
-                  <p className="text-small font-medium">
-                    Puwede mong tanggalin si <strong>{member.displayName}</strong> at i-redraw ang lahat. Everyone&apos;s
-                    monito will change.
-                  </p>
-                  <div className="flex gap-2">
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="xs"
-                      className="px-4"
-                      disabled={pending}
-                      onClick={() => remove(member.id, true)}
-                    >
-                      {pending ? "Sandali…" : "Tanggalin at i-redraw"}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="xs"
-                      disabled={pending}
-                      onClick={() => {
-                        close();
-                        setError(null);
-                      }}
-                    >
-                      Huwag
-                    </Button>
-                  </div>
-                </Inset>
+                <div className="my-2">
+                  <ConfirmBox label={`Remove ${member.displayName} and redraw`}>
+                    <p className="text-small font-bold">Magbabago ang monito ng lahat.</p>
+                    <p className="text-small">
+                      Puwede mong tanggalin si <Name>{member.displayName}</Name> at i-redraw ang lahat. Everyone&apos;s
+                      monito will change.
+                    </p>
+                    <div className="flex flex-wrap gap-2.5">
+                      <Button type="button" variant="secondary" disabled={pending} onClick={() => remove(member.id, true)}>
+                        {pending ? "Sandali…" : "Tanggalin at i-redraw"}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="link"
+                        disabled={pending}
+                        onClick={() => {
+                          close();
+                          setError(null);
+                        }}
+                      >
+                        Huwag
+                      </Button>
+                    </div>
+                  </ConfirmBox>
+                </div>
               )}
             </li>
           );
         })}
       </ul>
-    </div>
+    </Listahan>
   );
 }

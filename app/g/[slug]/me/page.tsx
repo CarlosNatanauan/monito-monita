@@ -1,16 +1,17 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
-import { HeaderLights } from "@/components/lights";
-import { Slip } from "@/components/slip";
-import { ThemeCard } from "@/components/theme-card";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { PrivateLink } from "@/components/copy-link";
+import { colClass, colsClass, LightString, Name, Narrow, pageClass, stickyClass } from "@/components/page";
 import { RememberGroup } from "@/components/remember-group";
 import { RoleSwitch } from "@/components/role-switch";
-import { ShareLink } from "@/components/share-link";
+import { BunutanSlip } from "@/components/slip/bunutan-slip";
+import { Button } from "@/components/ui/button";
+import { Capiz, Listahan, SecretCard, SectionTitle, ThemeSheet } from "@/components/ui/paper";
+import { WishlistView } from "@/components/wish-item";
+import { getThemeStatus, themeCard } from "@/lib/theme-status";
+import { todayIn } from "@/lib/theme-weeks";
+import { cn } from "@/lib/utils";
 import {
   getCurrentOrganizer,
   getMemberSession,
@@ -20,21 +21,17 @@ import {
   personalLinkPath,
 } from "@/server/auth";
 import { getOwnReceiver } from "@/server/draw-service";
+import { getThemeWeeks } from "@/server/groups";
 import { getGroupSummary } from "@/server/members";
 import { getOwnGiver } from "@/server/reveal";
-import { getThemeWeeks } from "@/server/groups";
-import { getThemeStatus, themeCard } from "@/lib/theme-status";
-import { todayIn } from "@/lib/theme-weeks";
 import { getReceiverWishlist, listWishlist } from "@/server/wishlists";
-import { WishlistView } from "@/components/wish-item";
-import { CleanWelcomeParam } from "./clean-welcome";
+import { GroupFacts, PageFallback, RemovedNotice } from "../group-facts";
 import { MonitoReveal, MonitoSlip, WhenOpened } from "./monito-reveal";
 import { MonitoUpdatedNotice } from "./monito-updated";
+import { CleanWelcomeParam } from "./rare-cards";
 import { SetPinCard } from "./set-pin-card";
 import { SwitchConfirm } from "./switch-confirm";
 import { WishlistEditor } from "./wishlist-editor";
-import { Eyebrow, Narrow, stickyClass, widePageClass } from "@/components/page";
-import { GroupFacts, PageFallback, RemovedNotice } from "../group-facts";
 
 export const metadata: Metadata = {
   title: "My monito · Monito Monita",
@@ -43,8 +40,8 @@ export const metadata: Metadata = {
 export default function MemberHomePage({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   return (
     <>
-      <HeaderLights />
-      <main className={cn(widePageClass, "pt-3 md:pt-6")}>
+      <LightString />
+      <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
         <Suspense fallback={<PageFallback />}>
           <MemberHome params={params} searchParams={searchParams} />
         </Suspense>
@@ -53,13 +50,8 @@ export default function MemberHomePage({ params, searchParams }: PageProps<"/g/[
   );
 }
 
-function PageTitle({ eyebrow, children }: { eyebrow?: string; children: React.ReactNode }) {
-  return (
-    <header className="flex flex-col gap-2 pt-2 pb-1 md:pb-2">
-      {eyebrow && <Eyebrow>{eyebrow}</Eyebrow>}
-      <h1 className="font-display text-heading-lg break-words">{children}</h1>
-    </header>
-  );
+function GroupTitle({ children }: { children: React.ReactNode }) {
+  return <h1 className="font-head text-display break-words lg:text-display-lg">{children}</h1>;
 }
 
 async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
@@ -80,7 +72,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
     return (
       <Narrow>
         <RememberGroup slug={slug} name={group.name} role="member" forget />
-        <PageTitle>{group.name}</PageTitle>
+        <GroupTitle>{group.name}</GroupTitle>
         <RemovedNotice />
       </Narrow>
     );
@@ -90,23 +82,23 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
     return (
       <Narrow>
         <RememberGroup slug={slug} name={group.name} role="member" forget />
-        <PageTitle>{group.name}</PageTitle>
-        <Card>
-          <CardTitle>Hindi ka pa namin kilala sa device na &apos;to.</CardTitle>
-          <CardContent>
-            <CardDescription>
-              Kung kasali ka na, bumalik gamit ang pangalan at PIN mo, o buksan ang personal link mo.
-            </CardDescription>
+        <GroupTitle>{group.name}</GroupTitle>
+        <Capiz>
+          <SectionTitle>Hindi ka pa namin kilala sa device na &apos;to.</SectionTitle>
+          <p className="text-ube-soft">
+            Kung kasali ka na, bumalik gamit ang pangalan at PIN mo, o buksan ang personal link mo.
+          </p>
+          <div className="flex flex-col gap-2.5 self-stretch">
             <Button asChild className="w-full">
-              <Link href={`/g/${slug}?bumalik=1`}>Bumalik gamit ang PIN</Link>
+              <a href={`/g/${slug}?bumalik=1`}>Bumalik gamit ang PIN</a>
             </Button>
             {group.status === "OPEN" && (
               <Button asChild variant="secondary" className="w-full">
-                <Link href={`/g/${slug}`}>Join the group</Link>
+                <a href={`/g/${slug}`}>Join the group</a>
               </Button>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </Capiz>
       </Narrow>
     );
   }
@@ -117,55 +109,102 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   if (pendingSwitch) {
     return (
       <Narrow>
-        <PageTitle>{group.name}</PageTitle>
-        <SwitchConfirm
-          slug={slug}
-          current={pendingSwitch.current.displayName}
-          other={pendingSwitch.other.displayName}
-        />
+        <GroupTitle>{group.name}</GroupTitle>
+        <SwitchConfirm slug={slug} current={pendingSwitch.current.displayName} other={pendingSwitch.other.displayName} />
       </Narrow>
     );
   }
+
   const welcome = query.welcome === "1";
   const drawn = group.status !== "OPEN";
+  const revealed = group.status === "REVEALED";
   // Only this member's own receiver, looked up by the id from their cookie.
   // Who gave to them: only after the reveal (getOwnGiver checks too).
   const [receiver, receiverWishlist, myWishlist, themeWeeks, giver] = await Promise.all([
     drawn ? getOwnReceiver(member.id) : null,
-    drawn ? getReceiverWishlist(member.id) : [],
-    listWishlist(member.id),
+    drawn && !revealed ? getReceiverWishlist(member.id) : [],
+    revealed ? [] : listWishlist(member.id),
     getThemeWeeks(group.id),
-    group.status === "REVEALED" ? getOwnGiver(member.id) : null,
+    revealed ? getOwnGiver(member.id) : null,
   ]);
   // "Today" in the group's timezone (Asia/Manila), never the server's (UTC on Vercel).
   const theme = themeCard(getThemeStatus(themeWeeks, group.partyDate, todayIn(group.timezone)), themeWeeks, group.budget);
 
-  // The personal link. Right after joining it's the first thing on the
-  // page, with "Send to yourself" as the main button; later it sits at the
-  // bottom.
+  const greeting = (
+    <header>
+      <h1 className="font-head text-display lg:text-display-lg">
+        Hi, <Name>{member.displayName}</Name>!
+      </h1>
+      <p className="mt-1 text-ube-soft">{group.name}</p>
+    </header>
+  );
+
+  // The personal link on pink paper, masked until "Ipakita". Right after
+  // joining it's the first card ("I-save ang link mo!"); later it sits
+  // under the slip.
   const personalLink = token && (
-    <Card>
-      <CardHeader>
-        <CardTitle>{welcome ? "Save this link!" : "Your personal link"}</CardTitle>
-        <CardDescription>
-          Ito ang susi mo para makabalik dito. I-send sa sarili mo (Messenger o Notes), o gamitin ang pangalan at PIN
-          mo. Huwag i-share sa GC.
-        </CardDescription>
-      </CardHeader>
-      <ShareLink
+    <SecretCard aria-labelledby="personal-link-title">
+      <SectionTitle id="personal-link-title">{welcome ? "I-save ang link mo!" : "Personal link mo"}</SectionTitle>
+      <p className="text-small">Para makabalik nang walang PIN. Sa&apos;yo lang &apos;to, huwag i-share sa GC.</p>
+      <PrivateLink
         path={personalLinkPath("member", slug, token)}
+        maskedLabel="Personal link (nakatago). Gamitin ang Ipakita o Copy."
+        copyAriaLabel="Copy my link"
         shareText={`Personal link ko sa ${group.name} (huwag i-share)`}
         prominent={welcome}
-        masked
       />
-    </Card>
+    </SecretCard>
   );
 
   const codename = (
-    <p className="py-2 text-center font-medium text-ube-soft">
-      Codename mo: <span className="font-hand text-hand text-ube">{member.codename}</span>
+    <p className="text-ube-soft">
+      Codename mo: <Name className="text-ube">{member.codename}</Name>
     </p>
   );
+
+  // --- After the reveal (docs/design/11): the giver on the slip, the summary, the greeting.
+  if (revealed) {
+    return (
+      <>
+        <RememberGroup slug={slug} name={group.name} role="member" />
+        {organizer && <TabsBar slug={slug} />}
+        <div className={colsClass}>
+          <div className={cn(colClass, "lg:col-start-1 lg:row-start-1")}>
+            {greeting}
+            {giver ? (
+              <>
+                <BunutanSlip name={giver.displayName} initiallyOpened heading="Ang nagbigay sa'yo ay…" label="Ang nagbigay sa'yo" />
+                <p>
+                  Si <Name>{giver.codename}</Name> pala si <Name>{giver.displayName}</Name>!
+                </p>
+              </>
+            ) : (
+              codename
+            )}
+          </div>
+          <div className={cn(colClass, "lg:col-start-2 lg:row-start-1")}>
+            <Capiz aria-labelledby="reveal-done-title">
+              <SectionTitle id="reveal-done-title">Tapos na ang reveal</SectionTitle>
+              {receiver && (
+                <p>
+                  Ang monito mo: <Name>{receiver.displayName}</Name>
+                </p>
+              )}
+              {giver && (
+                <p>
+                  Nagbigay sa&apos;yo: <Name>{giver.displayName}</Name>
+                </p>
+              )}
+            </Capiz>
+            <GroupFacts partyDate={group.partyDate} budget={group.budget} year />
+            <p className="font-head text-title lg:text-[28px]">
+              Maligayang Pasko, <Name>{member.displayName}</Name>!
+            </p>
+          </div>
+        </div>
+      </>
+    );
+  }
 
   // The slip hero: the bunutan slip after the draw, the codename slip before.
   const hero = drawn ? (
@@ -176,26 +215,18 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         // show the slip already open (docs/DESIGN.md).
         <MonitoSlip />
       ) : (
-        <Card>
-          <CardTitle>Ang monito mo ay…</CardTitle>
-          <CardDescription>Inaayos pa ng organizer ang bunutan. Balik ka in a bit.</CardDescription>
-        </Card>
+        <Capiz>
+          <SectionTitle>Ang monito mo ay…</SectionTitle>
+          <p className="text-ube-soft">Inaayos pa ng organizer ang bunutan. Balik ka in a bit.</p>
+        </Capiz>
       )}
       {codename}
     </>
   ) : (
     <>
-      <section className="flex flex-col items-center gap-4 py-2 md:py-6" aria-label="Your codename">
-        <p className="font-medium text-ube-soft">Ang codename mo:</p>
-        <Slip>{member.codename}</Slip>
-      </section>
-      <Card>
-        <CardHeader>
-          <CardTitle>Waiting for the bunutan…</CardTitle>
-          <CardDescription>Hintayin si organizer na mag-draw ng names.</CardDescription>
-        </CardHeader>
-        <GroupFacts partyDate={group.partyDate} budget={group.budget} memberCount={group.memberCount} />
-      </Card>
+      <SectionTitle>Hintayin ang bunutan</SectionTitle>
+      <BunutanSlip name={member.codename} initiallyOpened heading="Codename mo" label="Your codename" rays={false} />
+      <p className="text-ube-soft">Hintayin si organizer na mag-draw ng names. Ang codename mo ang makikita sa reveal.</p>
     </>
   );
 
@@ -203,56 +234,58 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
     <>
       {drawn && receiver && (
         <WhenOpened>
-          <Card>
-            <CardTitle>Wishlist ni {receiver.displayName}</CardTitle>
+          <Listahan
+            title={
+              <>
+                Wishlist ni <Name>{receiver.displayName}</Name>
+              </>
+            }
+            titleId="their-wishlist-title"
+          >
             <WishlistView
               items={receiverWishlist}
-              emptyText={`Wala pang wishlist si ${receiver.displayName}. Balikan mo mamaya!`}
+              empty={[`Wala pang wishlist si ${receiver.displayName}.`, "Balikan mo mamaya!"]}
             />
-          </Card>
+          </Listahan>
         </WhenOpened>
-      )}
-
-      {giver && (
-        <Card>
-          <CardTitle>Ang nagbigay sa&apos;yo ay…</CardTitle>
-          <p className="font-hand text-hand-lg">{giver.displayName}!</p>
-          <CardDescription>
-            Siya pala si <span className="font-hand text-hand-sm text-ube">{giver.codename}</span>.
-          </CardDescription>
-        </Card>
       )}
 
       {!member.hasPin && <SetPinCard slug={slug} />}
 
-      <ThemeCard aria-label="Theme this week" label={theme.label} title={theme.title} detail={theme.detail} />
+      {drawn && <ThemeSheet aria-label="Theme this week" label={theme.label} title={theme.title} detail={theme.detail} />}
 
-      {drawn && (
-        <Card>
-          <GroupFacts partyDate={group.partyDate} budget={group.budget} />
-        </Card>
-      )}
+      <GroupFacts
+        partyDate={group.partyDate}
+        budget={group.budget}
+        memberCount={drawn ? undefined : group.memberCount}
+        year
+      />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Wishlist mo</CardTitle>
-          <p className="text-small font-medium text-ube-soft">Makikita ito ng nakabunot sa&apos;yo, at wala nang iba.</p>
-        </CardHeader>
-        <WishlistEditor slug={slug} items={myWishlist} />
-      </Card>
+      {!drawn && <ThemeSheet aria-label="Theme this week" label={theme.label} title={theme.title} detail={theme.detail} />}
 
-      {!welcome && personalLink}
+      <WishlistEditor slug={slug} items={myWishlist} />
     </>
   );
 
-  // Phones: one column (the personal link first right after joining, the
-  // slip, then the rest). From md: the slip on the left, sticky so it stays
-  // in view; everything else on the right. The DOM keeps the phone order.
+  // Phones: one column (the personal link first right after joining, else
+  // last; the slip, then the rest). Laptops: the greeting, slip and personal link on
+  // the left, sticky so the slip stays in view; everything else on the
+  // right. The DOM keeps the phone order.
+  // Each block renders once, in reading order (the DOM is the phone
+  // order): the greeting, the personal link right after joining, the slip,
+  // the rest, else the personal link last. Laptops: the greeting and the
+  // slip on the left, the slip sticky so it stays in view (the left column
+  // stretches the full height to give it room); the rest and the personal
+  // link on the right.
   const layout = (
-    <div className="flex flex-col gap-4 md:grid md:grid-cols-2 md:items-start md:gap-x-6 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-x-12">
-      {welcome && <div className="flex flex-col gap-4 md:col-start-2 md:row-start-1">{personalLink}</div>}
-      <div className={cn("flex flex-col gap-4 md:col-start-1 md:row-span-2 md:row-start-1", stickyClass)}>{hero}</div>
-      <div className="flex flex-col gap-4 md:col-start-2">{rest}</div>
+    <div className={colsClass}>
+      <div className="flex min-w-0 flex-col gap-[18px] lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:gap-[22px] lg:self-stretch">
+        {greeting}
+        {welcome && personalLink}
+        <div className={cn("flex min-w-0 flex-col gap-[18px] lg:gap-[22px]", stickyClass)}>{hero}</div>
+      </div>
+      <div className={cn(colClass, "lg:col-start-2 lg:row-start-1")}>{rest}</div>
+      {!welcome && personalLink && <div className="min-w-0 lg:col-start-2 lg:row-start-2">{personalLink}</div>}
     </div>
   );
 
@@ -260,8 +293,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
     <>
       <RememberGroup slug={slug} name={group.name} role="member" />
       {welcome && <CleanWelcomeParam />}
-      {organizer && <RoleSwitch slug={slug} current="member" />}
-      <PageTitle eyebrow={group.name}>Hi, {member.displayName}!</PageTitle>
+      {organizer && <TabsBar slug={slug} />}
 
       {drawn && receiver ? (
         <MonitoReveal slug={slug} receiverName={receiver.displayName} alreadyOpened={receiver.slipOpenedAt !== null}>
@@ -271,5 +303,14 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         layout
       )}
     </>
+  );
+}
+
+/** "My slip / Manage group" folder tabs on their line, for someone who is also the organizer. */
+function TabsBar({ slug }: { slug: string }) {
+  return (
+    <div className="-mx-5 border-b-[1.5px] border-ube px-5 lg:mx-0 lg:px-0">
+      <RoleSwitch slug={slug} current="member" />
+    </div>
   );
 }
