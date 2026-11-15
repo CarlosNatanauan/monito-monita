@@ -1,27 +1,27 @@
 import type { Metadata, Viewport } from "next";
-import { Gochi_Hand, Instrument_Serif, Manrope } from "next/font/google";
-import { serverSiteUrl } from "@/lib/site-url";
+import { Atkinson_Hyperlegible, Chelsea_Market, Gochi_Hand } from "next/font/google";
+import { ArtSymbols } from "@/components/art/symbols";
+import { serverSiteUrl } from "@/lib/server-site-url";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
-// Everything else: body, labels, buttons, card titles.
-const manrope = Manrope({
+// Everything else: body, labels, secondary buttons, helper text.
+const atkinson = Atkinson_Hyperlegible({
   subsets: ["latin"],
-  weight: ["400", "500", "700", "800"],
+  weight: ["400", "700"],
   display: "swap",
-  variable: "--font-manrope",
+  variable: "--font-atkinson",
 });
 
-// Large headings only (30px and up), always italic.
-const instrument = Instrument_Serif({
+// Headings, primary buttons, tag values. Hand-lettered; never a person's name.
+const chelsea = Chelsea_Market({
   subsets: ["latin"],
   weight: "400",
-  style: "italic",
   display: "swap",
-  variable: "--font-instrument",
+  variable: "--font-chelsea",
 });
 
-// Gochi Hand is only for names on slips and codenames.
+// Gochi Hand is only for people's names and codenames.
 const gochi = Gochi_Hand({
   subsets: ["latin"],
   weight: "400",
@@ -46,16 +46,17 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  themeColor: "#edf3e6",
+  themeColor: "#eee9f6",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html
-      lang="en"
-      className={cn("h-full antialiased", manrope.variable, instrument.variable, gochi.variable)}
-    >
-      <body className="flex min-h-full flex-col">{children}</body>
+    <html lang="en" className={cn("h-full antialiased", atkinson.variable, chelsea.variable, gochi.variable)}>
+      <body className="flex min-h-full flex-col">
+        {/* Every illustration, once, as <symbol>s (components/art/symbols.tsx). */}
+        <ArtSymbols />
+        {children}
+      </body>
     </html>
   );
 }
