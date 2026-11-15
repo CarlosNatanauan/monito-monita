@@ -211,12 +211,14 @@
   max-width: 860px;
   overflow-wrap: anywhere;
 }
-/* The finale: "Maligayang Pasko!" on white paper, ube text, readable over the gold frame. */
+/* The finale: "Maligayang Pasko!" on white paper, ube text, readable over the gold frame.
+   800px wide at most, so it stays inside the ring: the nearest slips (the
+   corners at 12 slots) start about 80px past its sides, tilt included. */
 .rv-banner {
   background: var(--color-papel);
   color: var(--color-ube);
   padding: 38px 56px 42px;
-  max-width: 1280px;
+  max-width: 800px;
   transform: rotate(-2deg);
   box-shadow: 6px 7px 0 rgb(0 0 0 / 0.45);
 }

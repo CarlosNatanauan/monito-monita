@@ -250,7 +250,15 @@ for (const size of SIZES) {
     await me.goto(drawn.members.Marco.link);
     await expect(me.getByRole("button", { name: "Tap to open your bunutan" })).toBeVisible();
     await settle(me);
-    await expectColumns(size, me.getByRole("region", { name: "Your monito" }), me.getByRole("region", { name: "Theme this week" }), "me slip | rest");
+    await expectColumns(size, me.getByRole("region", { name: "Your monito" }), me.getByRole("list", { name: "Wishlist mo" }), "me slip | rest");
+    // After the draw the theme sheet sits under the slip on laptops (balancing
+    // the columns) and in the rest on phones; one copy is displayed either way.
+    const themeSheet = me.getByRole("region", { name: "Theme this week" });
+    await expect(themeSheet).toHaveCount(1);
+    if (size.width >= 1024) {
+      const [slipBox, themeBox] = [await box(me.getByRole("region", { name: "Your monito" })), await box(themeSheet)];
+      expect(themeBox.x, "theme sheet in the slip column").toBeLessThan(slipBox.x + slipBox.width);
+    }
     await shot(me, "me-folded");
 
     await member.close();
@@ -273,18 +281,25 @@ for (const size of SIZES) {
       const sticky = await carlo.newPage();
       await sticky.goto(stickyGroup.members[STICKY_PEOPLE[size.name]].link);
       const slip = sticky.getByRole("region", { name: "Your monito" });
+      // Scrolled to the bottom: the slip is still fully in view.
+      const expectStuck = async (minScroll: number, label: string) => {
+        await sticky.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+        const scrolled = await sticky.evaluate(() => window.scrollY);
+        expect(scrolled, `${label}: the page scrolls well past the top`).toBeGreaterThan(minScroll);
+        const r = await box(slip);
+        expect(r.y, `${label}: slip stays in view (sticky)`).toBeGreaterThanOrEqual(0);
+        expect(r.y + r.height).toBeLessThanOrEqual(size.height);
+      };
       await expect(sticky.getByRole("button", { name: "Tap to open your bunutan" })).toBeVisible();
-      await sticky.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
-      const scrolled = await sticky.evaluate(() => window.scrollY);
-      expect(scrolled, "the page scrolls past the slip's own height").toBeGreaterThan(300);
-      const r = await box(slip);
-      expect(r.y, "slip stays in view (sticky)").toBeGreaterThanOrEqual(0);
-      expect(r.y + r.height).toBeLessThanOrEqual(size.height);
+      // Folded, only the own wishlist is on the right (the theme sheet sits under the slip).
+      await expectStuck(200, "folded");
       await sticky.getByRole("button", { name: "Tap to open your bunutan" }).click();
       await expect(sticky.getByRole("button", { name: "Tap to open your bunutan" })).toHaveCount(0, { timeout: 15_000 });
       await expect(sticky.getByText("Ang monito mo ay…")).toBeVisible();
       await expect(sticky.getByText(/^Wishlist ni /)).toBeVisible();
       await shot(sticky, "me-sticky-unfolded");
+      // Opened, the receiver's 10-item wishlist joins the right column.
+      await expectStuck(300, "opened");
       await carlo.close();
     }
 

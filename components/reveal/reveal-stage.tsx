@@ -287,7 +287,7 @@ function Centre({ view }: { view: StageView }) {
     return (
       <div className="rv-banner">
         <h1 className="font-head text-[101px] leading-[1.05]">Maligayang Pasko!</h1>
-        <p className="mt-3 text-[37px] leading-[1.2] font-bold">Buo na ang parol. Bigayan na ng regalo!</p>
+        <p className="mt-3 text-[37px] leading-[1.2] font-bold text-balance">Buo na ang parol. Bigayan na ng regalo!</p>
       </div>
     );
   }

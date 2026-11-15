@@ -206,7 +206,14 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
     );
   }
 
+  const themeSheet = (className?: string) => (
+    <ThemeSheet aria-label="Theme this week" label={theme.label} title={theme.title} detail={theme.detail} className={className} />
+  );
+
   // The slip hero: the bunutan slip after the draw, the codename slip before.
+  // After the draw, laptops show the theme sheet under the codename (sticky
+  // with the slip) so the two columns end close together; phones keep it in
+  // the rest, after the receiver's wishlist. Only one copy is ever displayed.
   const hero = drawn ? (
     <>
       {receiver?.changedAt && <MonitoUpdatedNotice slug={slug} />}
@@ -221,6 +228,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         </Capiz>
       )}
       {codename}
+      {themeSheet("hidden lg:block")}
     </>
   ) : (
     <>
@@ -252,7 +260,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
 
       {!member.hasPin && <SetPinCard slug={slug} />}
 
-      {drawn && <ThemeSheet aria-label="Theme this week" label={theme.label} title={theme.title} detail={theme.detail} />}
+      {drawn && themeSheet("lg:hidden")}
 
       <GroupFacts
         partyDate={group.partyDate}
@@ -261,7 +269,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         year
       />
 
-      {!drawn && <ThemeSheet aria-label="Theme this week" label={theme.label} title={theme.title} detail={theme.detail} />}
+      {!drawn && themeSheet()}
 
       <WishlistEditor slug={slug} items={myWishlist} />
     </>
