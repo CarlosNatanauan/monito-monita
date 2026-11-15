@@ -25,12 +25,12 @@ Each tool has one clear job. Animation code is **lazy-loaded** only on the scree
 
 | Tool | Job | Used for |
 |---|---|---|
-| **Motion** (motion.dev) | Everyday UI motion in React: state changes, layout animations, gestures | Buttons, wishlist add/remove, press-and-hold on the slip, page elements responding to taps |
+| **Motion** (motion.dev) | Everyday UI motion in React: state changes, layout animations, gestures | Not on member pages any more: /me must stay under 150 KB of JS, so its press feedback and fade-ins are CSS transitions and Web Animations |
 | **GSAP** + plugins (100% free, including formerly paid plugins) | Cinematic, choreographed timelines | Slip unfold sequence, the bowl draw and join drop, the party reveal (slip flips, bulbs lighting along the loop, the turning window, the parol finale) |
 | **Rive** (optional, decide after mockups) | Illustrated, interactive animations with state machines, tiny runtime | The bowl with slips tumbling, if SVG + GSAP isn't rich enough. Needs design time in the Rive editor |
 | **canvas-confetti** | Particle bursts | Gold star/parol sparkles at big moments only |
 | **View Transitions** (React / Next 16) | Smooth page-to-page transitions | Join → member home, member home → slip. Check Next 16 docs for current support |
-| **opentype.js** | Turn text into SVG paths | Converts names into Gochi Hand paths so GSAP DrawSVG can "write" them |
+| ~~opentype.js~~ | Not used | The slip's handwriting is an ink reveal moved with transforms (docs/DESIGN.md, section 8), so no font outlines ship to /me |
 
 **Not using three.js / 3D WebGL for v1.** It's heavy on budget phones and a big time sink. CSS 3D transforms + SVG + GSAP gets the paper-slip look. Revisit for the 2027 reveal screen.
 
@@ -165,7 +165,7 @@ The server knows everything. The API must never leak it.
 ### The reveal screen (`components/reveal/`)
 
 - **Stage:** drawn at 1920×1080 and scaled to fit the window (`reveal-stage.tsx`, `reveal.css`); controls sit in the window's corners, 5% in. Phones (portrait) get the stage on top and big buttons below: the organizer's phone is the remote.
-- **State, then motion:** the stage always renders the exact state for the step (`ring.ts`), so a refresh mid-reveal is correct by construction. When the step or status changes while open (own tap, or the 2-second auto-refresh picking up the phone's tap), `transition.ts` works out what changed and a timeline animates from the old state into it: `reveal-timeline.ts` (GSAP, lazy-loaded after the screen is up) or, with reduced motion, `fade-transition.ts` (Web Animations cross-fades, no GSAP). Only `transform` and `opacity` animate, from pre-painted glow and halo layers.
+- **State, then motion:** the stage always renders the exact state for the step (`ring.ts`), so a refresh mid-reveal is correct by construction. When the step or status changes while open (own tap, or the 2-second auto-refresh picking up the phone's tap), `transition.ts` works out what changed and a timeline animates from the old state into it: `reveal-timeline.ts` (GSAP, lazy-loaded after the screen is up) or, with reduced motion, `fade-transition.ts` (Web Animations cross-fades, no GSAP). Only `transform` and `opacity` animate (pre-painted gold outlines, the gold parol frame). Bulbs light by their `data-state` with a CSS transition and a per-bulb delay the timeline sets before the new state paints; no script runs per frame for them.
 - **Confetti** (`stars.ts`, canvas-confetti, gold stars only) loads while the last pair is on screen; never with reduced motion.
 - **Sound** (`sound.ts`): optional Web Audio bells, off by default, remembered per device in `localStorage`.
 - `/lab/reveal?n=3..150&step=0..n+1&speed=` shows the screen with made-up names (no database), for tuning and `scripts/perf/reveal-perf.mjs`.

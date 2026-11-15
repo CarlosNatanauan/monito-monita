@@ -64,6 +64,7 @@ Goal: the moments strangers see first, then launch.
 - [x] PostHog analytics (create → join → draw → slip opened funnel), server-side only
 - [x] Playwright test of the main flow on a mobile viewport
 - [x] Responsive layouts for tablets and laptops (two columns, organizer dashboard), checked at 8 sizes
+- [x] "Handmade Pasko" look (docs/DESIGN.md): new tokens and fonts, paper materials, the evening sky and parol, every page and the 4 moments restyled
 - [ ] Fix everything from the test group's feedback
 - [ ] **Launch Nov 28:** post in your own GCs, Facebook, Reddit (r/Philippines), LinkedIn
 

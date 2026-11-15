@@ -77,6 +77,8 @@ Text pairs. AA needs 4.5 for body text, 3.0 for text 24px and larger.
 | Ilaw gold `#F4C542` | gabi `#1E1238` | 10.8 |
 | Gabi ink `#1E1238` | gold button `#F4C542` | 10.8 |
 | Ube text `#3F1F63` | current slip `#FFE9A3` | 11.0 |
+| Gabi text `#EBDFF8` | gabi ray tone `#251746` (phone reveal) | 12.7 |
+| Ilaw gold `#F4C542` | gabi ray tone `#251746` (phone reveal header, name) | 10.0 |
 
 Non-text (needs 3.0 where it carries meaning):
 
@@ -85,6 +87,9 @@ Non-text (needs 3.0 where it carries meaning):
 | Input / PIN border | `#3F1F63` on `#FFFFFF` | 13.2 |
 | Off bulb outline | `#3F1F63` on `#FFFFFF` | 13.2 |
 | Off bulb outline (reveal) | `#9C87C4` on `#1E1238` | 5.6 |
+| Off bulb outline (reveal, ray tone) | `#9C87C4` on `#251746` | 5.2 |
+| Focused PIN box border | `#3F1F63` on `#FFE9A3` | 11.0 |
+| Gold outline on the reveal slip | `#F4C542` on `#1E1238` | 10.8 |
 | Listahan edge (decorative) | `#B9A6D9` on `#EEE9F6` | 1.9 |
 | Focus ring gold vs page (paired with ube border) | `#F4C542` on `#EEE9F6` | 1.4 |
 
@@ -150,7 +155,7 @@ What goes where on laptop. Asymmetric: text left, picture right, never centred.
 - **Create group:** form and "Create group" left; "Preview sa GC" (the bubble and the share card) right. Phones show the preview under the form, above the button.
 - **Group ready:** heading with the parol and the capiz "Link ng group" card left; the organizer link card and "Pumunta sa group ko" right.
 - **Join, come back, closed:** heading, parol and tags left (with "Kasali ka na? Bumalik dito"); the listahan form, its error and the button right.
-- **/me:** greeting, the sky panel with the slip, the codename line and the personal link left; the receiver's wishlist, theme sheet, tags and own wishlist right.
+- **/me:** greeting, the sky panel with the slip and the codename line left; the receiver's wishlist, theme sheet, tags, own wishlist and the personal link right. Right after joining the personal link comes first, under the greeting (its "I-send sa sarili mo" is the filled button then). Phones put it last otherwise.
 - **Organizer:** the header line holds the wordmark and, for someone who is also a member, the folder tabs on the right. Status, share, draw, reminder and the other cards left; the members listahan right. Below 840px everything stacks.
 - **Reveal:** a fixed 16:9 stage scaled to fit any landscape window. A phone held upright gets the follow-along view instead (section 8).
 
@@ -293,6 +298,7 @@ Reduced motion (`prefers-reduced-motion`): no flips, drops or sweeps. States cro
 - Four font files, Latin subset, `font-display: swap`.
 - Lazy-load animation code per screen (landing, /me unfold, reveal).
 - Target: mobile Lighthouse performance 90 or higher, under 150 KB of JS on the join and /me routes.
+- Where it stands (`scripts/perf/js-weight.mjs`, Lighthouse 12 on a production build): join 144 KB, /me 148 KB, landing performance 95. The framework alone is about 135 KB, so member pages keep their own code small: no Motion on /me (press and fade-ins are CSS transitions and Web Animations), a small class merger in `lib/utils.ts` instead of a full tailwind-merge, the join drop loads only after joining, and nothing on /me imports `next/link`. (Cards with buttons stay in the main bundle: a lazy one shows before it can be tapped.)
 
 ## 10. Accessibility
 
@@ -355,3 +361,4 @@ The screens in `docs/design/` were drawn before some product rules were settled.
 - **More states than the screens show** use the same materials: before the draw /me shows the codename on the slip in the sky panel; the organizer page keeps share, exclusions, theme weeks, party details and the reveal link after the draw (as listahan, tags and capiz cards); "My slip / Manage group" and the reminder type ("Na-draw na" / "Theme reminder") are folder tabs; small one-card states (not your group, removed, switch device) sit in a 560px column.
 - **After the reveal** /me follows screen 11: the giver on the slip, "Tapos na ang reveal", the tags and the greeting. Wishlists and the theme sheet are gone by then.
 - **Join drop**: the overlay is the evening sky panel with the bowl, the parol and "Kasali ka na!".
+- **/me on laptops**: the personal link sits at the end of the right column, not under the slip as in screen 09. The slip block stays in view while the page scrolls (kept from the responsive pass), and with the link under it the left column was taller than a 768px window.
