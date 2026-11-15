@@ -3,9 +3,11 @@
 Monito Monita, "Handmade Pasko". This replaces the previous DESIGN.md.
 
 Reference files:
-- `Monito Monita Final.html`: every screen and state, static, tokens as CSS variables
-- `final/png/`: screenshots, phone (390px) and laptop (1366px), 2x
-- `final/svg/`: every illustration
+- `docs/design/reference.html`: every screen and state, static, tokens as CSS variables
+- `docs/design/*.png`: screenshots, phone (390px) and laptop (1366px), 2x
+- `docs/design/svg/`: every illustration
+
+Where the build differs from the reference screens, section 14 says how and why.
 
 ## 1. Concept
 
@@ -135,21 +137,30 @@ Load: Chelsea Market 400, Atkinson Hyperlegible 400 and 700, Gochi Hand 400. Lat
 
 ## 5. Layout
 
+What is built (`components/page.tsx`, checked by `e2e/layouts.spec.ts`):
+
 | Width | Layout |
 |---|---|
-| Phone, under 600px | One column, 20px gutters. Light string across the top |
-| Tablet, 600 to 1023px | One column, max 560px, centred. The sky panel may grow to 420px tall. Organizer page may use two columns from 840px |
-| Laptop, 1024px and up | Two columns inside a 1120px container: main column (flexible) and a 420px side column, 48px gap. Light string repeats in swags of about 340px across the full width |
+| Phone, under 600px | One column, 20px gutters. Light string across the top (one swag) |
+| Tablet, 600 to 1023px | One column, max 560px, centred (phones turned sideways too). The organizer page uses two columns from 840px (side column 340px, 32px gap) |
+| Laptop, 1024px and up (iPad landscape included) | Two columns inside a 1120px container (32px gutters when the window is narrower): main column (flexible) and a 420px side column, 48px gap. Light string repeats in swags of 340px across the full width |
 
-What goes where on laptop:
-- **Landing:** headline, button and "Paano 'to?" left; evening sky with bowl and parol right. Never centred.
-- **Create group:** form left; live GC preview right.
-- **Join:** group, parol and tags left; listahan form and button right.
-- **/me:** greeting, sky panel with the slip, codename and personal link left; wishlists, theme sheet and tags right.
-- **Organizer:** status, share, exclusions and actions left; members listahan right. Tabs sit on the right of the header line.
-- **Reveal:** always a fixed 16:9 stage scaled to fit the screen.
+What goes where on laptop. Asymmetric: text left, picture right, never centred.
+- **Landing:** brand, headline, line of copy, "Create your group", "Your groups" and "Paano 'to?" left; the evening sky with bowl and parol right (500px tall).
+- **Create group:** form and "Create group" left; "Preview sa GC" (the bubble and the share card) right. Phones show the preview under the form, above the button.
+- **Group ready:** heading with the parol and the capiz "Link ng group" card left; the organizer link card and "Pumunta sa group ko" right.
+- **Join, come back, closed:** heading, parol and tags left (with "Kasali ka na? Bumalik dito"); the listahan form, its error and the button right.
+- **/me:** greeting, the sky panel with the slip, the codename line and the personal link left; the receiver's wishlist, theme sheet, tags and own wishlist right.
+- **Organizer:** the header line holds the wordmark and, for someone who is also a member, the folder tabs on the right. Status, share, draw, reminder and the other cards left; the members listahan right. Below 840px everything stacks.
+- **Reveal:** a fixed 16:9 stage scaled to fit any landscape window. A phone held upright gets the follow-along view instead (section 8).
 
-On phone the same blocks stack in this order: heading, the hero or form, the main button, then lists.
+Kept from the responsive pass:
+- **/me:** the slip panel stays in view (sticky) while the right column scrolls, only on laptops and only when the window is at least 640px tall (not on a phone turned sideways).
+- **Organizer:** the order of cards depends on the stage. Before the draw: share and join count, exclusions, the draw, then the rest. Right after the draw: "Names drawn" with the announcement, the slip count, then the rest. Later: the slip count, the reminder, then the rest. Phones read them in that order; laptops place each in a column.
+- **Organizer:** the members listahan scrolls inside its card past about 14 rows on laptop, so a big group doesn't push the page down.
+- **Every page fits:** no sideways scrolling at 360×740, 390×844, 430×932, 844×390, 768×1024, 1024×768, 1366×768 and 1920×1080.
+
+The DOM keeps the phone order; the grid places each block on wider screens. On phone the blocks stack: heading, the hero or form, the main button, then lists.
 
 ## 6. Components
 
@@ -198,7 +209,9 @@ On phone the same blocks stack in this order: heading, the hero or form, the mai
 - One per screen, on /me only.
 
 ### Private-link card
-- `--tag-pink` paper, no border. Title, one line of explanation, the link in a dashed box with the secret part masked (`/o/••••••••••••`, `/me/••••••••••`), then "Ipakita" and "Copy".
+- `--tag-pink` paper, no border. Title, one line of explanation, the link in a dashed box with the secret part masked, then "Ipakita" and "Copy" (and "I-send sa sarili mo" where the phone can share).
+- The links are the real ones with only the token masked: `monitomonita-ph.vercel.app/g/barkada-2026/admin?t=••••••••••` (organizer) and `…/g/barkada-2026/me?t=••••••••••` (personal). The slug is the public share link, so it shows.
+- "Ipakita" shows the whole link until tapped again ("Itago"). Copy and Share always use the whole link.
 
 ### GC bubble and link box
 - Bubble: white, 1.5px ube border, corners `4px 16px 16px 16px`. Shows exactly what will be pasted.
@@ -214,7 +227,8 @@ Wire: 1.3px ube line that sags (quadratic curve). Bulbs are ovals of slightly di
   - **Off:** white fill, ube outline.
   - **On:** `--ilaw` fill, ube outline.
   - **Newest:** `--ilaw-lit` fill with four short drawn rays.
-  - Always paired with the count in words ("8 of 12 have opened their slip"). Over 12 members, bulbs shrink to fit one string up to 30, then wrap to a second string.
+  - Always paired with the count in words ("8 of 12 have opened their slip"). Over 12 members, bulbs shrink to fit one string up to 30, then wrap to a second string (balanced: 31 is 16 + 15), up to 60 members.
+  - Over 60 members each bulb stands for a share (61 is 31 bulbs of 2, 150 is 50 bulbs of 3) with a small line under the strings: "Bawat ilaw: 3 tao". A share's bulb lights in proportion and never all until everyone is done. The count in words stays exact. See `/lab/lights`.
 - **On the reveal:** off = `--gabi` fill with `--gabi-line` outline; on = `--ilaw`.
 
 ### The slip
@@ -255,13 +269,16 @@ All motion uses `transform` and `opacity` only.
 
 1. **Landing bowl.** Tap the bowl: slips jiggle (200ms), one rises out (350ms, ease-out), unfolds (rotateX, 400ms) and shows a sample name. Each tap gives a new name. The parol sways a few degrees on a slow loop.
 2. **Join drop.** On "Join the group", the name on the listahan lifts off as a slip (250ms), folds (300ms) and drops into the bowl (350ms, ease-in), then the page goes to /me. On the organizer page a new bulb lights as "newest".
-3. **Slip unfold.** Tap the folded slip: it unfolds on the string in 3D (600ms), the name is drawn like pen strokes (SVG stroke animation, 900ms), the ray disc scales in from 0.6 and fades in (500ms), a short vibration on Android. Plays once per person; later visits show the opened state.
+3. **Slip unfold.** Tap the folded slip: it unfolds on the string in 3D (600ms), the name is written left to right like wet ink (about 900ms), the ray disc scales in from 0.6 and fades in (500ms), a short vibration on Android. Plays once per person; later visits show the opened state.
+   - **Handwriting: kept as an ink reveal, not SVG strokes.** A window over the name opens letter by letter with a soft leading edge, moved with transforms only, pausing at spaces. An SVG stroke version needs each name turned into Gochi Hand outlines in the browser (opentype.js and the font file, well over 100 KB on /me) and Gochi Hand is a filled font, so stroking its outlines draws the edge of each letter twice instead of a pen line. The ink reveal costs nothing extra and reads as handwriting at slip size.
 4. **Reveal.** A fixed 16:9 stage on a dark ube night.
    - **Start:** all slips show codenames, bulbs off, "Handa na?" and "Simulan ang reveal".
    - **Each Next** (button, Space or right arrow): the giver's slip flips to the real name (rotateY, 700ms) and gets the gold outline; the bulbs toward the receiver light one after another, 120ms apart; the centre shows "Si [codename] ay si… [Name]!".
    - **Large groups:** the ring always holds 12 slips. Past 12 members it is a moving window: on each step the oldest revealed slip slides out and the next codename slides in. A small 30-bulb string and "19 of 30" show overall progress.
    - **Finale:** after the last slip the button reads "Ilawan ang parol". Every bulb lights in a sweep, the parol frame behind the text turns gold, every slip gets a gold outline, and "Maligayang Pasko!" appears on a white paper banner in the centre (ube text, so it stays readable over the gold frame). Gold paper stars fall for 3 seconds.
    - Readability: at 1920 by 1080 nothing is smaller than 24px; the name is about 190px.
+   - **Phone follow-along** (any window taller than wide): no stage. The group name and "7 of 12" in gold top-left, the parol top-right, the centre text ("Handa na?", "Si … ay si… Jun!", "Maligayang Pasko!") in a column, then "Nabunyag na": the latest six revealed pairs as white slips in two columns ("Huling 6 lang ang ipinapakita. 11 pa ang nakatiklop."), every pair after the finale. Big groups add the small progress string. The organizer's buttons (Start, Previous, Next) sit under it, so the phone is still the remote.
+   - The stage keeps the state for each step in its markup; motion only plays the change. Bulbs light by switching their state attribute, with a CSS transition and a delay per bulb; no script runs per frame for them.
 
 Everywhere else there is no entrance animation. Motion only answers what the user did.
 
@@ -326,3 +343,15 @@ Sample links use `monitomonita-ph.vercel.app`. Private links are always shown ma
 - No text on the gold rays.
 - No emoji, snowflakes, Santa or rainbow confetti.
 - No Gochi Hand for anything that is not a name. No Chelsea Market for a person's name.
+
+## 14. Where the build differs from the reference screens
+
+The screens in `docs/design/` were drawn before some product rules were settled. The build keeps the product rules:
+
+- **Create group** has no organizer name and PIN. The organizer joins like everyone else ("Kasali ka rin ba?" on the organizer page). Theme weeks stay editable inputs on the listahan (two-line rows), not fixed text.
+- **One filled button per screen.** The group-ready screen draws two; "Copy link" stays filled and "Pumunta sa group ko" is the secondary button.
+- **Coming back** says "Mali ang pangalan o PIN" for every failure (wrong PIN, unknown name, locked), never "Mali ang PIN", so the page can't be used to find out who is in a group.
+- **Names are always Gochi Hand**, also in list rows (members, bawal pairs), on the reveal slips ("→ kay *Marco*") and on the phone follow-along view, where the screens set some in bold Atkinson. Inline names are 1.18em, never under 20px.
+- **More states than the screens show** use the same materials: before the draw /me shows the codename on the slip in the sky panel; the organizer page keeps share, exclusions, theme weeks, party details and the reveal link after the draw (as listahan, tags and capiz cards); "My slip / Manage group" and the reminder type ("Na-draw na" / "Theme reminder") are folder tabs; small one-card states (not your group, removed, switch device) sit in a 560px column.
+- **After the reveal** /me follows screen 11: the giver on the slip, "Tapos na ang reveal", the tags and the greeting. Wishlists and the theme sheet are gone by then.
+- **Join drop**: the overlay is the evening sky panel with the bowl, the parol and "Kasali ka na!".
