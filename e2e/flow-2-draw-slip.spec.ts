@@ -79,11 +79,14 @@ test("draw and slip: draw, unfold, lost link, redraw, leaks", async ({ browser }
       browser,
       organizer.page,
       [
-        "Na-draw na! Buksan ang link mo para makita ang monito mo 🎁",
+        "Na-draw na! Buksan ang personal link mo para makita ang monito mo 🎁",
+        'Nawala ang link mo? Buksan \'to tapos i-tap ang "Bumalik sa slip ko":',
+        // The share link: the way back for whoever lost their personal link (persona test C6).
+        `👉 ${shareUrl}`,
         `🎉 Party: ${formatPartyDate(partyDate)}`,
         "💸 Budget: ₱500",
       ],
-      [shareUrl, "Unang theme"],
+      ["Unang theme"],
     );
     await shot(page, "names-drawn-next-steps");
     // …with an easy switch to the theme reminder.
@@ -96,8 +99,8 @@ test("draw and slip: draw, unfold, lost link, redraw, leaks", async ({ browser }
         `✨ Unang theme: Something soft, simula ${formatPartyDate(addDays(partyDate, -28))}`,
         "💸 Budget: ₱500",
         "Na-update n'yo na ba ang wishlist n'yo?",
+        `👉 ${shareUrl}`,
       ],
-      [shareUrl],
     );
     // Exclusions are locked now (members can still be removed, with a patch).
     await expect(page.getByRole("button", { name: "Add pair" })).toHaveCount(0);

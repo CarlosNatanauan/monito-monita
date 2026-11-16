@@ -31,7 +31,7 @@ describe("buildGcReminder", () => {
     expect(buildGcReminder({ ...base, memberCount: 0 })).toContain("Wala pang sumali, ikaw na ang una!");
   });
 
-  it("after the draw: this week's theme, budget, party, and a wishlist nudge", () => {
+  it("after the draw: this week's theme, budget, party, a wishlist nudge, and the way back (C6)", () => {
     const message = buildGcReminder({ ...base, status: "DRAWN", theme: getThemeStatus(themes, PARTY, "2026-12-08") });
     expect(message).toBe(
       [
@@ -42,10 +42,11 @@ describe("buildGcReminder", () => {
         "🎉 Party: Sat, Dec 19, 2026",
         "",
         "Na-update n'yo na ba ang wishlist n'yo? Buksan ang personal link n'yo para hindi mahirapan ang monito n'yo 😉",
+        "",
+        'Nawala ang link mo? Buksan \'to tapos i-tap ang "Bumalik sa slip ko":',
+        "👉 https://monitomonita-ph.vercel.app/g/abc123xyz789",
       ].join("\n"),
     );
-    // No share link once joining is closed.
-    expect(message).not.toContain("https://");
   });
 
   it("after the draw, adapts to where the themes are", () => {
@@ -57,13 +58,16 @@ describe("buildGcReminder", () => {
     expect(buildGcReminder({ ...drawn, theme: getThemeStatus([], PARTY, "2026-12-01") })).not.toContain("✨");
   });
 
-  it("right after the draw: tells everyone to open their link, with party and budget", () => {
+  it("right after the draw: tells everyone to open their link, the way back if it's lost, party and budget (C6)", () => {
     const message = buildGcReminder({ ...base, status: "DRAWN", kind: "drawn" });
     expect(message).toBe(
       [
         "🎁 Barkada Party",
         "",
-        "Na-draw na! Buksan ang link mo para makita ang monito mo 🎁",
+        "Na-draw na! Buksan ang personal link mo para makita ang monito mo 🎁",
+        "",
+        'Nawala ang link mo? Buksan \'to tapos i-tap ang "Bumalik sa slip ko":',
+        "👉 https://monitomonita-ph.vercel.app/g/abc123xyz789",
         "",
         "🎉 Party: Sat, Dec 19, 2026",
         "💸 Budget: ₱500",

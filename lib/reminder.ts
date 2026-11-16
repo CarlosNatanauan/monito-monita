@@ -39,6 +39,16 @@ function themeLine(theme: ThemeStatus): string | null {
   }
 }
 
+/**
+ * After the draw the share link opens "Tapos na ang bunutan" with one big
+ * "Bumalik sa slip ko" button, so it's safe in the GC and it's the way back
+ * for whoever lost their personal link (persona test C6).
+ */
+function lostLinkLines(shareUrl: string): string[] {
+  if (!shareUrl) return [];
+  return ["", "Nawala ang link mo? Buksan 'to tapos i-tap ang \"Bumalik sa slip ko\":", `👉 ${shareUrl}`];
+}
+
 export function buildGcReminder(input: ReminderInput): string {
   const party = input.partyDate ? formatPartyDate(input.partyDate) : NOT_YET;
   const budget = input.budget === null ? `₱${NOT_YET}` : formatPeso(input.budget);
@@ -63,7 +73,8 @@ export function buildGcReminder(input: ReminderInput): string {
     return [
       `🎁 ${input.groupName}`,
       "",
-      "Na-draw na! Buksan ang link mo para makita ang monito mo 🎁",
+      "Na-draw na! Buksan ang personal link mo para makita ang monito mo 🎁",
+      ...lostLinkLines(input.shareUrl),
       "",
       `🎉 Party: ${party}`,
       `💸 Budget: ${budget}`,
@@ -79,6 +90,7 @@ export function buildGcReminder(input: ReminderInput): string {
     `🎉 Party: ${party}`,
     "",
     "Na-update n'yo na ba ang wishlist n'yo? Buksan ang personal link n'yo para hindi mahirapan ang monito n'yo 😉",
+    ...lostLinkLines(input.shareUrl),
   ].join("\n");
 }
 
