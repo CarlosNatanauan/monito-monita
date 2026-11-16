@@ -141,9 +141,13 @@ export function RevealScreen({
         }}
       />
 
-      <footer className="z-10 hidden flex-col gap-1 text-[clamp(16px,2.4vh,28px)] font-bold text-gabi-text landscape:absolute landscape:bottom-[5vh] landscape:left-[5vw] landscape:flex">
-        <p>
-          {view.groupName} · {count}
+      {/* Bottom left, clear of the ring: at 16:9 the ring's lower-left slip
+          starts about 24vw in, so this stays within 18vw and a long group
+          name is cut short instead of running into it (the count stays). */}
+      <footer className="z-10 hidden max-w-[18vw] flex-col gap-1 text-[clamp(16px,2.4vh,28px)] font-bold text-gabi-text landscape:absolute landscape:bottom-[5vh] landscape:left-[5vw] landscape:flex">
+        <p className="flex min-w-0 whitespace-nowrap">
+          <span className="min-w-0 truncate">{view.groupName}</span>
+          <span className="shrink-0">&nbsp;· {count}</span>
         </p>
         {progress}
       </footer>

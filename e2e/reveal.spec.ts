@@ -161,6 +161,18 @@ async function expectProjectorLayout(page: Page, label: string) {
         );
       }
     }
+    // The group name and count (bottom left) stay clear of the ring's slips (persona test M1).
+    const footer = document.querySelector("footer:has([data-count])");
+    if (footer && visible(footer)) {
+      const f = footer.getBoundingClientRect();
+      for (const slip of document.querySelectorAll("[data-slip]")) {
+        if (!visible(slip)) continue;
+        const r = slip.getBoundingClientRect();
+        if (f.left < r.right && r.left < f.right && f.top < r.bottom && r.top < f.bottom) {
+          out.push(`the footer "${(footer.textContent ?? "").trim().slice(0, 40)}" overlaps a slip at ${Math.round(r.left)},${Math.round(r.top)}`);
+        }
+      }
+    }
     return out;
   });
   expect(found, `${label}:\n${found.join("\n")}`).toEqual([]);
@@ -418,6 +430,8 @@ test("party reveal on a projector: ring, steps, phone as remote, a group of 30, 
       await expect(all.getByRole("listitem").nth(i)).toHaveText(new RegExp(`^${pair.giver}\\s*→ kay ${pair.receiver}$`));
     }
     await expect(page.locator("footer p").first()).toHaveText("E2E Office Party · 30 of 30");
+    // The list sits on a solid gabi panel, so the parol's gold lines don't cross the names (persona test M2).
+    await expect(page.locator(".rv-list-scroll")).toHaveCSS("background-color", "rgb(30, 18, 56)");
     await shot(page, "all-pairs-30");
     await atProjectorSizes(page, "all pairs", "all-pairs");
     await page.getByRole("button", { name: "Balik sa parol" }).click();

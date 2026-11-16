@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { RevealScreen } from "@/components/reveal/reveal-screen";
 import "@/components/reveal/reveal.css";
-import { getCurrentOrganizer, isValidSlug } from "@/server/auth";
+import { getCurrentOrganizer, getOwnToken, isValidSlug, personalLinkPath } from "@/server/auth";
 import { getRevealView } from "@/server/reveal";
 import { RevealAutoRefresh } from "./auto-refresh";
 import { RevealControls, StartReveal } from "./reveal-controls";
@@ -55,8 +55,10 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
     );
   }
 
-  const view = await getRevealView(organizer.groupId);
+  const [view, ownToken] = await Promise.all([getRevealView(organizer.groupId), getOwnToken("organizer", slug)]);
   if (!view) notFound();
+  // "Gawing remote ang phone mo": the organizer's own link, from their cookie.
+  const remotePath = ownToken ? personalLinkPath("organizer", slug, ownToken) : undefined;
   const backHref = `/g/${slug}/admin`;
 
   if (view.status === "OPEN") {
@@ -82,7 +84,7 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
         backHref={backHref}
         controls={
           view.status === "DRAWN" ? (
-            <StartReveal slug={slug} />
+            <StartReveal slug={slug} remotePath={remotePath} />
           ) : view.status === "REVEALING" ? (
             <RevealControls slug={slug} step={view.step} total={view.total} />
           ) : undefined

@@ -235,11 +235,16 @@
   flex-direction: column;
 }
 /* The scroller wraps the columns, so long lists scroll down instead of
-   overflowing into extra columns to the side. */
+   overflowing into extra columns to the side. It's a gabi panel, so the
+   parol's gold lines behind it don't cross the names (hard to read from
+   the back of a room). */
 .rv-list-scroll {
   flex: 1;
   min-height: 0;
   overflow-y: auto;
+  padding: 10px 24px;
+  background: var(--color-gabi);
+  border: 1.5px solid var(--color-gabi-line);
 }
 .rv-list-items {
   padding: 0 4px 8px;
