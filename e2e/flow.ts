@@ -29,12 +29,14 @@ export function people(browser: Browser, testInfo: TestInfo) {
       if (/\?_rsc=\S+ due to access control checks/.test(error.message)) return;
       // The same race, as newer WebKit reports it: the aborted refresh is a
       // bare "Load failed", and the dev overlay's stack lookup is blocked
-      // while the page unloads. Only on the reveal screen (seen during
-      // page.goto away from it), only in WebKit.
+      // while the page unloads. Only on the reveal screen and the home page
+      // (its "Your groups" lookup, when the test leaves or reloads right
+      // away), seen during page.goto away from them, only in WebKit.
       if (
         browser.browserType().name() === "webkit" &&
-        /\/reveal$/.test(new URL(page.url()).pathname) &&
-        (error.message === "Load failed" || /__nextjs_original-stack-frames due to access control checks/.test(error.message))
+        /^\/$|\/reveal$/.test(new URL(page.url()).pathname) &&
+        (/^(TypeError: )?Load failed$/.test(error.message) ||
+          /__nextjs_original-stack-frames due to access control checks/.test(error.message))
       ) {
         return;
       }
