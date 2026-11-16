@@ -1,4 +1,5 @@
 import { NextResponse, type NextFetchEvent, type NextRequest } from "next/server";
+import { REFERRER_POLICY } from "@/lib/referrer-policy";
 import { analyticsConfig } from "@/server/analytics";
 import { isLandingView, referrerDomain, sendLandingView } from "@/server/landing-view";
 import {
@@ -42,14 +43,14 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
 
   if (!link || token === null) {
     const response = NextResponse.next();
-    response.headers.set("Referrer-Policy", "no-referrer");
+    response.headers.set("Referrer-Policy", REFERRER_POLICY);
     return response;
   }
 
   const cleanUrl = request.nextUrl.clone();
   cleanUrl.searchParams.delete("t");
   const response = NextResponse.redirect(cleanUrl, 303);
-  response.headers.set("Referrer-Policy", "no-referrer");
+  response.headers.set("Referrer-Policy", REFERRER_POLICY);
   response.headers.set("Cache-Control", "no-store");
 
   try {

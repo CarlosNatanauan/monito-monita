@@ -1,19 +1,21 @@
 import type { NextConfig } from "next";
+import { REFERRER_POLICY } from "./lib/referrer-policy";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
-  // Pages that can carry or show secret links never send a Referer.
+  // Pages that can carry or show secret links never send a Referer to
+  // another site (see lib/referrer-policy.ts for why not "no-referrer").
   async headers() {
     return [
       // Group pages are for people with the link, never search results.
       {
         source: "/g/:path*",
         headers: [
-          { key: "Referrer-Policy", value: "no-referrer" },
+          { key: "Referrer-Policy", value: REFERRER_POLICY },
           { key: "X-Robots-Tag", value: "noindex, nofollow" },
         ],
       },
-      { source: "/new", headers: [{ key: "Referrer-Policy", value: "no-referrer" }] },
+      { source: "/new", headers: [{ key: "Referrer-Policy", value: REFERRER_POLICY }] },
       // Prototypes: never indexed.
       { source: "/lab/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
     ];
