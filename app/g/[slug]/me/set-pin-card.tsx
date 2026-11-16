@@ -33,7 +33,7 @@ export function SetPinCard({ slug }: { slug: string }) {
       <SectionTitle>{saved ? "Na-save ang PIN mo!" : "Mag-set ng PIN"}</SectionTitle>
       <p className="text-ube-soft">
         {saved
-          ? "Sa ibang phone o browser: buksan ang share link, i-tap ang “Kasali ka na? Bumalik dito”, at ilagay ang pangalan at PIN mo."
+          ? "Sa ibang phone o browser: buksan ang share link, i-tap ang “Bumalik”, at ilagay ang pangalan at PIN mo."
           : "Para makabalik ka kahit sa ibang phone, gamit ang pangalan mo at 4-digit PIN."}
       </p>
       {!saved ? (

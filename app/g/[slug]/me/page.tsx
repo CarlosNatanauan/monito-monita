@@ -9,6 +9,7 @@ import { BunutanSlip } from "@/components/slip/bunutan-slip";
 import { Button } from "@/components/ui/button";
 import { Capiz, Listahan, SecretCard, SectionTitle, ThemeSheet } from "@/components/ui/paper";
 import { WishlistView } from "@/components/wish-item";
+import { formatPeso } from "@/lib/format";
 import { getThemeStatus, themeCard } from "@/lib/theme-status";
 import { todayIn } from "@/lib/theme-weeks";
 import { cn } from "@/lib/utils";
@@ -153,6 +154,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         shareText={`Personal link ko sa ${group.name} (huwag i-share)`}
         prominent={welcome}
       />
+      <p className="text-small text-ube-soft">Halimbawa: i-send sa sarili mong Messenger o i-save sa Notes.</p>
     </SecretCard>
   );
 
@@ -271,7 +273,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
 
       {!drawn && themeSheet()}
 
-      <WishlistEditor slug={slug} items={myWishlist} />
+      <WishlistEditor slug={slug} items={myWishlist} placeholder={`Hal. mug na cute · hanggang ${formatPeso(group.budget)}`} />
     </>
   );
 

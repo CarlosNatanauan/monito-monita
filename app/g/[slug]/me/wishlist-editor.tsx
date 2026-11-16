@@ -22,7 +22,16 @@ const EMPTY: Draft = { title: "", url: "", note: "" };
  * with Edit and Alisin, the one being edited as an input with Save, and
  * the add row at the bottom ("Hal. mug na cute" + Add).
  */
-export function WishlistEditor({ slug, items }: { slug: string; items: WishItemData[] }) {
+export function WishlistEditor({
+  slug,
+  items,
+  placeholder,
+}: {
+  slug: string;
+  items: WishItemData[];
+  /** The add row's example, with the budget ("Hal. mug na cute · hanggang ₱500"). */
+  placeholder: string;
+}) {
   const [editingId, setEditingId] = useState<string | null>(null);
   // Remounts the add form (clearing it) after each successful add.
   const [addKey, setAddKey] = useState(0);
@@ -59,6 +68,7 @@ export function WishlistEditor({ slug, items }: { slug: string; items: WishItemD
           key={addKey}
           initial={EMPTY}
           mode="add"
+          placeholder={placeholder}
           onSubmit={(draft) => addWishAction({ slug, ...draft })}
           onDone={() => setAddKey((k) => k + 1)}
         />
@@ -113,11 +123,13 @@ function WishForm({
   mode,
   onSubmit,
   onDone,
+  placeholder,
 }: {
   initial: Draft;
   mode: "add" | "edit";
   onSubmit: (draft: Draft) => Promise<WishActionResult>;
   onDone: () => void;
+  placeholder?: string;
 }) {
   const [draft, setDraft] = useState<Draft>(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -165,7 +177,7 @@ function WishForm({
           size="row"
           value={draft.title}
           onChange={(e) => set("title")(e.target.value)}
-          placeholder="Hal. mug na cute"
+          placeholder={placeholder ?? "Hal. mug na cute"}
           aria-label="Ano ang gusto mo?"
           aria-invalid={errors.title ? true : undefined}
           maxLength={WISH_TITLE_MAX}
