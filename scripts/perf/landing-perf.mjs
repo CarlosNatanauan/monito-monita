@@ -1,8 +1,10 @@
 // Landing page "Try a bunutan" checks (signature moment 1):
-//   1. frame rate of the bowl draw (rise + unfold) with 4x CPU throttling
+//   1. frame rate of the bowl draw (mix + rise + unfold) with 4x CPU throttling
 //   2. GSAP is lazy: not part of the first page load, fetched on intent/idle
 //   3. reduced motion: no GSAP, the open slip is shown
 //   4. the landing page is static (served from the prerender, no DB)
+//   5. the mix: every tap leaves the bowl's slips in a new arrangement
+//      (reduced motion: they never move)
 //   (the light string's modes have their own script: scripts/perf/lights-perf.mjs)
 //
 // Run against a PRODUCTION build, not `next dev`:
@@ -12,8 +14,19 @@ import { chromium, devices } from "@playwright/test";
 
 const base = process.argv[2] ?? "http://localhost:3100";
 const RUNS = 4;
-const DRAW_MS = 2700; // rise (~0.6s) + unfold (~2.1s)
+const DRAW_MS = 3200; // mix (0.7s) + rise (0.35s) + unfold (~2.1s)
 const browser = await chromium.launch();
+
+/** The bowl's slips' positions and turns (rounded), as one string. */
+const bowlSlips = (page) =>
+  page.evaluate(() =>
+    [...document.querySelectorAll("[data-bowl-slip]")]
+      .map((el) => {
+        const r = el.getBoundingClientRect();
+        return `${Math.round(r.left)},${Math.round(r.top)},${getComputedStyle(el).transform}`;
+      })
+      .join("|"),
+  );
 
 /** Records the JS files the page downloads, and whether one is GSAP. */
 function watchJs(page) {
@@ -98,11 +111,36 @@ for (let run = 1; run <= RUNS; run++) {
   const page = await ctx.newPage();
   const js = watchJs(page);
   await page.goto(base, { waitUntil: "networkidle" });
+  const before = await bowlSlips(page);
   await page.getByRole("button", { name: "Tap the bowl para bumunot" }).click();
   await page.waitForTimeout(1000);
   const name = await page.locator("[data-sample-slip]").getAttribute("data-sample-slip");
   const open = await page.locator('[data-sample-slip] [data-part="flat"]').evaluate((el) => getComputedStyle(el).opacity);
-  console.log(`Reduced motion: GSAP ${js.some((f) => f.gsap) ? "LOADED (bad)" : "not loaded"}, slip "${name}" open: ${open === "1"}`);
+  const still = (await bowlSlips(page)) === before;
+  console.log(
+    `Reduced motion: GSAP ${js.some((f) => f.gsap) ? "LOADED (bad)" : "not loaded"}, slip "${name}" open: ${open === "1"}, ` +
+      `bowl slips ${still ? "not moved (no shake or tumble)" : "MOVED (bad)"}`,
+  );
+  await ctx.close();
+}
+
+// 5. The mix: every tap leaves the bowl's slips in a new arrangement.
+{
+  const ctx = await browser.newContext({ ...devices["Pixel 7"] });
+  const page = await ctx.newPage();
+  await page.goto(base, { waitUntil: "networkidle" });
+  const seen = [await bowlSlips(page)];
+  await page.getByRole("button", { name: "Tap the bowl para bumunot" }).click();
+  await page.getByRole("button", { name: "Tap ulit para bumunot ng iba" }).waitFor({ timeout: 20_000 });
+  seen.push(await bowlSlips(page));
+  for (let k = 0; k < 2; k++) {
+    await page.getByRole("button", { name: "Tap ulit para bumunot ng iba" }).click();
+    await page.waitForTimeout(400);
+    await page.getByRole("button", { name: "Tap ulit para bumunot ng iba" }).waitFor({ timeout: 20_000 });
+    seen.push(await bowlSlips(page));
+  }
+  const fresh = seen.every((s, i) => i === 0 || s !== seen[i - 1]);
+  console.log(`Mix: ${seen.length - 1} taps, ${fresh ? "a new arrangement of the bowl's slips after every tap" : "SAME arrangement twice (bad)"}`);
   await ctx.close();
 }
 

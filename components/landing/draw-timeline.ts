@@ -1,17 +1,77 @@
 import gsap from "gsap";
+import { BOWL_SLIPS, type BowlSlipSpot } from "@/components/bowl/bowl-art";
 import { buildUnfoldTimeline } from "@/components/slip/unfold-timeline";
 import type { Sparkle } from "@/components/slip/sparkle";
 
 /**
- * "Try a bunutan" on the landing page (signature moment #1): a folded
- * sample slip rises out of the bowl, then unfolds exactly like the real
- * slip on /me (same timeline). Lazy-loaded by TryBunutan, so GSAP is never
+ * "Try a bunutan" on the landing page (signature moment #1): the bowl
+ * shakes and its slips tumble and swap places (a new mix every tap), then
+ * a folded sample slip rises out of the bowl and unfolds exactly like the
+ * real slip on /me (same timeline). Lazy-loaded by TryBunutan, so GSAP is never
  * part of the landing page's first load. Transforms and opacity only.
  */
 
-/** When the slip starts to rise, after the slips jiggle (200ms). */
-const RISE_AT = 0.2;
+/** The mix: the bowl shakes and its slips tumble and swap places (700ms). */
+const MIX = 0.7;
+/** When the slip starts to rise: as the bowl settles. */
+const RISE_AT = MIX;
 const UNFOLD_AT = RISE_AT + 0.35;
+
+/** A new order where no slip stays in the spot it is in now (2 slips: a swap). */
+function derange(now: number[]): number[] {
+  for (;;) {
+    const next = [...now].sort(() => Math.random() - 0.5);
+    if (next.every((spot, k) => spot !== now[k])) return next;
+  }
+}
+
+/**
+ * Where the bowl's slips are now, between mixes: for each slip (by its home
+ * spot), the spot it sits in and its rotation so far (unbounded degrees, so
+ * every tumble spins on from where the last one stopped).
+ */
+type MixState = { spot: number[]; rot: number[] };
+const homeState = (spots: BowlSlipSpot[]): MixState => ({ spot: spots.map((_, k) => k), rot: spots.map((s) => s.rot) });
+
+/**
+ * Adds the mix to `tl` at 0: the bowl rocks side to side on its foot while
+ * each slip hops, spins and lands in another slip's spot (tilted as that
+ * spot is). Transforms only, on the slips' own elements (composited).
+ * Returns the state the slips end in.
+ */
+function addMix(tl: gsap.core.Timeline, shakers: HTMLElement[], layers: { spots: BowlSlipSpot[]; els: HTMLElement[]; now: MixState }[]) {
+  tl.to(shakers, { keyframes: { rotation: [0, -5, 4.5, -3.5, 2.5, -1, 0], easeEach: "sine.inOut" }, duration: MIX, ease: "none", transformOrigin: "50% 100%" }, 0);
+  tl.set(shakers, { clearProps: "transform" }, MIX);
+  return layers.map(({ spots, els, now }) => {
+    const order = derange(now.spot);
+    const rot = now.rot.map((from, k) => {
+      const to = spots[order[k]];
+      const dir = Math.random() < 0.5 ? 1 : -1;
+      let end = to.rot + (Math.random() < 0.5 ? 180 : 0);
+      while ((end - from) * dir < 120) end += 360 * dir;
+      while ((end - from) * dir >= 480) end -= 360 * dir;
+      const home = spots[k];
+      const at = (spot: BowlSlipSpot) => ({ x: ((spot.cx - home.cx) / home.w) * 100, y: ((spot.cy - home.cy) / home.h) * 100 });
+      const a = at(spots[now.spot[k]]);
+      const b = at(to);
+      const el = els[k];
+      if (el) {
+        tl.to(
+          el,
+          {
+            keyframes: [
+              { xPercent: (a.x + b.x) / 2, yPercent: (a.y + b.y) / 2 - 70, rotation: (from + end) / 2, duration: 0.28, ease: "power2.out" },
+              { xPercent: b.x, yPercent: b.y, rotation: end, duration: 0.3, ease: "power2.in" },
+            ],
+          },
+          0.06 + k * 0.03,
+        );
+      }
+      return end;
+    });
+    return { spot: order, rot };
+  });
+}
 
 /**
  * Where the slip starts (inside the bowl), relative to where it ends (top
@@ -63,6 +123,7 @@ export function createDrawer(): Drawer {
   let ctx: gsap.Context | null = null;
   let timeline: gsap.core.Timeline | null = null;
   let rise = { x: 0, y: 215 };
+  let mixed = { top: homeState(BOWL_SLIPS.top), inside: homeState(BOWL_SLIPS.inside) };
 
   const drawer: Drawer = {
     prepare(stage, onDone) {
@@ -72,16 +133,21 @@ export function createDrawer(): Drawer {
         const riser = stage.querySelector<HTMLElement>('[data-part="riser"]');
         if (!riser) return;
         rise = measureRise(stage);
-        const bowls = stage.closest("section")?.querySelectorAll<HTMLElement>('[data-part="bowl"]') ?? [];
+        const shakers = [...(stage.closest("section")?.querySelectorAll<HTMLElement>('[data-part="bowl-shake"]') ?? [])];
         const unfold = buildUnfoldTimeline(stage, { sparkle: () => sparkle, onDone });
         const tl = gsap.timeline({ paused: true });
-        // The slips jiggle (200ms), then one rises out (350ms, ease-out).
-        if (bowls.length) {
-          tl.to(bowls, { rotation: 2.5, duration: 0.05, ease: "sine.inOut", yoyo: true, repeat: 3, transformOrigin: "50% 100%" }, 0).set(
-            bowls,
-            { clearProps: "transform" },
-            RISE_AT,
-          );
+        // The mix (700ms), with a short buzz on Android (iPhone ignores it);
+        // then one slip rises out (350ms, ease-out).
+        if (shakers.length === 2) {
+          const slips = (i: number) => [...shakers[i].querySelectorAll<HTMLElement>("[data-bowl-slip]")];
+          const [top, inside] = addMix(tl, shakers, [
+            { spots: BOWL_SLIPS.top, els: slips(0), now: mixed.top },
+            { spots: BOWL_SLIPS.inside, els: slips(1), now: mixed.inside },
+          ]);
+          tl.call(() => {
+            mixed = { top, inside };
+            navigator.vibrate?.([30, 60, 30, 60, 40]);
+          }, undefined, 0);
         }
         tl.fromTo(
           riser,

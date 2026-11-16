@@ -2,7 +2,7 @@
 
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Art } from "@/components/art/symbols";
-import { Bilao, BowlBack, BowlFront } from "@/components/bowl/bowl-art";
+import { Bilao, BOWL_SLIPS, BowlGlass, BowlRim, BowlSlip } from "@/components/bowl/bowl-art";
 import { SlipArt } from "@/components/slip/slip-art";
 import { FIRST_SAMPLE, nextSample } from "@/lib/sample-names";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
@@ -20,10 +20,13 @@ type Phase = "idle" | "ready" | "drawing" | "shown";
 
 /**
  * Signature moment #1 (docs/DESIGN.md): the bowl on the bilao on the
- * evening sky, the parol top right. Tap the bowl: the slips jiggle, a
- * sample slip rises out and unfolds with a sample name (the same unfold
- * as /me), top left, clear of the parol. Tap again for another name.
- * Reduced motion: the opened slip fades in, no GSAP.
+ * evening sky, the parol top right. Tap the bowl: it shakes and the slips
+ * inside tumble and swap places (a new mix on every tap), then a sample
+ * slip rises out and unfolds with a sample name (the same unfold as /me),
+ * top left, clear of the parol. Tap again for another name. Each slip in
+ * the bowl is its own element, between the glass and the rim, so the mix
+ * moves them with composited transforms. Reduced motion: no shake or
+ * tumble, the opened slip fades in, no GSAP.
  */
 export function TryBunutan({ className }: { className?: string }) {
   const reduced = usePrefersReducedMotion();
@@ -161,7 +164,13 @@ export function TryBunutan({ className }: { className?: string }) {
         data-part="bowl"
         className="pointer-events-none absolute top-[158px] left-[26px] h-[147px] w-[196px] origin-bottom transition-transform duration-150 group-has-[button:active]:scale-[0.98] lg:top-[232px] lg:left-9 lg:h-[202px] lg:w-[270px]"
       >
-        <BowlBack className="absolute inset-0 size-full" />
+        {/* The shake moves this inner layer (GSAP); the press scale stays on the outer one (CSS). */}
+        <div data-part="bowl-shake" className="absolute inset-0 origin-bottom">
+          {BOWL_SLIPS.top.map((spot, i) => (
+            <BowlSlip key={i} spot={spot} />
+          ))}
+          <BowlGlass className="absolute inset-0 size-full" />
+        </div>
       </div>
 
       <div
@@ -180,7 +189,13 @@ export function TryBunutan({ className }: { className?: string }) {
         data-part="bowl"
         className="pointer-events-none absolute top-[158px] left-[26px] h-[147px] w-[196px] origin-bottom transition-transform duration-150 group-has-[button:active]:scale-[0.98] lg:top-[232px] lg:left-9 lg:h-[202px] lg:w-[270px]"
       >
-        <BowlFront className="absolute inset-0 size-full" />
+        {/* The shake moves this inner layer (GSAP); the press scale stays on the outer one (CSS). */}
+        <div data-part="bowl-shake" className="absolute inset-0 origin-bottom">
+          {BOWL_SLIPS.inside.map((spot, i) => (
+            <BowlSlip key={i} spot={spot} />
+          ))}
+          <BowlRim className="absolute inset-0 size-full" />
+        </div>
       </div>
 
       <button

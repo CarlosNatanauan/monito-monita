@@ -24,6 +24,61 @@ export function BowlFront({ className, style, tone = "sky" }: LayerProps) {
   return <Art name="bowl-front" className={cn(TONE[tone], className)} style={style} />;
 }
 
+/** The bowl's glass alone (the landing draws its slips separately, to mix them). */
+export function BowlGlass({ className, style, tone = "sky" }: LayerProps) {
+  return <Art name="bowl-glass" className={cn(TONE[tone], className)} style={style} />;
+}
+
+/** The bowl's rim, highlight and foot alone, in front of the slips inside. */
+export function BowlRim({ className, style, tone = "sky" }: LayerProps) {
+  return <Art name="bowl-rim" className={cn(TONE[tone], className)} style={style} />;
+}
+
+/**
+ * The slips in the bowl, in its 200×150 box (the same places as in
+ * bowl-back and bowl-front): two over the rim, behind the glass's front,
+ * and four inside. cx/cy is the centre, rot the tilt in degrees. `wave`:
+ * the folded line of writing, in the slip's own 0..w × 0..h box.
+ */
+export type BowlSlipSpot = { cx: number; cy: number; w: number; h: number; rot: number; wave?: string };
+export const BOWL_SLIPS: { top: BowlSlipSpot[]; inside: BowlSlipSpot[] } = {
+  top: [
+    { cx: 96, cy: 26, w: 52, h: 24, rot: -14 },
+    { cx: 138, cy: 22, w: 52, h: 24, rot: 12 },
+  ],
+  inside: [
+    { cx: 66, cy: 74, w: 52, h: 24, rot: 9, wave: "M10 10q6-5 12 0t12 0" },
+    { cx: 130, cy: 68, w: 52, h: 24, rot: -12, wave: "M8 12q6-5 12 0t12 0" },
+    { cx: 88, cy: 102, w: 52, h: 24, rot: -5, wave: "M10 12q6-5 12 0t12 0" },
+    { cx: 129, cy: 109, w: 46, h: 22, rot: 16 },
+  ],
+};
+
+/**
+ * One slip in the bowl: its own small element (positioned in % of the
+ * bowl's box), so a mix moves it with a composited transform.
+ */
+export function BowlSlip({ spot, tone = "sky" }: { spot: BowlSlipSpot; tone?: Tone }) {
+  return (
+    <div
+      data-bowl-slip
+      className={cn("absolute", TONE[tone])}
+      style={{
+        left: `${((spot.cx - spot.w / 2) / BOWL.W) * 100}%`,
+        top: `${((spot.cy - spot.h / 2) / BOWL.H) * 100}%`,
+        width: `${(spot.w / BOWL.W) * 100}%`,
+        height: `${(spot.h / BOWL.H) * 100}%`,
+        transform: `rotate(${spot.rot}deg)`,
+      }}
+    >
+      <svg viewBox={`0 0 ${spot.w} ${spot.h}`} className="block size-full overflow-visible" aria-hidden focusable="false">
+        <rect x="0" y="0" width={spot.w} height={spot.h} fill="#fff" stroke="currentColor" strokeWidth="2" />
+        {spot.wave && <path d={spot.wave} fill="none" stroke="currentColor" strokeWidth="1.5" />}
+      </svg>
+    </div>
+  );
+}
+
 /** The woven tray, always under the bowl (240×50). */
 export function Bilao({ className, style }: { className?: string; style?: React.CSSProperties }) {
   return <Art name="bilao" className={className} style={style} />;

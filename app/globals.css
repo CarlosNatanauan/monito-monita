@@ -269,8 +269,9 @@
    wire); a pattern animates only those four layers' opacity, chosen by
    data-mode. The controller (landing, /me) cycles steady, alternate, chase,
    fade and twinkle; forms get calm. Each bulb flashes at most about once a
-   second, every on/off edge is a 110-140ms ramp, and steady (no animation)
-   is the default: reduced motion keeps it, since nothing is declared there. */
+   second, every on/off edge is a 110-140ms ramp, the string is never fully
+   dark, and steady (no animation) is the default: the first paint, a hidden
+   page and reduced motion all show it. */
 @media (prefers-reduced-motion: no-preference) {
   [data-light-string] .ls-lit {
     will-change: opacity;
@@ -331,11 +332,14 @@
     animation-duration: 7.8s;
     animation-delay: -1.7s;
   }
-  /* The tab is hidden: hold still. */
+  /* The page is hidden: steady and lit, not frozen mid-pattern (a frozen
+     fade could sit dark if a phone never says the page is back). */
   [data-light-string][data-paused] .ls-lit {
-    animation-play-state: paused;
+    animation: none;
   }
 }
+/* "Off" is never fully dark: an off group keeps a faint glow (15%), and
+   alternate and chase always have half the bulbs lit. */
 @keyframes ls-onoff {
   0%,
   45% {
@@ -343,18 +347,19 @@
   }
   52%,
   93% {
-    opacity: 0;
+    opacity: 0.15;
   }
   100% {
     opacity: 1;
   }
 }
+/* The fade dims every bulb together, so its bottom still glows (30%). */
 @keyframes ls-fade {
   from {
     opacity: 1;
   }
   to {
-    opacity: 0;
+    opacity: 0.3;
   }
 }
 @keyframes ls-sparkle {
@@ -364,7 +369,7 @@
   }
   23%,
   40% {
-    opacity: 0;
+    opacity: 0.15;
   }
   45%,
   70% {

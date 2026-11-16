@@ -16,6 +16,8 @@ export type ArtName =
   | "star"
   | "bowl-back"
   | "bowl-front"
+  | "bowl-glass"
+  | "bowl-rim"
   | "bilao"
   | "simbahan"
   | "clothespin";
@@ -26,6 +28,8 @@ export const ART_VIEWBOX: Record<ArtName, string> = {
   star: "0 0 100 100",
   "bowl-back": "0 0 200 150",
   "bowl-front": "0 0 200 150",
+  "bowl-glass": "0 0 200 150",
+  "bowl-rim": "0 0 200 150",
   bilao: "0 0 240 50",
   simbahan: "0 0 300 90",
   clothespin: "0 0 16 46",
@@ -128,6 +132,18 @@ export function ArtSymbols() {
         <rect x="62" y="90" width="52" height="24" transform="rotate(-5 88 102)" fill="#fff" stroke="currentColor" strokeWidth="2" />
         <rect x="106" y="98" width="46" height="22" transform="rotate(16 129 109)" fill="#fff" stroke="currentColor" strokeWidth="2" />
         <path d="M50 72q6-5 12 0t12 0M112 68q6-5 12 0t12 0M72 102q6-5 12 0t12 0" fill="none" stroke="currentColor" strokeWidth="1.5" />
+        <ellipse cx="100" cy="42" rx="86" ry="11" fill="none" stroke="currentColor" strokeWidth="2.5" />
+        <path d="M30 60C32 84 40 102 52 114" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
+        <path d="M70 138C80 147 120 147 130 138" fill="none" stroke="currentColor" strokeWidth="2.5" />
+      </symbol>
+
+      {/* The same bowl without its slips, for the landing, where each slip is
+          its own element so they can be mixed: the glass (behind the slips
+          inside) and the rim, highlight and foot (in front of them). */}
+      <symbol id="art-bowl-glass" viewBox={ART_VIEWBOX["bowl-glass"]}>
+        <path d="M14 42C16 104 52 138 100 138 148 138 184 104 186 42" fill="#fff" fillOpacity=".55" stroke="currentColor" strokeWidth="2.5" />
+      </symbol>
+      <symbol id="art-bowl-rim" viewBox={ART_VIEWBOX["bowl-rim"]}>
         <ellipse cx="100" cy="42" rx="86" ry="11" fill="none" stroke="currentColor" strokeWidth="2.5" />
         <path d="M30 60C32 84 40 102 52 114" fill="none" stroke="#fff" strokeWidth="4" strokeLinecap="round" />
         <path d="M70 138C80 147 120 147 130 138" fill="none" stroke="currentColor" strokeWidth="2.5" />

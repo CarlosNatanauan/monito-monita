@@ -38,8 +38,8 @@ export function Name({ children, className }: { children: React.ReactNode; class
 /**
  * The decorative light string across the top of member pages
  * (docs/DESIGN.md, "Light string"): one continuous wire that sags between
- * nails every 360px, drawn at true pixel size on a 3960px strip centred on
- * the page and clipped to the window, so it has no seams and never
+ * nails every 360px, drawn at true pixel size on a 3960px drawing centred
+ * on the page and clipped to the window, so it has no seams and never
  * stretches. The middle of the window is the middle of a sag: a 390px
  * phone shows one swag with a nail 15px in from each edge.
  *
@@ -56,18 +56,24 @@ const STRING_WIRE = `M0 5${" q180 24 360 0".repeat(STRING_SWAGS)}`;
 const SWAG_XS = Array.from({ length: STRING_SWAGS }, (_, k) => k * SWAG_W);
 const stringClass = "relative block h-11 w-full shrink-0 overflow-hidden";
 
+/**
+ * One layer of the string: as wide as the window (a composited layer per
+ * lit group, so it stays small on phones), with the 3960px drawing centred
+ * in it by a nested SVG at x 50% and clipped at the window's edges.
+ */
 function Strip({ children, className, group }: { children: React.ReactNode; className?: string; group?: number }) {
   return (
     <svg
-      viewBox={`0 0 ${STRING_W} 44`}
-      width={STRING_W}
+      width="100%"
       height="44"
       aria-hidden
       focusable="false"
       data-group={group}
-      className={cn("pointer-events-none absolute top-0 left-1/2 h-11 -translate-x-1/2", className)}
+      className={cn("pointer-events-none absolute inset-0 h-11 w-full overflow-hidden", className)}
     >
-      {children}
+      <svg x="50%" overflow="visible">
+        <g transform={`translate(${-STRING_W / 2} 0)`}>{children}</g>
+      </svg>
     </svg>
   );
 }

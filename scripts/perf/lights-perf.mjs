@@ -3,19 +3,28 @@
 //      throttling (Pixel 7), how many animations run and on what property
 //   2. flash rate per mode: each lit layer sampled every 20ms for 8s;
 //      a flash is an off-and-back-on (opacity under 0.5, then over)
-//   3. the controller: a "Palitan ang ilaw" button, the 8s auto cycle,
-//      tap to switch, paused while the tab is hidden
-//   4. forms (/new): calm twinkle only, not a button
-//   5. reduced motion: no button, no animations, every bulb lit, a tap does nothing
+//   3. never dark: per mode, the longest stretch with every group off and
+//      the brightest group at the darkest moment; "off" still glows
+//   4. the controller: a "Palitan ang ilaw" button, tap to switch; hidden =
+//      steady and lit; a missed "visible again" event still resumes
+//   5. the first paint with JavaScript off is steady and lit, and the 8s
+//      auto cycle starts by itself (also after loading hidden), on WebKit
+//      (iPhone 14) and Chromium (Pixel 7)
+//   6. forms (/new): calm twinkle only, not a button
+//   7. reduced motion: no button, no animations, every bulb lit, a tap does nothing
 //
 // Creates an "E2E Lights perf" group in the dev DB for /me (the e2e
 // teardown deletes E2E groups). Run against a PRODUCTION build:
 //   npm run build && npx next start -p 3100
 //   node scripts/perf/lights-perf.mjs http://localhost:3100
-import { chromium, devices } from "@playwright/test";
+import { chromium, devices, webkit } from "@playwright/test";
 
 const base = process.argv[2] ?? "http://localhost:3100";
 const MODES = ["steady", "alternate", "chase", "fade", "twinkle"];
+const ENGINES = [
+  ["iPhone 14 (WebKit)", "webkit", "iPhone 14"],
+  ["Pixel 7 (Chromium)", "chromium", "Pixel 7"],
+];
 const browser = await chromium.launch();
 let failures = 0;
 const check = (ok, text) => {
@@ -58,7 +67,16 @@ const stringAnimations = (page) =>
       })),
   );
 
-/** Each lit layer's opacity every 20ms for `ms`: flashes per second, worst layer and whole string. */
+/** Each lit layer's opacity right now. */
+const litOpacities = (page) =>
+  page.evaluate(() => [...document.querySelectorAll("[data-light-string] .ls-lit")].map((el) => +(+getComputedStyle(el).opacity).toFixed(2)));
+
+/**
+ * Each lit layer's opacity every 20ms for `ms`: flashes per second (worst
+ * layer and whole string), the lowest opacity of any layer, the brightest
+ * layer at the string's darkest moment, and the longest stretch with every
+ * group under 0.5 (the whole string looking off).
+ */
 const flashRate = (page, ms) =>
   page.evaluate(
     (ms) =>
@@ -67,10 +85,14 @@ const flashRate = (page, ms) =>
         const off = layers.map(() => false);
         const flashes = layers.map(() => 0);
         let min = 1;
+        let brightestAtDarkest = 1;
+        let darkSince = null;
+        let darkMs = 0;
         const start = performance.now();
         const id = setInterval(() => {
-          layers.forEach((el, i) => {
-            const o = +getComputedStyle(el).opacity;
+          const now = performance.now();
+          const os = layers.map((el) => +getComputedStyle(el).opacity);
+          os.forEach((o, i) => {
             min = Math.min(min, o);
             if (!off[i] && o < 0.5) off[i] = true;
             else if (off[i] && o > 0.5) {
@@ -78,10 +100,16 @@ const flashRate = (page, ms) =>
               flashes[i]++;
             }
           });
-          if (performance.now() - start > ms) {
+          const top = Math.max(...os);
+          brightestAtDarkest = Math.min(brightestAtDarkest, top);
+          if (top < 0.5) {
+            darkSince ??= now;
+            darkMs = Math.max(darkMs, now - darkSince);
+          } else darkSince = null;
+          if (now - start > ms) {
             clearInterval(id);
             const s = ms / 1000;
-            resolve({ worst: Math.max(...flashes) / s, all: flashes.reduce((a, b) => a + b, 0) / s, min });
+            resolve({ worst: Math.max(...flashes) / s, all: flashes.reduce((a, b) => a + b, 0) / s, min, brightestAtDarkest, darkMs });
           }
         }, 20);
       }),
@@ -154,44 +182,98 @@ for (const [label, url, cookies] of [
     const props = [...new Set(anims.flatMap((a) => a.props))].join(",") || "none";
     console.log(
       `  ${mode.padEnd(9)} ${anims.length} animations (${props}); ${f.fps.toFixed(1)} fps at 4x, worst ${f.worst.toFixed(1)}ms, ` +
-        `over 34ms ${f.over}/${f.n}, long tasks ${f.long}; flashes/s: worst bulb ${fl.worst.toFixed(2)}, whole string ${fl.all.toFixed(2)}, lowest opacity ${fl.min.toFixed(2)}`,
+        `over 34ms ${f.over}/${f.n}, long tasks ${f.long}; flashes/s: worst bulb ${fl.worst.toFixed(2)}, whole string ${fl.all.toFixed(2)}; lowest layer ${fl.min.toFixed(2)}, brightest at the darkest moment ${fl.brightestAtDarkest.toFixed(2)}, all off for ${Math.round(fl.darkMs)}ms`,
     );
     check(mode === MODES[m] && still, `tap ${m} → ${MODES[m]}, held for the whole sample`);
     check(anims.length === (m === 0 ? 0 : 4) && anims.every((a) => a.props.join() === "opacity"), `${MODES[m]}: ${m === 0 ? "no" : "4 opacity-only"} animations`);
     check(f.fps > 58 && f.over === 0, `${MODES[m]}: 60 fps at 4x`);
     check(fl.worst <= 1.2 && fl.all <= 3, `${MODES[m]}: at most ~1 flash/s per bulb, under 3/s on the whole string`);
+    // Never dark: some bulbs always lit (alternate, chase), the fade's bottom
+    // still glowing, twinkle's rare all-dim moments brief; off still glows.
+    const dark = { steady: fl.min === 1, alternate: fl.darkMs <= 100, chase: fl.darkMs <= 100, fade: fl.brightestAtDarkest >= 0.29, twinkle: fl.darkMs <= 300 };
+    check(dark[MODES[m]] && fl.min >= 0.14, `${MODES[m]}: never dark (off glows at ${fl.min.toFixed(2)})`);
   }
 
-  // Hidden tab: paused, and the auto cycle stops.
+  // Hidden: steady and lit (no animation frozen mid-pattern). Then the
+  // "visible again" event never comes (bfcache restores, in-app browsers):
+  // the string must notice by itself and carry on.
+  await button.click(); // twinkle -> steady
+  for (let k = 0; k < 3; k++) await button.click(); // -> fade
+  await page.waitForTimeout(2300); // near the bottom of the fade
   await page.evaluate(() => {
-    Object.defineProperty(document, "hidden", { configurable: true, get: () => true });
+    Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
     document.dispatchEvent(new Event("visibilitychange"));
   });
-  await page.waitForTimeout(200);
-  const paused = await page.evaluate(() =>
-    document.getAnimations().filter((a) => a.effect?.target?.closest?.("[data-light-string]")).every((a) => a.playState === "paused"),
+  await page.waitForTimeout(300);
+  const hiddenLit = await litOpacities(page);
+  check(
+    (await string.getAttribute("data-paused")) !== null && (await stringAnimations(page)).length === 0 && hiddenLit.every((o) => o === 1),
+    `hidden: no animations, every bulb lit (${hiddenLit.join(", ")})`,
   );
-  check((await string.getAttribute("data-paused")) !== null && paused, "hidden tab: every animation paused");
-  await page.evaluate(() => {
-    Object.defineProperty(document, "hidden", { configurable: true, get: () => false });
-    document.dispatchEvent(new Event("visibilitychange"));
-  });
+  await page.evaluate(() => delete document.visibilityState); // visible again, no event
+  await page.waitForTimeout(1500);
+  check((await string.getAttribute("data-paused")) === null, "visible again without an event: resumes within 1.5s");
+  const resumedMode = await string.getAttribute("data-mode");
+  await page.waitForTimeout(8200);
+  const nextMode = await string.getAttribute("data-mode");
+  check(nextMode !== resumedMode, `and the 8s cycle carries on (${resumedMode} -> ${nextMode})`);
   await ctx.close();
 }
 
-// The auto cycle: steady, then alternate after 8 seconds.
+// First paint, before any JavaScript: steady and lit.
 {
-  console.log("Auto cycle:");
-  const ctx = await browser.newContext({ ...devices["Pixel 7"] });
-  const page = await ctx.newPage();
-  await page.goto(base, { waitUntil: "networkidle" });
-  const string = page.locator("[data-light-string]");
-  await page.waitForTimeout(7000);
-  const early = await string.getAttribute("data-mode");
-  await page.waitForTimeout(2000);
-  const later = await string.getAttribute("data-mode");
-  check(early === "steady" && later === "alternate", `steady at 7s, alternate at 9s (got ${early}, ${later})`);
-  await ctx.close();
+  console.log("First paint (JavaScript off):");
+  for (const [name, engine, dev] of ENGINES) {
+    const b = engine === "chromium" ? browser : await webkit.launch();
+    const ctx = await b.newContext({ ...devices[dev], javaScriptEnabled: false });
+    const page = await ctx.newPage();
+    await page.goto(base, { waitUntil: "load" });
+    const lit = await litOpacities(page);
+    const mode = await page.locator("[data-light-string]").getAttribute("data-mode");
+    check(mode === "steady" && lit.every((o) => o === 1), `${name}: steady, every bulb lit (${lit.join(", ")})`);
+    await ctx.close();
+    if (b !== browser) await b.close();
+  }
+}
+
+// The auto cycle starts by itself: steady, then alternate 8s after load,
+// no tap. Also when the page loads hidden (opened in the background) and
+// is shown later without any event.
+{
+  console.log("Auto cycle (no tap):");
+  for (const [name, engine, dev] of ENGINES) {
+    const b = engine === "chromium" ? browser : await webkit.launch();
+    const ctx = await b.newContext({ ...devices[dev] });
+    const page = await ctx.newPage();
+    await page.goto(base, { waitUntil: "networkidle" });
+    const string = page.locator("[data-light-string]");
+    await page.waitForTimeout(6500);
+    const early = await string.getAttribute("data-mode");
+    await page.waitForTimeout(3500);
+    const later = await string.getAttribute("data-mode");
+    check(early === "steady" && later === "alternate", `${name}: steady at ~7s, alternate at ~10s (got ${early}, ${later})`);
+
+    const bg = await b.newContext({ ...devices[dev] });
+    await bg.addInitScript(() => {
+      Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "hidden" });
+      setTimeout(() => delete document.visibilityState, 3000); // shown 3s later, no event
+    });
+    const hiddenPage = await bg.newPage();
+    await hiddenPage.goto(base, { waitUntil: "networkidle" });
+    const hs = hiddenPage.locator("[data-light-string]");
+    const pausedAtLoad = await hs.getAttribute("data-paused");
+    const litAtLoad = await litOpacities(hiddenPage);
+    await hiddenPage.waitForTimeout(13000);
+    const pausedLater = await hs.getAttribute("data-paused");
+    const modeLater = await hs.getAttribute("data-mode");
+    check(
+      pausedAtLoad !== null && litAtLoad.every((o) => o === 1) && pausedLater === null && modeLater === "alternate",
+      `${name}: loaded hidden: lit while hidden, then cycling once shown (mode ${modeLater})`,
+    );
+    await ctx.close();
+    await bg.close();
+    if (b !== browser) await b.close();
+  }
 }
 
 // Forms: calm only, decoration (not a button).

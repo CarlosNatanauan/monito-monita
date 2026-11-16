@@ -191,20 +191,22 @@ for (const size of SIZES) {
     // with the window's middle on the middle of a sag.
     const string = await page.locator("[data-light-string]").evaluate((el) => {
       const r = el.getBoundingClientRect();
-      const strips = [...el.querySelectorAll("svg")].map((s) => s.getBoundingClientRect());
+      // Each layer is window-wide; the wire's own box spans the 3960px drawing.
+      const layers = [...el.querySelectorAll(":scope > svg")].map((s) => s.getBoundingClientRect());
+      const wire = el.querySelector("path")!.getBoundingClientRect();
       return {
         left: r.left,
         width: r.width,
         wires: el.querySelectorAll("path").length,
-        covers: strips.every((s) => s.left <= r.left && s.right >= r.right),
-        offset: (((strips[0].left + strips[0].width / 2 - (r.left + r.width / 2)) % 360) + 360) % 360,
+        covers: wire.left <= r.left && wire.right >= r.right && layers.every((s) => Math.abs(s.left - r.left) < 1 && Math.abs(s.width - r.width) < 1),
+        offset: (((wire.left + wire.width / 2 - (r.left + r.width / 2)) % 360) + 360) % 360,
       };
     });
     const nailOffset = Math.min(string.offset, 360 - string.offset);
     expect(string.left, "light string from the left edge").toBe(0);
     expect(string.width, "light string across the full width").toBe(size.width);
     expect(string.wires, "one continuous wire").toBe(1);
-    expect(string.covers, "the wire strip covers the window edge to edge").toBe(true);
+    expect(string.covers, "the wire covers the window edge to edge; every layer is window-wide").toBe(true);
     expect(nailOffset, "window centred on the middle of a sag").toBeLessThan(1);
     // The landing's string is its light controller: one 44px button above the page, overlapping nothing.
     const controller = page.getByRole("button", { name: "Palitan ang ilaw" });
