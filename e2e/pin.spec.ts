@@ -10,7 +10,8 @@
  * so no IP limit); the test group is deleted afterwards.
  */
 import { eq } from "drizzle-orm";
-import { expect, test, type Browser, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
+import type { Browser, BrowserContext, Page, TestInfo } from "@playwright/test";
+import { expect, test } from "./test";
 import { addDays, todayIn } from "../lib/theme-weeks";
 import { closeDb, db } from "../server/db";
 import { members } from "../server/db/schema";

@@ -9,7 +9,8 @@
  * and Ben, in join order. The projector layouts at 1080p are in
  * reveal.spec.ts.
  */
-import { expect, test, type Page, type Request } from "@playwright/test";
+import type { Page, Request } from "@playwright/test";
+import { expect, test } from "./test";
 import { closeDb } from "../server/db";
 import { deleteGroups } from "./db-cleanup";
 import { expectCardOrder, navigate, people, screenshotter, type Person } from "./flow";

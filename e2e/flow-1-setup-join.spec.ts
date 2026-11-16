@@ -8,7 +8,8 @@
  * Starts from nothing and clicks through it all. Runs against `next dev`
  * and the DEV database; the test group is deleted afterwards.
  */
-import { expect, test, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "./test";
 import { formatPartyDate } from "../lib/format";
 import { addDays, formatShortDate, todayIn } from "../lib/theme-weeks";
 import { closeDb } from "../server/db";
@@ -376,6 +377,35 @@ test("setup and join: create, join, organizer, wishlists, reminder", async ({ br
     await addWish(joyM.page, "Notebook");
     await ben.page.goto(`/g/${slug}/me`);
     await addWish(ben.page, "Socks");
+  });
+
+  await test.step("a wish typed before /me hydrates (slow phone) is still added", async () => {
+    // Chromium only: holding the scripts with page.route is reliable there.
+    if (browser.browserType().name() !== "chromium") return;
+    const { page } = ben;
+    let release!: () => void;
+    const scriptsHeld = new Promise<void>((resolve) => (release = resolve));
+    const hold = async (route: import("@playwright/test").Route) => {
+      await scriptsHeld;
+      await route.continue();
+    };
+    await page.route("**/_next/static/chunks/**/*.js", hold);
+    await page.goto(`/g/${slug}/me`, { waitUntil: "commit" });
+    // The server HTML is up, React isn't: type now.
+    await page.getByLabel("Ano ang gusto mo?").fill("Scarf");
+    release();
+    await page.waitForLoadState("load");
+    await page.unroute("**/_next/static/chunks/**/*.js", hold);
+    await expect(page.getByRole("button", { name: "Add", exact: true })).toBeEnabled();
+    // Hydration done when a client-only control responds.
+    await expect(async () => {
+      await page.getByRole("button", { name: "Lagyan ng link o note" }).click({ timeout: 2_000 });
+      await expect(page.getByLabel("Link (optional)")).toBeVisible({ timeout: 1_000 });
+    }).toPass();
+    await expect(page.getByLabel("Ano ang gusto mo?")).toHaveValue("Scarf");
+    await page.getByRole("button", { name: "Add", exact: true }).click();
+    await expect(page.getByRole("list", { name: "Wishlist mo" }).getByText("Scarf", { exact: true })).toBeVisible();
+    await expect(page.getByText("Pakilagay kung ano ang gusto mo.")).toHaveCount(0);
   });
 
   await test.step("GC reminder before the draw: invite, link, count, party date", async () => {

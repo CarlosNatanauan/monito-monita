@@ -9,7 +9,8 @@
  * it sets each size itself.
  */
 import { mkdirSync, rmSync } from "node:fs";
-import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
+import type { Browser, Locator, Page } from "@playwright/test";
+import { expect, test } from "./test";
 import { closeDb } from "../server/db";
 import { deleteGroups } from "./db-cleanup";
 import { seedGroup, type SeededGroup } from "./seed";

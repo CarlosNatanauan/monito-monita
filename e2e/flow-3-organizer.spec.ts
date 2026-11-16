@@ -9,7 +9,7 @@
  * organizer) and Ben, with wishlists. The draw itself runs on the server
  * here (part 2 covers the Draw button).
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 import { closeDb } from "../server/db";
 import { drawNames, markSlipOpened } from "../server/draw-service";
 import { deleteGroups } from "./db-cleanup";

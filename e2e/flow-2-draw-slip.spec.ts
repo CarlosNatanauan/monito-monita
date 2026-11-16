@@ -8,7 +8,7 @@
  * Starts from a seeded group before the draw: Joy, Joy M, Tita Org (the
  * organizer) and Ben, with wishlists and Joy–Joy M as a bawal pair.
  */
-import { expect, test } from "@playwright/test";
+import { expect, test } from "./test";
 import { formatPartyDate } from "../lib/format";
 import { addDays } from "../lib/theme-weeks";
 import { closeDb } from "../server/db";

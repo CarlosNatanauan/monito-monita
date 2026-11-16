@@ -6,7 +6,8 @@
  * stage. Groups are seeded straight into the DEV database and deleted
  * afterwards.
  */
-import { devices, expect, test, type Browser, type BrowserContext, type Page, type Response } from "@playwright/test";
+import { devices, type Browser, type BrowserContext, type Page, type Response } from "@playwright/test";
+import { expect, test } from "./test";
 import { eq } from "drizzle-orm";
 import { addDays, todayIn } from "../lib/theme-weeks";
 import { closeDb, db } from "../server/db";

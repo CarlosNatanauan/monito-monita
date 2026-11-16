@@ -4,7 +4,8 @@
  * bowl, then /me (no GSAP). Runs on both phones, against the dev database;
  * the test group is deleted afterwards.
  */
-import { expect, test, type Page } from "@playwright/test";
+import type { Page } from "@playwright/test";
+import { expect, test } from "./test";
 import { addDays, todayIn } from "../lib/theme-weeks";
 import { closeDb } from "../server/db";
 import { deleteGroups, E2E_PREFIX } from "./db-cleanup";

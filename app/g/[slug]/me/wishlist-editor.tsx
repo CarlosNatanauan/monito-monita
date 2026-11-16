@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import { WishRows, type WishItemData } from "@/components/wish-item";
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
@@ -134,6 +134,17 @@ function WishForm({
     });
   };
 
+  // On a slow phone people type before /me hydrates. The field shows that
+  // text but state doesn't have it, so the next render (or Add) would wipe
+  // it or say it's missing. Take it into state once, right after hydrating.
+  const titleRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    const typed = titleRef.current?.value ?? "";
+    if (typed !== initial.title) setDraft((d) => ({ ...d, title: typed }));
+    // Only the first render can differ from what was typed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
     setMessage(null);
@@ -150,6 +161,7 @@ function WishForm({
       {message && <ErrorMessage className="my-2">{message}</ErrorMessage>}
       <div className="lst-row2">
         <Input
+          ref={titleRef}
           size="row"
           value={draft.title}
           onChange={(e) => set("title")(e.target.value)}
