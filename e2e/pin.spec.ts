@@ -276,11 +276,11 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
 
   await test.step("5 wrong → locked for 15 min (right PIN fails, the organizer sees it); 10 → locked until unlocked", async () => {
     const { page } = anaD;
-    // 2 wrong so far (previous step): the quiet hint, under the error.
+    // 2 failures in this browser so far (1 of them Ana's): the quiet hint, under the error.
     await expect(page.getByText(ASK_ORGANIZER)).toBeVisible();
     await expect(page.getByText("Huminto muna.")).toHaveCount(0);
-    // 3 more → 5: locked. From the 3rd, the hint grows (counted in this browser only).
-    for (let i = 0; i < 3; i++) {
+    // 4 more for Ana → 5: locked. From the 3rd failure in this browser, the hint grows.
+    for (let i = 0; i < 4; i++) {
       await submitComeBack(page, "0000", "Ana");
       await expectWrong(page);
     }
