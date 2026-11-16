@@ -206,6 +206,12 @@ for (const size of SIZES) {
     expect(string.wires, "one continuous wire").toBe(1);
     expect(string.covers, "the wire strip covers the window edge to edge").toBe(true);
     expect(nailOffset, "window centred on the middle of a sag").toBeLessThan(1);
+    // The landing's string is its light controller: one 44px button above the page, overlapping nothing.
+    const controller = page.getByRole("button", { name: "Palitan ang ilaw" });
+    await expect(controller).toHaveCount(1);
+    const [ctrl, brand] = [await box(controller), await box(page.getByText("Monito Monita").first())];
+    expect(ctrl.height, "controller is the 44px string").toBe(44);
+    expect(brand.y, "page content starts below the string").toBeGreaterThanOrEqual(ctrl.y + ctrl.height);
     await shot(page, "landing");
 
     // Returning visitor: "Your groups" under the main button.
@@ -232,6 +238,7 @@ for (const size of SIZES) {
     // The live GC preview: the invite, at every width.
     const preview = page.getByLabel("Invite preview");
     await expect(preview).toContainText("Sali na sa exchange gift natin!");
+    await expect(page.getByRole("button", { name: "Palitan ang ilaw" }), "forms: calm twinkle, no controller").toHaveCount(0);
     await shot(page, "new");
     await page.getByLabel("Pangalan ng group").fill("Barkada Christmas Party");
     await page.getByLabel("Budget", { exact: true }).fill("500");

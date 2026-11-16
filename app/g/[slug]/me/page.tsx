@@ -40,7 +40,7 @@ export const metadata: Metadata = {
 export default function MemberHomePage({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   return (
     <>
-      <LightString />
+      <LightString controller />
       <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
         <Suspense fallback={<PageFallback />}>
           <MemberHome params={params} searchParams={searchParams} />

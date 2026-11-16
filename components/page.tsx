@@ -1,4 +1,5 @@
-import { SWAG_HALO_GROUPS, SWAG_W } from "@/components/art/symbols";
+import { SWAG_GROUPS, SWAG_W } from "@/components/art/symbols";
+import { LightController } from "@/components/light-controller";
 import { cn } from "@/lib/utils";
 
 /**
@@ -42,44 +43,69 @@ export function Name({ children, className }: { children: React.ReactNode; class
  * stretches. The middle of the window is the middle of a sag: a 390px
  * phone shows one swag with a nail 15px in from each edge.
  *
- * The bulbs' flat halos sit on three layers of their own (a third of the
- * bulbs each, behind the wire); the twinkle animates only those three
- * layers' opacity (`.ls-halo` in globals.css), and stops under reduced motion.
+ * Layers, bottom to top: every bulb unlit; four lit layers, one per bulb
+ * group (bulb i in group i % 4); the wire, nails and socket caps. Light
+ * patterns animate only the four lit layers' opacity, chosen by
+ * `data-mode` (globals.css). With `controller` (landing, /me) the string
+ * is a button that cycles the modes like a real controller; otherwise
+ * (forms) it only twinkles, slow and calm. Reduced motion: steady and lit.
  */
 const STRING_SWAGS = 11;
 const STRING_W = STRING_SWAGS * SWAG_W;
 const STRING_WIRE = `M0 5${" q180 24 360 0".repeat(STRING_SWAGS)}`;
-const stripClass = "absolute top-0 left-1/2 h-11 -translate-x-1/2";
+const SWAG_XS = Array.from({ length: STRING_SWAGS }, (_, k) => k * SWAG_W);
+const stringClass = "relative block h-11 w-full shrink-0 overflow-hidden";
 
-export function LightString() {
-  const swags = Array.from({ length: STRING_SWAGS + 1 }, (_, k) => k * SWAG_W);
+function Strip({ children, className, group }: { children: React.ReactNode; className?: string; group?: number }) {
   return (
-    <div aria-hidden data-light-string className="pointer-events-none relative h-11 w-full shrink-0 overflow-hidden">
-      {Array.from({ length: SWAG_HALO_GROUPS }, (_, g) => (
-        <svg
-          key={g}
-          viewBox={`0 0 ${STRING_W} 44`}
-          width={STRING_W}
-          height="44"
-          className={cn(stripClass, "ls-halo")}
-          data-halo-group={g}
-          focusable="false"
-        >
-          {swags.slice(0, -1).map((x) => (
-            <use key={x} href={`#art-swag-halo-${g}`} x={x} />
+    <svg
+      viewBox={`0 0 ${STRING_W} 44`}
+      width={STRING_W}
+      height="44"
+      aria-hidden
+      focusable="false"
+      data-group={group}
+      className={cn("pointer-events-none absolute top-0 left-1/2 h-11 -translate-x-1/2", className)}
+    >
+      {children}
+    </svg>
+  );
+}
+
+export function LightString({ controller = false }: { controller?: boolean }) {
+  const layers = (
+    <>
+      <Strip>
+        {SWAG_XS.map((x) => (
+          <use key={x} href="#art-swag-off" x={x} />
+        ))}
+      </Strip>
+      {Array.from({ length: SWAG_GROUPS }, (_, g) => (
+        <Strip key={g} group={g} className="ls-lit">
+          {SWAG_XS.map((x) => (
+            <use key={x} href={`#art-swag-lit-${g}`} x={x} />
           ))}
-        </svg>
+        </Strip>
       ))}
-      <svg viewBox={`0 0 ${STRING_W} 44`} width={STRING_W} height="44" className={stripClass} focusable="false">
+      <Strip>
         <path d={STRING_WIRE} fill="none" stroke="#3F1F63" strokeWidth="1.3" />
-        {swags.map((x, k) =>
-          k < STRING_SWAGS ? (
-            <use key={x} href="#art-swag-bulbs" x={x} />
-          ) : (
-            <circle key={x} cx={x} cy="2.4" r="2.2" fill="#3F1F63" />
-          ),
-        )}
-      </svg>
+        {SWAG_XS.map((x) => (
+          <use key={x} href="#art-swag-top" x={x} />
+        ))}
+        <circle cx={STRING_W} cy="2.4" r="2.2" fill="#3F1F63" />
+      </Strip>
+    </>
+  );
+  if (controller) {
+    return (
+      <LightController className={cn(stringClass, "cursor-pointer focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-ilaw focus-visible:shadow-[inset_0_0_0_4.5px_var(--color-ube)]")}>
+        {layers}
+      </LightController>
+    );
+  }
+  return (
+    <div aria-hidden data-light-string data-mode="calm" className={cn(stringClass, "pointer-events-none")}>
+      {layers}
     </div>
   );
 }

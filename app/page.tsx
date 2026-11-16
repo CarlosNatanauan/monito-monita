@@ -28,7 +28,7 @@ const STEPS = {
 export default function Home() {
   return (
     <>
-      <LightString />
+      <LightString controller />
       <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
         <div className={colsClass}>
           <div className={cn(colClass, "lg:col-start-1 lg:row-start-1")}>

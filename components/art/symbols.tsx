@@ -34,38 +34,47 @@ export const ART_VIEWBOX: Record<ArtName, string> = {
 // The decorative light string (docs/DESIGN.md, "Light string"): one swag
 // of 360px between two nails, drawn at true pixel size. <LightString />
 // (components/page.tsx) draws the wire as one continuous path and repeats
-// these groups along it. Bulbs hang from the wire by a dark socket cap,
-// cycle gold, red, pale gold, green, and each has a white highlight. Their
-// flat halos are split into three groups (bulb i in group i % 3), each drawn
-// on its own layer so a twinkle animates three layers, not every bulb.
+// these groups along it, in layers:
+// - `art-swag-off`: every bulb unlit (a darker version of its colour);
+// - `art-swag-lit-0..3`: the lit bulbs of one group (bulb i is in group
+//   i % 4, so groups run along the wire): flat halo, bright glass, white
+//   highlight. Each group is its own layer, and the light patterns only
+//   animate those four layers' opacity;
+// - `art-swag-top`: the nail and every bulb's dark socket cap.
+// Bulbs cycle gold, red, pale gold, green, with slightly different sizes and tilts.
 export const SWAG_W = 360;
+export const SWAG_GROUPS = 4;
 /** The wire's height at x (0..360): the sag M0 5 Q180 29 360 5. */
 const swagWireY = (x: number) => {
   const t = x / SWAG_W;
   return 5 + 48 * t * (1 - t);
 };
-// [rx, ry, tilt, fill, halo]: slightly different sizes and tilts.
-const SWAG_BULB_LOOKS: [number, number, number, string, string][] = [
-  [5, 8, 8, "#F4C542", "#F4C542"],
-  [6, 7, -6, "#C4283A", "#C4283A"],
-  [5.5, 8.5, 5, "#FFE9A3", "#F4C542"],
-  [6, 8, -9, "#1F6B45", "#1F6B45"],
-  [5, 7.5, 4, "#F4C542", "#F4C542"],
-  [6.5, 8, -4, "#C4283A", "#C4283A"],
-  [5.5, 7, 7, "#FFE9A3", "#F4C542"],
-  [6, 8.5, -7, "#1F6B45", "#1F6B45"],
-  [5, 8, 6, "#F4C542", "#F4C542"],
-  [6, 7.5, -5, "#C4283A", "#C4283A"],
-  [5.5, 8, 9, "#FFE9A3", "#F4C542"],
-  [6, 7, -8, "#1F6B45", "#1F6B45"],
+// Lit glass, unlit glass, halo (gold for pale gold, which would vanish on the page).
+const GOLD = ["#F4C542", "#8C6F24", "#F4C542"];
+const RED = ["#C4283A", "#64202E", "#C4283A"];
+const PALE = ["#FFE9A3", "#A8976A", "#F4C542"];
+const GREEN = ["#1F6B45", "#1C3B2D", "#1F6B45"];
+// [rx, ry, tilt, colours]
+const SWAG_BULB_LOOKS: [number, number, number, string[]][] = [
+  [5, 8, 8, GOLD],
+  [6, 7, -6, RED],
+  [5.5, 8.5, 5, PALE],
+  [6, 8, -9, GREEN],
+  [5, 7.5, 4, GOLD],
+  [6.5, 8, -4, RED],
+  [5.5, 7, 7, PALE],
+  [6, 8.5, -7, GREEN],
+  [5, 8, 6, GOLD],
+  [6, 7.5, -5, RED],
+  [5.5, 8, 9, PALE],
+  [6, 7, -8, GREEN],
 ];
 /** Socket cap height: the bulb's glass starts just under it. */
 const CAP = 4;
-const SWAG_BULBS = SWAG_BULB_LOOKS.map(([rx, ry, tilt, fill, halo], i) => {
+const SWAG_BULBS = SWAG_BULB_LOOKS.map(([rx, ry, tilt, [lit, off, halo]], i) => {
   const x = 15 + 30 * i;
-  return { i, rx, ry, fill, halo, transform: `translate(${x} ${swagWireY(x).toFixed(2)}) rotate(${tilt})` };
+  return { i, rx, ry, cy: CAP - 0.6 + ry, lit, off, halo, transform: `translate(${x} ${swagWireY(x).toFixed(2)}) rotate(${tilt})` };
 });
-export const SWAG_HALO_GROUPS = 3;
 
 export function ArtSymbols() {
   return (
@@ -143,29 +152,32 @@ export function ArtSymbols() {
       </symbol>
 
       <defs>
-        {/* One swag's nail (at x 0) and bulbs; the wire is drawn by LightString. */}
-        <g id="art-swag-bulbs">
-          <circle cx="0" cy="2.4" r="2.2" fill="#3F1F63" />
-          <circle cx="-0.6" cy="1.8" r="0.7" fill="#FFFFFF" fillOpacity="0.55" />
+        {/* One swag of light string, in layers (see SWAG_BULBS above). */}
+        <g id="art-swag-off">
           {SWAG_BULBS.map((b) => (
-            <g key={b.i} transform={b.transform}>
-              <ellipse cx="0" cy={CAP - 0.6 + b.ry} rx={b.rx} ry={b.ry} fill={b.fill} stroke="#3F1F63" strokeWidth="1.1" />
-              <ellipse cx={-b.rx * 0.4} cy={CAP + b.ry * 0.6} rx="1.2" ry="2.3" fill="#FFFFFF" fillOpacity="0.85" />
-              <rect x="-2.6" y="-0.8" width="5.2" height={CAP + 0.6} rx="1.1" fill="#3F1F63" />
-            </g>
+            <ellipse key={b.i} transform={b.transform} cx="0" cy={b.cy} rx={b.rx} ry={b.ry} fill={b.off} stroke="#3F1F63" strokeWidth="1.1" />
           ))}
         </g>
-        {/* Flat painted halos, in three groups: two pale steps of the bulb's colour. */}
-        {Array.from({ length: SWAG_HALO_GROUPS }, (_, g) => (
-          <g key={g} id={`art-swag-halo-${g}`}>
-            {SWAG_BULBS.filter((b) => b.i % SWAG_HALO_GROUPS === g).map((b) => (
-              <g key={b.i} transform={b.transform} fill={b.halo}>
-                <circle cx="0" cy={CAP - 0.6 + b.ry} r={b.ry + 6} fillOpacity="0.14" />
-                <circle cx="0" cy={CAP - 0.6 + b.ry} r={b.ry + 3} fillOpacity="0.22" />
+        {Array.from({ length: SWAG_GROUPS }, (_, g) => (
+          <g key={g} id={`art-swag-lit-${g}`}>
+            {SWAG_BULBS.filter((b) => b.i % SWAG_GROUPS === g).map((b) => (
+              <g key={b.i} transform={b.transform}>
+                {/* Flat painted halo: two pale steps of the bulb's colour, no blur. */}
+                <circle cx="0" cy={b.cy} r={b.ry + 6} fill={b.halo} fillOpacity="0.14" />
+                <circle cx="0" cy={b.cy} r={b.ry + 3} fill={b.halo} fillOpacity="0.22" />
+                <ellipse cx="0" cy={b.cy} rx={b.rx} ry={b.ry} fill={b.lit} stroke="#3F1F63" strokeWidth="1.1" />
+                <ellipse cx={-b.rx * 0.4} cy={CAP + b.ry * 0.6} rx="1.2" ry="2.3" fill="#FFFFFF" fillOpacity="0.85" />
               </g>
             ))}
           </g>
         ))}
+        <g id="art-swag-top">
+          <circle cx="0" cy="2.4" r="2.2" fill="#3F1F63" />
+          <circle cx="-0.6" cy="1.8" r="0.7" fill="#FFFFFF" fillOpacity="0.55" />
+          {SWAG_BULBS.map((b) => (
+            <rect key={b.i} transform={b.transform} x="-2.6" y="-0.8" width="5.2" height={CAP + 0.6} rx="1.1" fill="#3F1F63" />
+          ))}
+        </g>
       </defs>
     </svg>
   );

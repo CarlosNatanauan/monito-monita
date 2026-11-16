@@ -263,30 +263,127 @@
   }
 }
 
-/* The decorative light string's twinkle (components/page.tsx, LightString):
-   three halo layers, a third of the bulbs each, softly brighten and dim out
-   of sync. Opacity only, on three elements; the lit state is the default and
-   reduced motion keeps it (no animation is declared at all). */
+/* The decorative light string (components/page.tsx, LightString;
+   docs/DESIGN.md, "Light string"). Four lit layers sit over the unlit
+   bulbs, one per bulb group (bulb i in group i % 4, so groups run along the
+   wire); a pattern animates only those four layers' opacity, chosen by
+   data-mode. The controller (landing, /me) cycles steady, alternate, chase,
+   fade and twinkle; forms get calm. Each bulb flashes at most about once a
+   second, every on/off edge is a 110-140ms ramp, and steady (no animation)
+   is the default: reduced motion keeps it, since nothing is declared there. */
 @media (prefers-reduced-motion: no-preference) {
-  .ls-halo {
-    animation: ls-twinkle 4.2s ease-in-out infinite alternate;
+  [data-light-string] .ls-lit {
     will-change: opacity;
   }
-  .ls-halo[data-halo-group="1"] {
+  /* Alternate: every other bulb, swapping every 0.8s. */
+  [data-mode="alternate"] .ls-lit {
+    animation: ls-onoff 1.6s linear infinite;
+  }
+  [data-mode="alternate"] .ls-lit:is([data-group="1"], [data-group="3"]) {
+    animation-delay: -0.8s;
+  }
+  /* Chase: two neighbouring groups lit, running left to right, a step every 0.5s. */
+  [data-mode="chase"] .ls-lit {
+    animation: ls-onoff 2s linear infinite;
+  }
+  [data-mode="chase"] .ls-lit[data-group="1"] {
+    animation-delay: -1.5s;
+  }
+  [data-mode="chase"] .ls-lit[data-group="2"] {
+    animation-delay: -1s;
+  }
+  [data-mode="chase"] .ls-lit[data-group="3"] {
+    animation-delay: -0.5s;
+  }
+  /* Slow fade: every bulb fades out and back in together, 2.5s each way. */
+  [data-mode="fade"] .ls-lit {
+    animation: ls-fade 2.5s ease-in-out infinite alternate;
+  }
+  /* Twinkle: irregular dips, each group on its own clock. */
+  [data-mode="twinkle"] .ls-lit {
+    animation: ls-sparkle 3.2s linear infinite;
+  }
+  [data-mode="twinkle"] .ls-lit[data-group="1"] {
+    animation-duration: 4.1s;
+    animation-delay: -1.3s;
+  }
+  [data-mode="twinkle"] .ls-lit[data-group="2"] {
+    animation-duration: 2.8s;
+    animation-delay: -0.4s;
+  }
+  [data-mode="twinkle"] .ls-lit[data-group="3"] {
+    animation-duration: 3.7s;
+    animation-delay: -2.1s;
+  }
+  /* Calm (forms): a slow breath, never fully off. */
+  [data-mode="calm"] .ls-lit {
+    animation: ls-calm 4.2s ease-in-out infinite alternate;
+  }
+  [data-mode="calm"] .ls-lit[data-group="1"] {
     animation-duration: 5.4s;
     animation-delay: -2.1s;
   }
-  .ls-halo[data-halo-group="2"] {
+  [data-mode="calm"] .ls-lit[data-group="2"] {
     animation-duration: 6.6s;
     animation-delay: -4.3s;
   }
+  [data-mode="calm"] .ls-lit[data-group="3"] {
+    animation-duration: 7.8s;
+    animation-delay: -1.7s;
+  }
+  /* The tab is hidden: hold still. */
+  [data-light-string][data-paused] .ls-lit {
+    animation-play-state: paused;
+  }
 }
-@keyframes ls-twinkle {
+@keyframes ls-onoff {
+  0%,
+  45% {
+    opacity: 1;
+  }
+  52%,
+  93% {
+    opacity: 0;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes ls-fade {
   from {
     opacity: 1;
   }
   to {
-    opacity: 0.3;
+    opacity: 0;
+  }
+}
+@keyframes ls-sparkle {
+  0%,
+  18% {
+    opacity: 1;
+  }
+  23%,
+  40% {
+    opacity: 0;
+  }
+  45%,
+  70% {
+    opacity: 1;
+  }
+  74% {
+    opacity: 0.25;
+  }
+  79%,
+  100% {
+    opacity: 1;
+  }
+}
+@keyframes ls-calm {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.55;
   }
 }
 
