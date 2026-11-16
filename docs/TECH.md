@@ -109,11 +109,11 @@ No sign-up, but people still need to come back.
 For people who joined in Messenger's browser and later open the link elsewhere.
 
 - **Storage:** the PIN is hashed with salted **scrypt** (N=2^14, r=8), never stored in plain text. PINs aren't unique and are never compared across members. No hash can make a 4-digit PIN strong against an offline attack, so the real protection is the online limits below; the hash keeps a leaked database from showing PINs at a glance.
-- **Joining with a taken name** (case-insensitive, extra spaces ignored, same matching as the unique-name index) creates nothing and returns the come-back form. Taken-name results count toward the IP failure limit.
-- **Coming back:** active member with that name + correct PIN → a **new device token** in `member_sessions` (hash only), set as the member cookie. The member's original token keeps working, so the old device stays logged in. Session tokens work everywhere a member token does, including as a personal link.
+- **Joining with a taken name** (case-insensitive, extra spaces ignored, same matching as the unique-name index) creates nothing and returns a "taken" result (the page asks "Ako 'yan?" before showing the come-back form). Taken-name results count toward the IP failure limit.
+- **Coming back:** active member with that name (or, failing an exact match, the one member it fits without a leading Kuya/Ate/Tita/Tito/Sir/Ma'am: `findByDisplayName` in `server/names.ts`) + correct PIN → a **new device token** in `member_sessions` (hash only), set as the member cookie. The member's original token keeps working, so the old device stays logged in. Session tokens work everywhere a member token does, including as a personal link.
 - **One failure for everything:** unknown name, wrong PIN, locked, removed, no PIN set, rate limited, bad input: all return exactly "Mali ang pangalan o PIN", and each runs one scrypt so timing doesn't tell them apart. Works in every group status (only new joins close at the draw).
 - **Lockout per member** (pure logic, unit tested): 5 wrong → `pinLockedUntil` = now + 15 min; 10 wrong → `pinLockedAt` (until the organizer unlocks). Tries during a lock aren't checked or counted. A correct PIN or an unlock resets the count. The member row is locked (`SELECT … FOR UPDATE`) while checking, so parallel guesses are counted one by one.
-- **Organizer:** sees "Na-lock ang PIN ni {name}" + Unlock for fully locked members; "Get new link" has a **Reset PIN** option (clears the PIN and lock).
+- **Organizer:** sees "Na-lock ang PIN ni {name}" + Unlock for fully locked members, and "Maraming maling PIN si {name} kanina" + "Get new link" (Reset PIN ticked) while a 15-minute lock runs; "Get new link" has a **Reset PIN** option (clears the PIN and lock).
 - **No PIN** (pre-PIN members, or after a reset): /me shows a one-time "Mag-set ng PIN" card; it can only set a PIN when there is none.
 
 ## The draw
@@ -141,16 +141,20 @@ The server knows everything. The API must never leak it.
 - No endpoint returns "who is giving to me" before `REVEALED`.
 - Organizer pages show who has joined and the draw status, **not** the pairs. The one exception is the reveal screen once the organizer starts the reveal: only the pairs revealed so far, then all of them after `REVEALED`.
 - Before reveal, nothing in page HTML, JSON, or network responses should contain other people's pairs. Check this in the browser's Network tab.
+- **Secret links never leave the site:** `/g/*` and `/new` send `Referrer-Policy: same-origin` (`lib/referrer-policy.ts`), so requests to other sites carry no Referer. Not `no-referrer`: with it, Chrome sends `Origin: null` on a form posted before hydration, and the Server Actions CSRF check rejects the early Join / come-back tap on a slow phone with a 500 (`e2e/slow-phone.spec.ts` covers both).
 
 ## Changes after the draw
 
 - **Joins lock** once the group is `DRAWN`.
+- **Edit details** (organizer page, `updateGroupDetails` in `server/groups.ts`): while `OPEN` the name, party date, budget and themes; once `DRAWN` only the date and themes (the stored name and budget are kept whatever is posted); nothing once the reveal starts. Same `createGroupSchema` as creating; theme dates are recomputed from the party date.
 - **Member removed after draw:** patch the loop. The person who had them now gets their receiver. No full redraw needed.
 - **Redraw:** allowed before reveal, with a strong warning (everyone's monito changes).
 
 ## Theme weeks
 
 - Current theme = the latest `ThemeWeek` whose `startDate` has passed. Computed on the fly, no job needed.
+- Weeks count back from the party, so adding one moves Week 1 earlier. The create and edit forms tag each week "Tapos na" / "Ngayong linggo" and warn when some would already be over (`themeWeekStates`, `pastWeeksWarning` in `lib/theme-weeks.ts`); the organizer's list tags this week too.
+- After the draw, the "Na-draw na!" and theme reminders end with the share link and "Nawala ang link mo? Buksan 'to tapos i-tap ang "Bumalik sa slip ko"" (the share link opens the closed page, so it's safe in the GC).
 - **"Copy reminder for GC"** generates a ready-to-paste message ("This week's theme: Something soft 🧸 — budget ₱300 — party on Dec 19!"). This is the MVP reminder system: free and works everywhere.
 - Email/push reminders come later via a daily Vercel Cron job.
 

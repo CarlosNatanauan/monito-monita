@@ -12,7 +12,7 @@ const PORT = 3000;
 // Anchored on the file name: flow-4-reveal.spec.ts is a phone spec.
 const PROJECTOR_SPEC = /[\/]reveal\.spec\.ts$/;
 const PHONE_IGNORE = /[\/](reveal|layouts)\.spec\.ts$/;
-const LAPTOP_MATCH = /[\/](flow-\d-[\w-]+|layouts)\.spec\.ts$/;
+const LAPTOP_MATCH = /[\/](flow-\d-[\w-]+|layouts|persona-fixes)\.spec\.ts$/;
 
 export default defineConfig({
   testDir: "./e2e",

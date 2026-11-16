@@ -155,7 +155,7 @@ test("slow phone: Join and come-back before hydration; tokens stay on the site",
       document.body.append(img);
     }, OTHER_SITE);
     await expect.poll(() => outside.length).toBeGreaterThan(0);
-    await page.evaluate((site) => (window.location.href = `${site}/page`), OTHER_SITE);
+    await page.evaluate((site) => void window.open(`${site}/page`, "_self"), OTHER_SITE);
     await expect.poll(() => outside.length).toBeGreaterThan(1);
 
     expect(outside.map((o) => o.referer), "no Referer to another site").toEqual(outside.map(() => undefined));
