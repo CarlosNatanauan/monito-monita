@@ -46,6 +46,7 @@ export function RevealScreen({
   data,
   backHref,
   controls,
+  startExtra,
   speed,
 }: {
   data: ScreenData;
@@ -54,6 +55,8 @@ export function RevealScreen({
   speed?: number;
   /** Start / Next / Previous for this screen. */
   controls?: React.ReactNode;
+  /** Inside the ring under "Handa na?" (landscape only): "Gawing remote ang phone mo". */
+  startExtra?: React.ReactNode;
 }) {
   const view = toStageView(data);
   const windowed = isWindowed(view.total);
@@ -136,6 +139,7 @@ export function RevealScreen({
         className="relative overflow-hidden portrait:hidden landscape:absolute landscape:inset-0"
         speed={speed}
         onCue={sound.play}
+        startExtra={startExtra}
         onFinaleDone={() => {
           if (windowed) setShowList(true);
         }}

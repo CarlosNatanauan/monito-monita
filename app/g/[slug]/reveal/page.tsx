@@ -7,7 +7,7 @@ import "@/components/reveal/reveal.css";
 import { getCurrentOrganizer, getOwnToken, isValidSlug, personalLinkPath } from "@/server/auth";
 import { getRevealView } from "@/server/reveal";
 import { RevealAutoRefresh } from "./auto-refresh";
-import { RevealControls, StartReveal } from "./reveal-controls";
+import { PhoneRemote, RevealControls, StartReveal } from "./reveal-controls";
 
 export const metadata: Metadata = {
   title: "Reveal · Monito Monita",
@@ -82,9 +82,10 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
       <RevealScreen
         data={view}
         backHref={backHref}
+        startExtra={view.status === "DRAWN" && remotePath ? <PhoneRemote remotePath={remotePath} /> : undefined}
         controls={
           view.status === "DRAWN" ? (
-            <StartReveal slug={slug} remotePath={remotePath} />
+            <StartReveal slug={slug} />
           ) : view.status === "REVEALING" ? (
             <RevealControls slug={slug} step={view.step} total={view.total} />
           ) : undefined

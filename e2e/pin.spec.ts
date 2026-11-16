@@ -225,7 +225,7 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     await expect(page.getByRole("form", { name: "Sumali" })).toBeVisible();
     await expect(page.getByLabel("Pangalan mo")).toHaveValue("ANA");
     await expect(page.getByLabel("Pangalan mo")).toBeFocused();
-    await expect(page.getByText("May ANA na sa group. Dagdagan ng initial ng apelyido, hal. “ANA R.”")).toBeVisible();
+    await expect(page.getByText("May ANA na. Lagyan ng initial, hal. “ANA R.”")).toBeVisible();
 
     // Same name again → the choice again; this time "Ako 'yan" (the PIN form).
     await page.getByLabel("4-digit PIN").fill("9999");
@@ -292,8 +292,8 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     // The organizer sees the 15-minute lock, with "Get new link" right there (persona test C1).
     await organizer.page.goto(`/g/${slug}/admin`);
     const tempLock = organizer.page.getByRole("group", { name: "Maling PIN ni Ana" });
-    await expect(tempLock.getByText("Maraming maling PIN si Ana kanina")).toBeVisible();
-    await expect(organizer.page.getByText(/^Maraming maling PIN si /)).toHaveCount(1);
+    await expect(tempLock.getByText("Maraming maling PIN kanina")).toBeVisible();
+    await expect(organizer.page.getByText("Maraming maling PIN kanina")).toHaveCount(1);
     await tempLock.getByRole("button", { name: "Get new link for Ana (locked)" }).click();
     await expect(organizer.page.getByRole("checkbox", { name: /Reset PIN/ })).toBeChecked();
     await organizer.page.getByRole("button", { name: "Huwag" }).click();
@@ -316,7 +316,7 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     await expect(lock.getByText("Na-lock ang PIN ni Ana")).toBeVisible();
     await expect(page.getByText(/^Na-lock ang PIN ni /)).toHaveCount(1);
     // Fully locked: no 15-minute notice on top of it.
-    await expect(page.getByText(/^Maraming maling PIN si /)).toHaveCount(0);
+    await expect(page.getByText("Maraming maling PIN kanina")).toHaveCount(0);
     await lock.getByRole("button", { name: "Unlock" }).click();
     await expect(page.getByText("Na-lock ang PIN ni Ana")).toHaveCount(0);
 

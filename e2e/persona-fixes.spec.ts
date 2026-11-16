@@ -87,7 +87,7 @@ test("join and come back: missing PIN, taken name, honorifics, PIN hints (C1–C
     await notMine.click();
     await expect(page.getByLabel("Pangalan mo")).toHaveValue("migs");
     await expect(page.getByLabel("Pangalan mo")).toBeFocused();
-    await expect(page.getByText("May migs na sa group. Dagdagan ng initial ng apelyido, hal. “migs R.”")).toBeVisible();
+    await expect(page.getByText("May migs na. Lagyan ng initial, hal. “migs R.”")).toBeVisible();
     await page.getByLabel("Pangalan mo").fill("Migs R.");
     await page.getByLabel("4-digit PIN").fill("1111");
     await join.click();
@@ -292,7 +292,7 @@ test("organizer in a 20-person group: themes, edit details, search, pairs, after
       .where(eq(members.id, xian));
     await page.reload();
     const row = page.getByRole("group", { name: "Maling PIN ni Xian" });
-    await expect(row.getByText("Maraming maling PIN si Xian kanina")).toBeVisible();
+    await expect(row.getByText("Maraming maling PIN kanina")).toBeVisible();
     await row.getByRole("button", { name: "Get new link for Xian (locked)" }).click();
     await expect(page.getByRole("checkbox", { name: /Reset PIN/ })).toBeChecked();
   });
@@ -329,7 +329,7 @@ test("/me: long wish titles, the budget on the wishlist, sending the link, PIN s
   });
 
   await test.step("M7 + M10: the budget is in the add row; an example says where to send the link", async () => {
-    await expect(page.getByLabel("Ano ang gusto mo?")).toHaveAttribute("placeholder", "Hal. mug na cute · hanggang ₱500");
+    await expect(page.getByText("Hanggang ₱500 ang regalo.")).toBeVisible();
     await expect(page.getByText("Halimbawa: i-send sa sarili mong Messenger o i-save sa Notes.").first()).toBeVisible();
   });
 

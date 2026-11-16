@@ -180,7 +180,7 @@ test("setup and join: create, join, organizer, wishlists, reminder", async ({ br
 
     await notMe.click();
     await expect(page.getByLabel("Pangalan mo")).toHaveValue("joy");
-    await expect(page.getByText("May joy na sa group. Dagdagan ng initial ng apelyido, hal. “joy R.”")).toBeVisible();
+    await expect(page.getByText("May joy na. Lagyan ng initial, hal. “joy R.”")).toBeVisible();
     await page.getByLabel("Pangalan mo").fill("Joy M");
     await page.getByLabel("4-digit PIN").fill("5678");
     await page.getByRole("button", { name: "Join the group" }).click();

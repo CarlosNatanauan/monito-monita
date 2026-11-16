@@ -25,12 +25,12 @@ const EMPTY: Draft = { title: "", url: "", note: "" };
 export function WishlistEditor({
   slug,
   items,
-  placeholder,
+  budgetLine,
 }: {
   slug: string;
   items: WishItemData[];
-  /** The add row's example, with the budget ("Hal. mug na cute · hanggang ₱500"). */
-  placeholder: string;
+  /** The budget, on its own line above the add row ("Hanggang ₱500 ang regalo."). */
+  budgetLine: string;
 }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   // Remounts the add form (clearing it) after each successful add.
@@ -68,7 +68,7 @@ export function WishlistEditor({
           key={addKey}
           initial={EMPTY}
           mode="add"
-          placeholder={placeholder}
+          budgetLine={budgetLine}
           onSubmit={(draft) => addWishAction({ slug, ...draft })}
           onDone={() => setAddKey((k) => k + 1)}
         />
@@ -123,13 +123,13 @@ function WishForm({
   mode,
   onSubmit,
   onDone,
-  placeholder,
+  budgetLine,
 }: {
   initial: Draft;
   mode: "add" | "edit";
   onSubmit: (draft: Draft) => Promise<WishActionResult>;
   onDone: () => void;
-  placeholder?: string;
+  budgetLine?: string;
 }) {
   const [draft, setDraft] = useState<Draft>(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -171,13 +171,14 @@ function WishForm({
   return (
     <form onSubmit={submit} noValidate>
       {message && <ErrorMessage className="my-2">{message}</ErrorMessage>}
+      {budgetLine && <p className="lst-row text-small text-ube-soft">{budgetLine}</p>}
       <div className="lst-row2">
         <Input
           ref={titleRef}
           size="row"
           value={draft.title}
           onChange={(e) => set("title")(e.target.value)}
-          placeholder={placeholder ?? "Hal. mug na cute"}
+          placeholder="Hal. mug na cute"
           aria-label="Ano ang gusto mo?"
           aria-invalid={errors.title ? true : undefined}
           maxLength={WISH_TITLE_MAX}

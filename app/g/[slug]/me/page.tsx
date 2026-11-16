@@ -273,7 +273,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
 
       {!drawn && themeSheet()}
 
-      <WishlistEditor slug={slug} items={myWishlist} placeholder={`Hal. mug na cute · hanggang ${formatPeso(group.budget)}`} />
+      <WishlistEditor slug={slug} items={myWishlist} budgetLine={`Hanggang ${formatPeso(group.budget)} ang regalo.`} />
     </>
   );
 

@@ -58,6 +58,7 @@ export function RevealStage({
   className,
   onCue,
   onFinaleDone,
+  startExtra,
   speed = 1,
 }: {
   view: StageView;
@@ -67,6 +68,8 @@ export function RevealStage({
   speed?: number;
   onCue?: (cue: Cue) => void;
   onFinaleDone?: () => void;
+  /** Under "Handa na?" (before the start): the organizer's "Gawing remote ang phone mo". */
+  startExtra?: React.ReactNode;
 }) {
   const boxRef = useRef<HTMLDivElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
@@ -240,7 +243,7 @@ export function RevealStage({
           </ol>
 
           <section data-part="centre" className="rv-centre" aria-label="Reveal" aria-live="polite">
-            <Centre view={view} />
+            <Centre view={view} startExtra={startExtra} />
           </section>
         </div>
 
@@ -272,7 +275,7 @@ function SlipBack({ slip, g }: { slip: { face: string; giverName?: string; recei
   );
 }
 
-function Centre({ view }: { view: StageView }) {
+function Centre({ view, startExtra }: { view: StageView; startExtra?: React.ReactNode }) {
   if (view.status === "DRAWN") {
     return (
       <>
@@ -280,6 +283,7 @@ function Centre({ view }: { view: StageView }) {
         <p className={cn("rv-centre-line", "text-[45px] leading-[1.2] font-bold text-balance")}>
           {view.total} slips, {view.total} sikreto. Pindutin para simulan.
         </p>
+        {startExtra}
       </>
     );
   }

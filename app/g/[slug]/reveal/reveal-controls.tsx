@@ -12,10 +12,12 @@ import { moveRevealFormAction, startRevealAction } from "./actions";
  * "Gawing remote ang phone mo" (persona test C7), on the laptop's "Handa
  * na?" screen: sends the organizer link to the organizer's own phone (the
  * share sheet, or Copy where there is none). The link is never shown on
- * this screen, which may already be on the projector. Hidden on a phone
- * held upright: that phone already is the remote.
+ * this screen, which may already be on the projector. It sits inside the
+ * ring under "Handa na?" (stage pixels, scaled with the stage), so it never
+ * covers a slip; a phone held upright doesn't show the stage at all (that
+ * phone already is the remote).
  */
-function PhoneRemote({ remotePath }: { remotePath: string }) {
+export function PhoneRemote({ remotePath }: { remotePath: string }) {
   const origin = useOrigin();
   const canShare = useCanShare();
   const [done, setDone] = useState<"copied" | "failed" | null>(null);
@@ -38,27 +40,28 @@ function PhoneRemote({ remotePath }: { remotePath: string }) {
   return (
     <section
       aria-labelledby="remote-title"
-      className="flex flex-col gap-2 rounded-paper border-[1.5px] border-gabi-line bg-gabi p-4 text-gabi-text portrait:hidden landscape:text-[clamp(16px,2.4vh,28px)]"
+      className="mt-4 flex max-w-[860px] flex-col items-center gap-2 border-t-[1.5px] border-gabi-line pt-4 text-[26px] leading-[1.25] text-gabi-text"
     >
-      <h2 id="remote-title" className="font-head text-white landscape:text-[clamp(18px,2.6vh,30px)]">
+      <h2 id="remote-title" className="font-head text-[32px] leading-none text-white">
         Gawing remote ang phone mo
       </h2>
-      <p>
-        Buksan ang organizer link sa phone mo at i-tap ang Party reveal. Susunod ang screen na &apos;to sa bawat Next.
-      </p>
-      <Button type="button" variant="secondary" className={`self-start ${NIGHT_BUTTON}`} disabled={!url} onClick={send}>
+      <p>Buksan ang organizer link sa phone, tapos i-tap ang Party reveal.</p>
+      <button
+        type="button"
+        className="h-[54px] cursor-pointer rounded-btn border-[1.5px] border-gabi-text px-6 text-[26px] font-bold text-gabi-text focus-ring disabled:cursor-not-allowed"
+        disabled={!url}
+        onClick={send}
+      >
         {canShare ? "I-send sa phone ko" : done === "copied" ? "Copied!" : "Copy organizer link"}
-      </Button>
-      {done === "copied" && (
-        <p role="status">I-paste sa chat mo sa sarili mo (Messenger), tapos buksan sa phone.</p>
-      )}
+      </button>
+      {done === "copied" && <p role="status">I-paste sa chat mo sa sarili mo, tapos buksan sa phone.</p>}
       {done === "failed" && <p role="status">Hindi na-send. Buksan na lang ang organizer link sa phone mo.</p>}
     </section>
   );
 }
 
 /** "Simulan ang reveal", with a confirm (redraws and removals lock after). */
-export function StartReveal({ slug, remotePath }: { slug: string; remotePath?: string }) {
+export function StartReveal({ slug }: { slug: string }) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
@@ -74,7 +77,6 @@ export function StartReveal({ slug, remotePath }: { slug: string; remotePath?: s
   return (
     <div className="flex flex-col gap-3 landscape:max-w-[min(560px,40vw)] landscape:items-end">
       <ErrorMessage>{error}</ErrorMessage>
-      {remotePath && !confirming && <PhoneRemote remotePath={remotePath} />}
       {!confirming ? (
         <Button type="button" variant="gold" className={GOLD_BUTTON} onClick={() => setConfirming(true)}>
           Simulan ang reveal

@@ -238,9 +238,8 @@ export function MemberList({
 
               {member.pinTempLocked && !isConfirming && newLink?.id !== member.id && (
                 <div className="lst-row" role="group" aria-label={`Maling PIN ni ${member.displayName}`}>
-                  <p className="min-w-0 truncate text-small font-bold text-sili">
-                    Maraming maling PIN si {member.displayName} kanina
-                  </p>
+                  {/* Under their own row, so the name isn't repeated (it would be cut on a phone). */}
+                  <p className="min-w-0 truncate text-small font-bold text-sili">Maraming maling PIN kanina</p>
                   <Button
                     type="button"
                     variant="link"

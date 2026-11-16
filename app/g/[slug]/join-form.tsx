@@ -84,7 +84,7 @@ export function JoinForm({
         <input type="hidden" name="slug" value={slug} />
         {takenName && (
           <p id="taken-hint" className="font-bold text-dahon">
-            May {takenName} na sa group. Dagdagan ng initial ng apelyido, hal. “{takenName} R.”
+            May {takenName} na. Lagyan ng initial, hal. “{takenName} R.”
           </p>
         )}
         <div className="listahan">
