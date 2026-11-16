@@ -1,33 +1,22 @@
 "use client";
 
-import { useActionState, useId, useState, useSyncExternalStore } from "react";
+import { useActionState, useState, useSyncExternalStore } from "react";
+import { Field, ThemeWeeksEditor, useThemeDrafts } from "@/components/group-fields";
 import { useOrigin } from "@/components/copy-link";
 import { colClass, colsClass } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { Input } from "@/components/ui/input";
-import { Bubble, Capiz, Listahan, SectionTitle } from "@/components/ui/paper";
+import { Bubble, Capiz, SectionTitle } from "@/components/ui/paper";
 import { formatPartyDay, formatPeso } from "@/lib/format";
 import { submitWithoutReset } from "@/lib/forms";
 import { buildGcReminder } from "@/lib/reminder";
 import { cn } from "@/lib/utils";
-import {
-  formatShortDate,
-  isIsoDate,
-  MAX_THEMES,
-  SAMPLE_THEMES,
-  themeStartDates,
-  todayIn,
-} from "@/lib/theme-weeks";
+import { isIsoDate, SAMPLE_THEMES, themeStartDates, todayIn } from "@/lib/theme-weeks";
 import { createGroupAction, type CreateGroupState } from "./actions";
 import { GroupCreated } from "./group-created";
 
 const initialState: CreateGroupState = { status: "idle" };
-
-interface ThemeDraft {
-  key: number;
-  title: string;
-}
 
 const noopSubscribe = () => () => {};
 const NO_KEYS: ReadonlySet<string> = new Set();
@@ -73,10 +62,6 @@ function CreateGroupForm({
   const [name, setName] = useState("");
   const [budget, setBudget] = useState("");
   const [partyDate, setPartyDate] = useState("");
-  const [themes, setThemes] = useState<ThemeDraft[]>(() =>
-    SAMPLE_THEMES.map((title, key) => ({ key, title })),
-  );
-  const [nextKey, setNextKey] = useState<number>(SAMPLE_THEMES.length);
   const today = useToday();
   // These fields are controlled; submitting before hydration would bypass
   // React (and its validation display), so wait until it's ready.
@@ -100,22 +85,9 @@ function CreateGroupForm({
     state.status === "error" &&
     Boolean(state.message) &&
     (Object.keys(allErrors).length === 0 || Object.keys(errors).length > 0);
+  const themeDrafts = useThemeDrafts(SAMPLE_THEMES, clearErrors);
+  const { themes } = themeDrafts;
   const startDates = isIsoDate(partyDate) ? themeStartDates(partyDate, themes.length) : [];
-
-  const updateTheme = (key: number, index: number, title: string) => {
-    setThemes((list) => list.map((t) => (t.key === key ? { ...t, title } : t)));
-    clearErrors((k) => k === `themes.${index}` || k === "themes");
-  };
-  const removeTheme = (key: number) => {
-    setThemes((list) => list.filter((t) => t.key !== key));
-    // Positions shift, so per-theme errors no longer line up.
-    clearErrors((k) => k.startsWith("themes"));
-  };
-  const addTheme = () => {
-    setThemes((list) => [...list, { key: nextKey, title: "" }]);
-    setNextKey((k) => k + 1);
-    clearErrors((k) => k === "themes");
-  };
 
   const origin = useOrigin();
   const host = origin.replace(/^https?:\/\//, "");
@@ -217,77 +189,15 @@ function CreateGroupForm({
           </Field>
         </div>
 
-        <Listahan title="Weekly themes" titleId="themes-title">
-          <p className="lst-row text-small text-ube-soft">Isang theme kada linggo bago ang party.</p>
-          {/* Said once, not under every theme. Each theme's date shows once there is a party date. */}
-          {themes.length > 0 && startDates.length === 0 && (
-            <p className="lst-row text-small text-ube-soft">Starts once you pick the party date.</p>
-          )}
-          <ol aria-labelledby="themes-title">
-            {themes.map((theme, index) => {
-              const error = errors[`themes.${index}`];
-              const errorId = `theme-${theme.key}-error`;
-              const inputId = `theme-${theme.key}`;
-              return (
-                <li key={theme.key}>
-                  <div className="lst-row2">
-                    <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                      <label htmlFor={inputId} className="text-tag font-bold text-dahon">
-                        Week {index + 1}
-                        {startDates[index] && (
-                          <>
-                            {" · "}
-                            <span className="font-normal">Starts {formatShortDate(startDates[index])}</span>
-                          </>
-                        )}
-                      </label>
-                      <Input
-                        id={inputId}
-                        size="row"
-                        name="theme"
-                        value={theme.title}
-                        onChange={(e) => updateTheme(theme.key, index, e.target.value)}
-                        aria-label={`Theme ${index + 1}`}
-                        aria-invalid={error ? true : undefined}
-                        aria-describedby={error ? errorId : undefined}
-                        placeholder="Something…"
-                        maxLength={60}
-                        className="h-11"
-                      />
-                    </div>
-                    <Button
-                      type="button"
-                      variant="link"
-                      className="self-end"
-                      onClick={() => removeTheme(theme.key)}
-                      aria-label={`Remove theme ${index + 1}`}
-                    >
-                      Alisin
-                    </Button>
-                  </div>
-                  {error && (
-                    <ErrorMessage id={errorId} alert={false} className="my-2">
-                      {error}
-                    </ErrorMessage>
-                  )}
-                </li>
-              );
-            })}
-          </ol>
-          {themes.length === 0 && <p className="lst-row text-ube-soft">Walang theme? Okay lang, puwede rin.</p>}
-          {errors.themes && (
-            <ErrorMessage alert={false} className="my-2">
-              {errors.themes}
-            </ErrorMessage>
-          )}
-          {themes.length < MAX_THEMES && (
-            <div className="lst-row">
-              <Button type="button" variant="link" onClick={addTheme}>
-                + Magdagdag ng week
-              </Button>
-            </div>
-          )}
-        </Listahan>
+        <ThemeWeeksEditor
+          themes={themes}
+          startDates={startDates}
+          today={today}
+          errors={errors}
+          onChange={themeDrafts.onChange}
+          onRemove={themeDrafts.onRemove}
+          onAdd={themeDrafts.onAdd}
+        />
       </div>
 
       {/* Rendered once: under the form on phones, the right column on laptops. */}
@@ -297,33 +207,5 @@ function CreateGroupForm({
         {pending ? "Ginagawa na…" : "Create group"}
       </Button>
     </form>
-  );
-}
-
-interface FieldControlProps {
-  id: string;
-  "aria-invalid"?: true;
-  "aria-describedby"?: string;
-}
-
-function Field({
-  label,
-  error,
-  children,
-}: {
-  label: string;
-  error?: string;
-  children: (props: FieldControlProps) => React.ReactNode;
-}) {
-  const id = useId();
-  const errorId = `${id}-error`;
-  return (
-    <div className="flex min-w-0 flex-col gap-1.5">
-      <label htmlFor={id} className="font-bold">
-        {label}
-      </label>
-      {children({ id, "aria-invalid": error ? true : undefined, "aria-describedby": error ? errorId : undefined })}
-      {error && <ErrorMessage id={errorId} alert={false}>{error}</ErrorMessage>}
-    </div>
   );
 }

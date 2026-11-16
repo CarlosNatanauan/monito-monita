@@ -142,6 +142,7 @@ export function PrivateLink({
   copyLabel = "Copy",
   copyAriaLabel,
   shareText,
+  shareLabel = "I-send sa sarili mo",
   prominent = false,
 }: {
   path?: string;
@@ -151,6 +152,8 @@ export function PrivateLink({
   copyAriaLabel?: string;
   /** With a share text, phones also get "I-send sa sarili mo". */
   shareText?: string;
+  /** The share button's label (the organizer sends a new link to someone else). */
+  shareLabel?: string;
   /** Right after joining: sending it to yourself (or Copy, without share) is the filled main button. */
   prominent?: boolean;
 }) {
@@ -185,7 +188,7 @@ export function PrivateLink({
         />
         {shareText && canShare && (
           <Button type="button" variant={prominent ? "default" : "secondary"} onClick={share} disabled={!url} className={cn(prominent && "w-full")}>
-            I-send sa sarili mo
+            {shareLabel}
           </Button>
         )}
       </div>

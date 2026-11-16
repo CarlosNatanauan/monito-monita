@@ -60,3 +60,37 @@ export function formatShortDate(date: string, withYear = false): string {
     ...(withYear ? { year: "numeric" } : {}),
   }).format(new Date(Date.UTC(y, m - 1, d)));
 }
+
+/** Where a theme week is on a given day. */
+export type ThemeWeekState = "past" | "current" | "upcoming";
+
+/**
+ * Each week's state on `today`. A week runs until the next one starts (the
+ * last one for 7 days). "past" weeks are over: nobody joining now sees them.
+ */
+export function themeWeekStates(startDates: readonly string[], today: string): ThemeWeekState[] {
+  return startDates.map((start, i) => {
+    const end = startDates[i + 1] ?? addDays(start, 7);
+    if (today >= end) return "past";
+    return today >= start ? "current" : "upcoming";
+  });
+}
+
+/** Short tags for the states, shown next to a week's date. */
+export const THEME_WEEK_TAG: Record<ThemeWeekState, string | null> = {
+  past: "Tapos na",
+  current: "Ngayong linggo",
+  upcoming: null,
+};
+
+/**
+ * The warning when some weeks would already be over on the day the group
+ * starts (weeks count back from the party, so adding one moves Week 1
+ * earlier). Null when every week is still ahead or running.
+ */
+export function pastWeeksWarning(states: readonly ThemeWeekState[]): string | null {
+  const past = states.filter((s) => s === "past").length;
+  if (past === 0) return null;
+  const count = past === 1 ? "1 theme" : `${past} themes`;
+  return `${count} ang tapos na bago pa magsimula, kaya walang makakakita. Bawasan ang weeks para magsimula sa linggong ito.`;
+}

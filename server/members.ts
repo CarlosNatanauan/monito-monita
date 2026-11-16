@@ -95,6 +95,8 @@ export interface OrganizerView {
     joinedAt: Date;
     linkStatus: LinkStatus;
     pinLocked: boolean;
+    /** Locked for 15 minutes right now (5 wrong PINs). The organizer can send a new link. */
+    pinTempLocked: boolean;
     /** Has unfolded their own slip (after the draw). Says nothing about pairs. */
     slipOpened: boolean;
   }[];
@@ -136,6 +138,8 @@ export async function getOrganizerView(groupId: string): Promise<OrganizerView |
         linkOpenedAt: members.linkOpenedAt,
         // Fully locked (10 wrong PINs): the organizer can unlock it.
         pinLocked: sql<boolean>`${members.pinLockedAt} is not null`,
+        // Locked for 15 minutes (5 wrong PINs), still running.
+        pinTempLocked: sql<boolean>`${members.pinLockedUntil} is not null and ${members.pinLockedUntil} > now()`,
         slipOpened: sql<boolean>`${members.slipOpenedAt} is not null`,
       })
       .from(members)
@@ -146,9 +150,10 @@ export async function getOrganizerView(groupId: string): Promise<OrganizerView |
   return {
     group,
     themes,
-    members: memberRows.map(({ linkReissuedAt, linkOpenedAt, pinLocked, slipOpened, ...m }) => ({
+    members: memberRows.map(({ linkReissuedAt, linkOpenedAt, pinLocked, pinTempLocked, slipOpened, ...m }) => ({
       ...m,
       pinLocked: Boolean(pinLocked),
+      pinTempLocked: Boolean(pinTempLocked) && !pinLocked,
       slipOpened: Boolean(slipOpened),
       linkStatus: !linkReissuedAt ? "none" : linkOpenedAt ? "new-opened" : "new-unopened",
     })),

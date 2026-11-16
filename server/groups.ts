@@ -4,6 +4,7 @@
 import { randomBytes } from "node:crypto";
 import { z } from "zod";
 import { asc, eq, inArray } from "drizzle-orm";
+import type { GroupStatus } from "./db/schema";
 import { addDays, DEFAULT_TIMEZONE, isIsoDate, MAX_THEMES, themeStartDates, todayIn } from "@/lib/theme-weeks";
 import { createToken, hashToken, isValidSlug } from "./auth";
 import { db } from "./db";
@@ -153,6 +154,63 @@ export async function createGroup(input: CreateGroupInput): Promise<CreatedGroup
       throw error;
     }
   }
+}
+
+// --- Editing details --------------------------------------------------------
+
+/** Which details the organizer can still change, by status. */
+export function editableDetails(status: GroupStatus): { all: boolean; any: boolean } {
+  // Before the draw: everything. After it: the date and themes only (the
+  // name and budget are in everyone's slip and GC messages by then). Once
+  // the reveal starts: nothing.
+  return { all: status === "OPEN", any: status === "OPEN" || status === "DRAWN" };
+}
+
+export type UpdateDetailsResult =
+  | { ok: true }
+  | { ok: false; reason: "NOT_FOUND" | "LOCKED"; message: string }
+  | { ok: false; reason: "INVALID"; fieldErrors: Record<string, string> };
+
+/**
+ * "Edit details" on the organizer page, validated exactly like creating a
+ * group. After the draw, the name and budget in `raw` are ignored and the
+ * stored ones kept. Theme dates are recomputed from the party date.
+ */
+export async function updateGroupDetails(groupId: string, raw: unknown, today?: string): Promise<UpdateDetailsResult> {
+  return db().transaction(async (tx): Promise<UpdateDetailsResult> => {
+    const [group] = await tx
+      .select({ status: groups.status, name: groups.name, budget: groups.budget })
+      .from(groups)
+      .where(eq(groups.id, groupId))
+      .for("update")
+      .limit(1);
+    if (!group) return { ok: false, reason: "NOT_FOUND", message: "Hindi mahanap ang group." };
+    const editable = editableDetails(group.status);
+    if (!editable.any) {
+      return { ok: false, reason: "LOCKED", message: "Nagsimula na ang reveal, kaya hindi na mababago ang details." };
+    }
+
+    const input = (raw ?? {}) as Record<string, unknown>;
+    const validation = validateCreateGroup(
+      editable.all ? input : { ...input, name: group.name, budget: group.budget },
+      today,
+    );
+    if (!validation.ok) return { ok: false, reason: "INVALID", fieldErrors: validation.fieldErrors };
+
+    const data = validation.data;
+    await tx
+      .update(groups)
+      .set({ name: data.name, budget: data.budget, partyDate: data.partyDate })
+      .where(eq(groups.id, groupId));
+    await tx.delete(themeWeeks).where(eq(themeWeeks.groupId, groupId));
+    if (data.themes.length > 0) {
+      const startDates = themeStartDates(data.partyDate, data.themes.length);
+      await tx.insert(themeWeeks).values(
+        data.themes.map((title, position) => ({ groupId, title, startDate: startDates[position], position })),
+      );
+    }
+    return { ok: true };
+  });
 }
 
 /** A group's theme weeks, in order. */

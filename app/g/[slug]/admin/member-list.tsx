@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { Input } from "@/components/ui/input";
 import { PrivateLink } from "@/components/copy-link";
 import { Name } from "@/components/page";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,8 @@ export interface MemberRow {
   linkStatus: LinkStatus;
   /** 10 wrong PINs: locked until the organizer unlocks it. */
   pinLocked: boolean;
+  /** 5 wrong PINs: locked for 15 minutes right now. */
+  pinTempLocked: boolean;
   /** Has opened their own slip. Never who they drew. */
   slipOpened: boolean;
 }
@@ -38,6 +41,22 @@ const LINK_STATUS: Record<Exclude<LinkStatus, "none">, string> = {
 
 type Confirming = { id: string; kind: "remove" | "link" } | null;
 
+/** From this many members the list gets a "Hanapin" filter. */
+export const SEARCH_FROM = 16;
+/** Rows the laptop's scroll box shows before it scrolls. */
+const ROWS_IN_BOX = 14;
+
+/** Case-, space- and accent-insensitive, for "Hanapin". */
+function searchKey(text: string): string {
+  return text.normalize("NFD").replace(/\p{Diacritic}/gu, "").toLowerCase().replace(/\s+/g, " ").trim();
+}
+
+const REMOVED_LINE: Record<"removed" | "patched" | "redrawn", (name: string) => string> = {
+  removed: (name) => `Natanggal si ${name}.`,
+  patched: (name) => `Natanggal si ${name}. May bagong monito na ang nakabunot sa kanya.`,
+  redrawn: (name) => `Natanggal si ${name}, at na-redraw ang lahat.`,
+};
+
 export function MemberList({
   slug,
   members,
@@ -47,7 +66,7 @@ export function MemberList({
   slug: string;
   members: MemberRow[];
   canRemove: boolean;
-  /** After the draw: shows Opened / Hindi pa; removing patches the loop (or needs a redraw). */
+  /** After the draw: shows Opened / Hindi pa bukas; removing patches the loop (or needs a redraw). */
   drawn: boolean;
 }) {
   // The row whose actions are showing.
@@ -60,6 +79,11 @@ export function MemberList({
   // "Reset PIN din" on the "Get new link" confirm.
   const [resetPin, setResetPin] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // "Natanggal si …": until the next action.
+  const [done, setDone] = useState<string | null>(null);
+  const [query, setQuery] = useState("");
+  // The laptop box: scrolled to the end (hides the "Scroll" cue).
+  const [atEnd, setAtEnd] = useState(false);
   const [pending, startTransition] = useTransition();
 
   const title = `Members (${members.length})`;
@@ -80,23 +104,29 @@ export function MemberList({
   const toggle = (id: string) => {
     close();
     setError(null);
+    setDone(null);
     setOpenId((current) => (current === id ? null : id));
   };
 
-  const start = (id: string, kind: "remove" | "link") => {
+  const start = (id: string, kind: "remove" | "link", options: { resetPin?: boolean } = {}) => {
     setError(null);
+    setDone(null);
     setNeedsRedrawId(null);
     setNewLink(null);
-    setResetPin(false);
+    setResetPin(options.resetPin ?? false);
+    // From the lock row the row may be closed: open it to show the confirm.
+    setOpenId(id);
     setConfirming({ id, kind });
   };
 
   const remove = (memberId: string, redraw = false) => {
     setError(null);
+    const name = members.find((m) => m.id === memberId)?.displayName ?? "";
     startTransition(async () => {
       const result = await removeMemberAction({ slug, memberId, redraw });
       if (result.ok) {
         setOpenId(null);
+        setDone(REMOVED_LINE[result.removed ?? "removed"](name));
         return close();
       }
       setError(result.message);
@@ -122,16 +152,50 @@ export function MemberList({
     });
   };
 
+  const searchable = members.length >= SEARCH_FROM;
+  const key = searchKey(query);
+  const shown = searchable && key ? members.filter((m) => searchKey(m.displayName).includes(key)) : members;
+  const scrolls = shown.length > ROWS_IN_BOX;
+
   return (
     <Listahan title={title} titleId="members-title">
+      {done && (
+        <p role="status" className="my-2 rounded-paper border-[1.5px] border-dahon bg-papel px-3 py-2.5 text-small font-bold text-dahon">
+          {done}
+        </p>
+      )}
       {error && <ErrorMessage className="my-2">{error}</ErrorMessage>}
+      {searchable && (
+        <div className="lst-row2">
+          <label className="min-w-0 flex-1">
+            <span className="sr-only">Hanapin ang member</span>
+            <Input
+              size="row"
+              type="search"
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder={`Hanapin (${members.length})`}
+              autoComplete="off"
+              enterKeyHint="search"
+            />
+          </label>
+        </div>
+      )}
+      {searchable && key && shown.length === 0 && (
+        <p className="lst-row text-ube-soft">Walang member na “{query.trim()}”.</p>
+      )}
       {/* Laptops: scrolls inside the card past 14 rows, so a big group
-          doesn't push the page down. The rules scroll with the rows. */}
-      <ul
-        aria-label="Members"
-        className="lg:max-h-[560px] lg:overflow-y-auto lg:bg-[repeating-linear-gradient(#fff_0_39px,var(--color-rule-blue)_39px_40px)] lg:[background-attachment:local]"
+          doesn't push the page down. The rules scroll with the rows; a fade
+          and "Scroll para sa lahat" say there's more, until the end. */}
+      <div
+        className="relative lg:max-h-[560px] lg:overflow-y-auto lg:bg-[repeating-linear-gradient(#fff_0_39px,var(--color-rule-blue)_39px_40px)] lg:[background-attachment:local]"
+        onScroll={(event) => {
+          const box = event.currentTarget;
+          setAtEnd(box.scrollTop + box.clientHeight >= box.scrollHeight - 4);
+        }}
       >
-        {members.map((member) => {
+      <ul aria-label="Members">
+        {shown.map((member) => {
           const isOpen = openId === member.id;
           const isConfirming = confirming?.id === member.id;
           const statusId = `member-${member.id}-status`;
@@ -149,7 +213,7 @@ export function MemberList({
                 <span className="flex shrink-0 items-center gap-1.5">
                   {drawn ? (
                     <span id={statusId} className={member.slipOpened ? "font-bold text-dahon" : "text-ube-soft"}>
-                      {member.slipOpened ? "✓ Opened" : "Hindi pa"}
+                      {member.slipOpened ? "✓ Opened" : "Hindi pa bukas"}
                     </span>
                   ) : (
                     <span className="text-ube-soft">Sumali na</span>
@@ -168,6 +232,24 @@ export function MemberList({
                   <p className="min-w-0 truncate text-small font-bold text-sili">Na-lock ang PIN ni {member.displayName}</p>
                   <Button type="button" variant="link" className="-mr-1.5" disabled={pending} onClick={() => unlock(member.id)}>
                     Unlock
+                  </Button>
+                </div>
+              )}
+
+              {member.pinTempLocked && !isConfirming && newLink?.id !== member.id && (
+                <div className="lst-row" role="group" aria-label={`Maling PIN ni ${member.displayName}`}>
+                  <p className="min-w-0 truncate text-small font-bold text-sili">
+                    Maraming maling PIN si {member.displayName} kanina
+                  </p>
+                  <Button
+                    type="button"
+                    variant="link"
+                    className="-mr-1.5"
+                    disabled={pending}
+                    onClick={() => start(member.id, "link", { resetPin: true })}
+                    aria-label={`Get new link for ${member.displayName} (locked)`}
+                  >
+                    Get new link
                   </Button>
                 </div>
               )}
@@ -238,6 +320,8 @@ export function MemberList({
                       path={newLink.path}
                       copyLabel="Copy link"
                       maskedLabel={`Bagong link ni ${member.displayName} (nakatago). Gamitin ang Copy link.`}
+                      shareText="Bagong personal link mo sa Monito Monita (sa'yo lang, huwag i-share)"
+                      shareLabel={`I-send kay ${member.displayName}`}
                     />
                   </ConfirmBox>
                 </div>
@@ -295,6 +379,16 @@ export function MemberList({
           );
         })}
       </ul>
+      {scrolls && !atEnd && (
+        <p
+          aria-hidden
+          data-scroll-cue
+          className="pointer-events-none sticky bottom-0 -mt-20 hidden h-20 items-end justify-center bg-linear-to-b from-transparent to-white to-60% pb-2 text-small font-bold text-ube-soft lg:flex"
+        >
+          Scroll para sa lahat ({shown.length}) ↓
+        </p>
+      )}
+      </div>
     </Listahan>
   );
 }

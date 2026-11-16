@@ -13,17 +13,19 @@ import { Button } from "@/components/ui/button";
 import { Capiz, Listahan, SectionTitle } from "@/components/ui/paper";
 import { formatJoinedAt, joinedCount } from "@/lib/format";
 import { mostHaveOpened } from "@/lib/reminder";
-import { getThemeStatus } from "@/lib/theme-status";
-import { formatShortDate, todayIn } from "@/lib/theme-weeks";
+import { daysBetween, getThemeStatus } from "@/lib/theme-status";
+import { formatShortDate, THEME_WEEK_TAG, themeWeekStates, todayIn } from "@/lib/theme-weeks";
 import { cn } from "@/lib/utils";
 import { getCurrentMember, getCurrentOrganizer, isValidSlug } from "@/server/auth";
 import type { GroupStatus } from "@/server/db/schema";
 import { checkDrawFeasibility } from "@/server/draw-check";
 import { countAssignments, countSlipsOpened, hasOpenedOwnSlip } from "@/server/draw-service";
 import { getDrawSetup, toExclusions } from "@/server/exclusions";
+import { editableDetails } from "@/server/groups";
 import { getOrganizerView } from "@/server/members";
 import { GroupFacts, PageFallback } from "../group-facts";
 import { DrawSection } from "./draw-section";
+import { EditDetails } from "./edit-details";
 import { ExclusionsSection } from "./exclusions-section";
 import { MemberList } from "./member-list";
 import { ReminderCard } from "./reminder-card";
@@ -116,7 +118,11 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
   // Same algorithm as the real draw, so the warning always matches.
   const feasibility = checkDrawFeasibility(setup.members, toExclusions(setup.pairs));
   // "Today" in the group's timezone, not the server's (UTC on Vercel).
-  const themeStatus = getThemeStatus(themes, group.partyDate, todayIn(group.timezone));
+  const today = todayIn(group.timezone);
+  const themeStatus = getThemeStatus(themes, group.partyDate, today);
+  // Party day is near (or here): the reveal goes to the top of the page,
+  // where a phone in the organizer's hand finds it (persona test C7).
+  const partyNear = group.status === "DRAWN" && daysBetween(today, group.partyDate) <= 2;
   const memberCount = view.members.length;
 
   const reminderData = {
@@ -209,6 +215,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
         joinedLabel: formatJoinedAt(m.joinedAt, group.timezone),
         linkStatus: m.linkStatus,
         pinLocked: m.pinLocked,
+        pinTempLocked: m.pinTempLocked,
         slipOpened: m.slipOpened,
       }))}
     />
@@ -235,8 +242,8 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
       </p>
       <Button
         asChild
-        variant={group.status === "REVEALING" ? "default" : "secondary"}
-        className={group.status === "REVEALING" ? "w-full lg:w-fit" : "self-start"}
+        variant={group.status === "REVEALING" || partyNear ? "default" : "secondary"}
+        className={group.status === "REVEALING" || partyNear ? "w-full lg:w-fit" : "self-start"}
       >
         <Link href={`/g/${slug}/reveal`}>
           {group.status === "DRAWN" && "Open the reveal screen"}
@@ -247,22 +254,50 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     </section>
   );
 
+  // This week tagged, weeks that are over dimmed (as members see it on /me).
+  const weekStates = themeWeekStates(
+    themes.map((t) => t.startDate),
+    today,
+  );
   const themeWeeks = themes.length > 0 && (
     <Listahan title="Weekly themes" titleId="themes-title">
       <ol aria-labelledby="themes-title">
-        {themes.map((theme, i) => (
-          <li key={`${theme.startDate}-${theme.title}`} className="lst-row">
-            <span className="min-w-0 truncate">
-              <strong>Week {i + 1}</strong> · {theme.title}
-            </span>
-            <span className="shrink-0 text-small text-ube-soft">{formatShortDate(theme.startDate)}</span>
-          </li>
-        ))}
+        {themes.map((theme, i) => {
+          const state = weekStates[i];
+          const tag = THEME_WEEK_TAG[state];
+          return (
+            <li
+              key={`${theme.startDate}-${theme.title}`}
+              className={cn("lst-row", state === "past" && "text-ube-soft")}
+              aria-current={state === "current" ? "date" : undefined}
+            >
+              <span className="min-w-0 truncate">
+                <strong>Week {i + 1}</strong> · {theme.title}
+              </span>
+              <span className="shrink-0 text-small">
+                {tag && <span className={cn("font-bold", state === "current" ? "text-dahon" : "")}>{tag} · </span>}
+                <span className="text-ube-soft">{formatShortDate(theme.startDate)}</span>
+              </span>
+            </li>
+          );
+        })}
       </ol>
     </Listahan>
   );
 
-  const details = <GroupFacts partyDate={group.partyDate} budget={group.budget} year />;
+  const editable = editableDetails(group.status);
+  const details = (
+    <div className="flex flex-col gap-[18px]">
+      <GroupFacts partyDate={group.partyDate} budget={group.budget} year />
+      {editable.any && (
+        <EditDetails
+          slug={slug}
+          all={editable.all}
+          details={{ name: group.name, budget: group.budget, partyDate: group.partyDate, themes: themes.map((t) => t.title) }}
+        />
+      )}
+    </div>
+  );
 
   // Phones: one column, in the order below for each stage. From 840px:
   // the members listahan on the right; everything else, in the same
@@ -281,12 +316,12 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
       ]
     : // After the draw: track slips, remind the GC, then the rest.
       [
-        { key: "reveal-now", node: group.status === "REVEALING" && reveal },
+        { key: "reveal-now", node: (group.status === "REVEALING" || partyNear) && reveal },
         { key: "bunutan", node: bunutan },
         { key: "reminder", node: !justDrawn && reminder },
         { key: "own-slip", node: ownSlip },
         { key: "members", right: true, node: membersCard },
-        { key: "reveal", node: group.status !== "REVEALING" && reveal },
+        { key: "reveal", node: group.status !== "REVEALING" && !partyNear && reveal },
         { key: "share", node: shareLink },
         { key: "exclusions", node: exclusions },
         { key: "themes", node: themeWeeks },

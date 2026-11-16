@@ -6,10 +6,13 @@ import { track } from "@/server/analytics";
 import { getCurrentOrganizer, isValidSlug, personalLinkPath } from "@/server/auth";
 import { drawNames, type DrawMode } from "@/server/draw-service";
 import { addExclusion, removeExclusion } from "@/server/exclusions";
+import { createGroupFormValues, updateGroupDetails } from "@/server/groups";
 import { reissueMemberLink, removeMember } from "@/server/members";
 import { unlockMemberPin } from "@/server/pin";
 
-export type ActionResult = { ok: true } | { ok: false; message: string; needsRedraw?: boolean };
+export type ActionResult =
+  | { ok: true; removed?: "removed" | "patched" | "redrawn" }
+  | { ok: false; message: string; needsRedraw?: boolean };
 
 const NOT_ORGANIZER = "Para sa organizer lang ito. Buksan ulit ang organizer link mo.";
 const slugField = z.string().refine(isValidSlug);
@@ -57,7 +60,8 @@ export async function removeMemberAction(input: {
     "Hindi natanggal. Subukan ulit in a bit.",
     async (groupId, { memberId, redraw }) => {
       const result = await removeMember(groupId, memberId, { redraw });
-      if (result.ok) return { ok: true };
+      // How it went (for the line at the top of the list), never who drew whom.
+      if (result.ok) return { ok: true, removed: result.mode };
       return { ok: false, message: result.message, needsRedraw: result.reason === "NEEDS_REDRAW" };
     },
   );
@@ -155,4 +159,39 @@ export async function reminderCopiedAction(input: { slug: string; kind: "invite"
   if (!parsed.success) return;
   const organizer = await getCurrentOrganizer(parsed.data.slug);
   if (organizer) track("reminder_copied", organizer.groupId, { kind: parsed.data.kind });
+}
+
+export type DetailsState =
+  | { status: "idle" }
+  | { status: "saved"; at: number }
+  | { status: "error"; message: string; fieldErrors: Record<string, string> };
+
+/**
+ * "Edit details": the same fields and validation as creating a group.
+ * Before the draw everything; after it the date and themes only (the
+ * server keeps the stored name and budget whatever is posted).
+ */
+export async function updateDetailsAction(_previous: DetailsState, formData: FormData): Promise<DetailsState> {
+  const slug = formData.get("slug");
+  if (typeof slug !== "string" || !isValidSlug(slug)) {
+    return { status: "error", message: "Hindi ma-process ang request.", fieldErrors: {} };
+  }
+  const organizer = await getCurrentOrganizer(slug);
+  if (!organizer) return { status: "error", message: NOT_ORGANIZER, fieldErrors: {} };
+
+  let result;
+  try {
+    result = await updateGroupDetails(organizer.groupId, createGroupFormValues(formData));
+  } catch (error) {
+    console.error("updateDetailsAction failed", error);
+    return { status: "error", message: "Hindi na-save. Subukan ulit in a bit.", fieldErrors: {} };
+  }
+  if (!result.ok) {
+    if (result.reason === "INVALID") {
+      return { status: "error", message: "May kulang o mali. Pakicheck sa baba.", fieldErrors: result.fieldErrors };
+    }
+    return { status: "error", message: result.message, fieldErrors: {} };
+  }
+  refresh();
+  return { status: "saved", at: Date.now() };
 }

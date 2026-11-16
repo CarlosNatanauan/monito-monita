@@ -32,6 +32,8 @@ export function ExclusionsSection({
   const [second, setSecond] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  // A to Z in the dropdowns (the list itself stays in join order elsewhere).
+  const byName = [...members].sort((a, b) => a.displayName.localeCompare(b.displayName, "en", { sensitivity: "base" }));
 
   const run = (action: () => Promise<{ ok: boolean; message?: string }>, onSuccess?: () => void) => {
     setError(null);
@@ -90,7 +92,7 @@ export function ExclusionsSection({
               <span className="sr-only">Unang tao</span>
               <Select value={first} onChange={(e) => setFirst(e.target.value)} disabled={pending}>
                 <option value="">Pumili</option>
-                {members.map((m) => (
+                {byName.map((m) => (
                   <option key={m.id} value={m.id}>
                     {m.displayName}
                   </option>
@@ -101,7 +103,7 @@ export function ExclusionsSection({
               <span className="sr-only">Pangalawang tao</span>
               <Select value={second} onChange={(e) => setSecond(e.target.value)} disabled={pending}>
                 <option value="">Pumili</option>
-                {members
+                {byName
                   .filter((m) => m.id !== first)
                   .map((m) => (
                     <option key={m.id} value={m.id}>
@@ -115,7 +117,8 @@ export function ExclusionsSection({
             </Button>
           </div>
         )}
-        {error && <ErrorMessage className="my-2">{error}</ErrorMessage>}
+        {/* Only next to the add form: after the draw it's locked, and an old error would be stale. */}
+        {editable && error && <ErrorMessage className="my-2">{error}</ErrorMessage>}
       </Listahan>
       <p className="text-small text-ube-soft">Hindi sila magkakabunutan, halimbawa mag-asawa o magkapatid.</p>
     </div>

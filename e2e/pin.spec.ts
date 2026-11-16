@@ -28,8 +28,9 @@ test.afterAll(async () => {
 });
 
 const WRONG = "Mali ang pangalan o PIN";
-const TAKEN =
-  "Kung kasali ka na, ilagay ang PIN mo. Kung bago ka, gumamit ng ibang pangalan (dagdagan ng initial ng apelyido).";
+const ASK_ORGANIZER = "Nakalimutan ang PIN? I-message ang organizer, bibigyan ka niya ng bagong link.";
+const MINE = "Ako 'yan, ilalagay ko ang PIN";
+const NOT_MINE = "Hindi ako 'yan, gagamit ako ng ibang pangalan";
 
 const problems: string[] = [];
 
@@ -96,6 +97,16 @@ async function submitComeBack(page: Page, pin: string, name?: string): Promise<s
 
 async function expectWrong(page: Page) {
   await expect(page.getByRole("form", { name: "Bumalik" }).getByRole("alert")).toHaveText(WRONG);
+}
+
+/** After a taken name: the two equal choices, both on screen without scrolling (persona test C2). */
+async function expectTakenChoice(page: Page, typed: string) {
+  await expect(page.getByRole("heading", { name: `May ${typed} na sa group` })).toBeVisible();
+  for (const name of [MINE, NOT_MINE]) {
+    const button = page.getByRole("button", { name });
+    await expect(button).toBeInViewport({ ratio: 1 });
+    await expect(button).toHaveAttribute("data-variant", "secondary");
+  }
 }
 
 test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the draw, leaks", async ({
@@ -197,7 +208,7 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     await expect(anaA.page.getByRole("heading", { name: "Hi, Ana!" })).toBeVisible();
   });
 
-  await test.step("a taken name in the join form → come-back form; wrong PIN; 'Bago ka?'; right PIN", async () => {
+  await test.step("a taken name: 'Ako 'yan' or 'Hindi ako 'yan'; wrong PIN; 'Bago ka?'; right PIN", async () => {
     const anaC = await newPerson(browser, testInfo, "Ana (phone C)");
     const { page } = anaC;
     const responses: string[] = [];
@@ -205,13 +216,30 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
       if (isAction(r)) responses.push(await r.text().catch(() => ""));
     });
     await joinWith(page, shareUrl, "ANA", "9999");
-    await expect(page.getByText(TAKEN)).toBeVisible();
-    await expect(page.getByText(/ana/i)).toHaveCount(0);
+    // Only the name she typed is said back, never anyone else's.
+    await expectTakenChoice(page, "ANA");
+    await expect(page.getByLabel("4-digit PIN")).toHaveCount(0);
+
+    // "Hindi ako 'yan": the join form again, her name kept, a hint to add an initial.
+    await page.getByRole("button", { name: NOT_MINE }).click();
+    await expect(page.getByRole("form", { name: "Sumali" })).toBeVisible();
+    await expect(page.getByLabel("Pangalan mo")).toHaveValue("ANA");
+    await expect(page.getByLabel("Pangalan mo")).toBeFocused();
+    await expect(page.getByText("May ANA na sa group. Dagdagan ng initial ng apelyido, hal. “ANA R.”")).toBeVisible();
+
+    // Same name again → the choice again; this time "Ako 'yan" (the PIN form).
+    await page.getByLabel("4-digit PIN").fill("9999");
+    await page.getByRole("button", { name: "Join the group" }).click();
+    await expectTakenChoice(page, "ANA");
+    await page.getByRole("button", { name: MINE }).click();
     // The PIN isn't carried over: she types it on purpose.
     await expect(page.getByRole("form", { name: "Bumalik" }).getByLabel("4-digit PIN")).toHaveValue("");
+    await expect(page.getByText(ASK_ORGANIZER)).toBeVisible();
 
     await submitComeBack(page, "9999");
     await expectWrong(page);
+    // The organizer hint stays under the error (persona test C1).
+    await expect(page.getByText(ASK_ORGANIZER)).toBeVisible();
 
     await page.getByRole("button", { name: "Bago ka? Sumali dito" }).click();
     await expect(page.getByRole("form", { name: "Sumali" })).toBeVisible();
@@ -220,7 +248,8 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     // Back to the come-back form via the same name, then the right PIN.
     await page.getByLabel("4-digit PIN").fill("1234");
     await page.getByRole("button", { name: "Join the group" }).click();
-    await expect(page.getByText(TAKEN)).toBeVisible();
+    await expectTakenChoice(page, "ANA");
+    await page.getByRole("button", { name: MINE }).click();
     await submitComeBack(page, "1234");
     await expect(page.getByRole("heading", { name: "Hi, Ana!" })).toBeVisible();
 
@@ -245,15 +274,29 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     expectJoinPageClean(await page.content(), await getTruth(slug));
   });
 
-  await test.step("5 wrong → locked for 15 min (right PIN fails); 10 → locked until unlocked", async () => {
+  await test.step("5 wrong → locked for 15 min (right PIN fails, the organizer sees it); 10 → locked until unlocked", async () => {
     const { page } = anaD;
-    // 1 wrong so far (previous step). 4 more → 5: locked.
-    for (let i = 0; i < 4; i++) {
+    // 2 wrong so far (previous step): the quiet hint, under the error.
+    await expect(page.getByText(ASK_ORGANIZER)).toBeVisible();
+    await expect(page.getByText("Huminto muna.")).toHaveCount(0);
+    // 3 more → 5: locked. From the 3rd, the hint grows (counted in this browser only).
+    for (let i = 0; i < 3; i++) {
       await submitComeBack(page, "0000", "Ana");
       await expectWrong(page);
     }
+    await expect(page.getByRole("status").filter({ hasText: "Huminto muna." })).toBeVisible();
+    await expect(page.getByText("bibigyan ka niya ng bagong link", { exact: false })).toBeVisible();
     await submitComeBack(page, "1234", "Ana");
     await expectWrong(page);
+
+    // The organizer sees the 15-minute lock, with "Get new link" right there (persona test C1).
+    await organizer.page.goto(`/g/${slug}/admin`);
+    const tempLock = organizer.page.getByRole("group", { name: "Maling PIN ni Ana" });
+    await expect(tempLock.getByText("Maraming maling PIN si Ana kanina")).toBeVisible();
+    await expect(organizer.page.getByText(/^Maraming maling PIN si /)).toHaveCount(1);
+    await tempLock.getByRole("button", { name: "Get new link for Ana (locked)" }).click();
+    await expect(organizer.page.getByRole("checkbox", { name: /Reset PIN/ })).toBeChecked();
+    await organizer.page.getByRole("button", { name: "Huwag" }).click();
 
     // Pretend 15 minutes passed.
     const anaId = (await getTruth(slug)).members.find((m) => m.name === "Ana")!.id;
@@ -272,6 +315,8 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
     const lock = page.getByRole("group", { name: "PIN lock for Ana" });
     await expect(lock.getByText("Na-lock ang PIN ni Ana")).toBeVisible();
     await expect(page.getByText(/^Na-lock ang PIN ni /)).toHaveCount(1);
+    // Fully locked: no 15-minute notice on top of it.
+    await expect(page.getByText(/^Maraming maling PIN si /)).toHaveCount(0);
     await lock.getByRole("button", { name: "Unlock" }).click();
     await expect(page.getByText("Na-lock ang PIN ni Ana")).toHaveCount(0);
 
