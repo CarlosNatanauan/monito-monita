@@ -4,7 +4,8 @@
  *
  * - The PIN is 4 digits, stored only as a salted scrypt hash. PINs don't
  *   need to be unique and are never compared across members.
- * - Coming back: active member with that name (case/space-insensitive) +
+ * - Coming back: active member with that name (case/space-insensitive,
+ *   or the one member it fits without a Kuya/Ate/Tita/Tito/Sir/Ma'am) +
  *   the right PIN → a NEW device token (member_sessions). Their original
  *   token keeps working, so other devices stay logged in.
  * - Every failure looks the same to the caller: unknown name, wrong PIN,
@@ -17,12 +18,12 @@
  * Pure helpers at the top (unit tested), database functions below.
  */
 import { randomBytes, scrypt, timingSafeEqual } from "node:crypto";
-import { and, desc, eq, isNull, notInArray, sql } from "drizzle-orm";
+import { and, desc, eq, isNull, notInArray } from "drizzle-orm";
 import { z } from "zod";
 import { createToken, hashToken, isValidSlug } from "./auth";
 import { db, type Tx } from "./db";
 import { groups, members, memberSessions } from "./db/schema";
-import { normalizeDisplayName } from "./names";
+import { findByDisplayName, normalizeDisplayName } from "./names";
 
 // --- PIN format ------------------------------------------------------------
 
@@ -158,12 +159,14 @@ export async function comeBack(slug: string, rawName: string, pin: string, now =
     return { ok: false };
   }
 
-  const [candidate] = await db()
-    .select({ id: members.id })
+  // Every active name in the group (at most 150), matched in code so a
+  // forgotten "Kuya" or "Tita" still finds the one member it fits.
+  const active = await db()
+    .select({ id: members.id, displayName: members.displayName })
     .from(members)
     .innerJoin(groups, eq(groups.id, members.groupId))
-    .where(and(eq(groups.slug, slug), isNull(members.removedAt), sql`lower(${members.displayName}) = lower(${name})`))
-    .limit(1);
+    .where(and(eq(groups.slug, slug), isNull(members.removedAt)));
+  const candidate = findByDisplayName(active, name);
   if (!candidate) {
     await burnPinCheck(pin);
     return { ok: false };

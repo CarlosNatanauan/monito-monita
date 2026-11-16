@@ -94,6 +94,21 @@ describe("comeBack (dev DB)", () => {
     }
   });
 
+  it("finds a member without the Kuya/Tita they joined with, only when one member fits (C3)", async () => {
+    const { slug } = await newGroup();
+    const ben = await joined(slug, "Kuya Ben", "1111");
+    const nena = await joined(slug, "Tita Nena", "2222");
+    await joined(slug, "Tito Nena", "3333");
+    expect(await comeBack(slug, "Ben", "1111")).toMatchObject({ ok: true, memberId: ben.memberId });
+    expect(await comeBack(slug, "tita nena", "2222")).toMatchObject({ ok: true, memberId: nena.memberId });
+    // Two members fit "Nena": same failure as an unknown name, and no PIN try is counted.
+    expect(await comeBack(slug, "Nena", "2222")).toEqual({ ok: false });
+    expect((await pinRow(nena.memberId)).failed).toBe(0);
+    // A wrong PIN through the loose match counts against that member, like any wrong PIN.
+    expect(await comeBack(slug, "Ben", "9999")).toEqual({ ok: false });
+    expect((await pinRow(ben.memberId)).failed).toBe(1);
+  });
+
   it("fails for removed members and members without a PIN", async () => {
     const { slug, groupId } = await newGroup();
     const ana = await joined(slug, "Ana", "1111");

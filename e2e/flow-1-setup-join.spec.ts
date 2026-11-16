@@ -166,22 +166,21 @@ test("setup and join: create, join, organizer, wishlists, reminder", async ({ br
   });
 
   const joyM = await newPerson("Joy M");
-  await test.step("'joy' is taken: the come-back form, then 'Bago ka?' → joins as 'Joy M'", async () => {
+  await test.step("'joy' is taken: two choices, 'Hindi ako 'yan' → joins as 'Joy M'", async () => {
     const { page } = joyM;
     await join(page, shareUrl, "joy", "5678");
-    // Nothing created; neutral wording that doesn't repeat the name.
-    await expect(
-      page.getByText(
-        "Kung kasali ka na, ilagay ang PIN mo. Kung bago ka, gumamit ng ibang pangalan (dagdagan ng initial ng apelyido).",
-      ),
-    ).toBeVisible();
-    await expect(page.getByRole("form", { name: "Bumalik" })).toBeVisible();
-    await expect(page.getByLabel("Pangalan mo")).toHaveCount(0);
-    await expect(page.getByText(/joy/i)).toHaveCount(0);
-    await shot(page, "name-taken-come-back");
+    // Nothing created; the name they typed is taken, so: is it them?
+    await expect(page.getByRole("heading", { name: "May joy na sa group" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Ako 'yan, ilalagay ko ang PIN" })).toBeInViewport({ ratio: 1 });
+    const notMe = page.getByRole("button", { name: "Hindi ako 'yan, gagamit ako ng ibang pangalan" });
+    await expect(notMe).toBeInViewport({ ratio: 1 });
+    // Nobody else's name: only the one typed.
+    await expect(page.getByText(/\bJoy\b/)).toHaveCount(0);
+    await shot(page, "name-taken-choice");
 
-    await page.getByRole("button", { name: "Bago ka? Sumali dito" }).click();
+    await notMe.click();
     await expect(page.getByLabel("Pangalan mo")).toHaveValue("joy");
+    await expect(page.getByText("May joy na sa group. Dagdagan ng initial ng apelyido, hal. “joy R.”")).toBeVisible();
     await page.getByLabel("Pangalan mo").fill("Joy M");
     await page.getByLabel("4-digit PIN").fill("5678");
     await page.getByRole("button", { name: "Join the group" }).click();

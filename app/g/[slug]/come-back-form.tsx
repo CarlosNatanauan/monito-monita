@@ -14,13 +14,19 @@ const initialState: ComeBackState = { status: "idle" };
 
 const NEW_LABEL = "Bago ka? Sumali dito";
 
+/** Failures in this browser before the "ask the organizer" hint grows. */
+export const LOUD_HINT_AFTER = 3;
+
 /**
  * Name + PIN, to come back on another device.
  *
  * - With `presetName` (after a taken name in the join form) only the PIN
  *   is asked; the name rides along hidden and is never shown back.
- * - Every failure shows the same "Mali ang pangalan o PIN". The hint
- *   below is always there, so it says nothing about a particular name.
+ * - Every failure shows the same "Mali ang pangalan o PIN". The hints
+ *   below are always there, so they say nothing about a particular name.
+ *   After 3 failures in this browser (a count kept here, never sent) the
+ *   "ask the organizer" hint grows: by then they may be locked out for
+ *   15 minutes, and more tries won't help.
  * - Submits without React's form reset once hydrated (keeps the name);
  *   before hydration it still works as a plain form post.
  */
@@ -45,6 +51,14 @@ export function ComeBackForm({
   const [state, formAction, pending] = useActionState(comeBackAction, initialState);
   // The error hides as soon as a field is edited, until the next submit.
   const [editedAfter, setEditedAfter] = useState<ComeBackState | null>(null);
+  // Failed tries in this browser (each result counted once).
+  const [counted, setCounted] = useState<ComeBackState>(state);
+  const [failures, setFailures] = useState(state.status === "error" ? 1 : 0);
+  if (counted !== state) {
+    setCounted(state);
+    if (state.status === "error") setFailures((n) => n + 1);
+  }
+  const loud = failures >= LOUD_HINT_AFTER;
   const error = state.status === "error" && editedAfter !== state ? state : null;
   const edited = () => {
     if (editedAfter !== state) setEditedAfter(state);
@@ -79,7 +93,7 @@ export function ComeBackForm({
               autoComplete="username"
               onChange={edited}
               invalid={Boolean(error)}
-              aria-describedby={error ? "comeback-error" : undefined}
+              aria-describedby={error ? "comeback-error comeback-name-hint" : "comeback-name-hint"}
               required
             />
           )}
@@ -91,16 +105,30 @@ export function ComeBackForm({
             autoComplete="current-password"
             autoFocus={presetName !== undefined}
             invalid={Boolean(error)}
-            describedBy={error ? "comeback-error" : "comeback-hint"}
+            describedBy={error ? "comeback-error comeback-hint" : "comeback-hint"}
             onChange={edited}
           />
-          {!error && (
-            <p id="comeback-hint" className="lst-row text-small text-ube-soft">
-              Nakalimutan ang PIN? Hingin sa organizer.
-            </p>
-          )}
         </div>
         {error && <ErrorMessage id="comeback-error">{error.message}</ErrorMessage>}
+        <div className="flex flex-col gap-1.5 text-small text-ube-soft">
+          {presetName === undefined && (
+            <p id="comeback-name-hint">
+              Isulat ang pangalan na ginamit mo noong sumali (kasama ang Kuya, Ate, Tita kung meron).
+            </p>
+          )}
+          {loud ? (
+            <p
+              id="comeback-hint"
+              role="status"
+              className="rounded-paper border-[1.5px] border-ube bg-ilaw-lit px-3 py-2.5 text-ube"
+            >
+              <strong>Huminto muna.</strong> Pagkatapos ng ilang maling PIN, naka-lock ito nang 15 minuto, kahit tama
+              na ang PIN. I-message ang organizer, bibigyan ka niya ng bagong link.
+            </p>
+          ) : (
+            <p id="comeback-hint">Nakalimutan ang PIN? I-message ang organizer, bibigyan ka niya ng bagong link.</p>
+          )}
+        </div>
         <Button type="submit" className="w-full" disabled={pending}>
           {pending ? "Sandali…" : "Buksan ang slip ko"}
         </Button>
