@@ -3,7 +3,7 @@
  * locks (C1), against the DEV database (`npm run test:db`). Deletes its
  * groups afterwards. Never point this at production.
  */
-import { asc, eq } from "drizzle-orm";
+import { asc, eq, sql } from "drizzle-orm";
 import { afterAll, describe, expect, it } from "vitest";
 import { addDays, themeStartDates, todayIn } from "@/lib/theme-weeks";
 import { closeDb, db } from "@/server/db";
@@ -136,7 +136,8 @@ describe("organizer view: PIN locks (dev DB)", () => {
     expect(locked.find((m) => m.id === ben)).toMatchObject({ pinTempLocked: false, pinLocked: true });
     expect(locked.find((m) => m.displayName === "Cris")).toMatchObject({ pinTempLocked: false, pinLocked: false });
 
-    await db().update(members).set({ pinLockedUntil: new Date(Date.now() - 1000) }).where(eq(members.id, id));
+    // The database's clock, not this machine's (which can run seconds ahead).
+    await db().update(members).set({ pinLockedUntil: sql`now() - interval '1 second'` }).where(eq(members.id, id));
     expect((await view()).find((m) => m.id === id)).toMatchObject({ pinTempLocked: false });
   });
 });
