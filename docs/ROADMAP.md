@@ -67,6 +67,7 @@ Goal: the moments strangers see first, then launch.
 - [x] "Handmade Pasko" look (docs/DESIGN.md): new tokens and fonts, paper materials, the evening sky and parol, every page and the 4 moments restyled
 - [x] Persona usability test (Nov 16): early taps on slow phones (Referrer-Policy), taken-name choice, honorifics and PIN hints on coming back, organizer sees 15-minute locks, edit details, past theme weeks flagged, links in GC messages, phone as remote near party day, search and A–Z in big groups, reveal footer and pair list, /me polish
 - [x] Portfolio demo (Nov 17): one-click demo group per visitor (landing button and /demo), guide on every demo page, Reset demo, 24-hour expiry with daily Vercel Cron cleanup, rate limit and a cap of 200, out of the analytics funnel; QR code for the reveal's phone remote
+- [x] In-between states (Nov 17): page-shaped loading placeholders, pending labels on every action, the demo's "Inihahanda" bowl, optimistic wishlist with roll-back, offline banner and waiting actions, on-brand 404 and error page, old-link / removed / expired-demo pages, parol icons, manifest and ube theme colour, page transitions
 - [ ] Fix everything from the test group's feedback
 - [ ] **Launch Nov 28:** post in your own GCs, Facebook, Reddit (r/Philippines), LinkedIn
 

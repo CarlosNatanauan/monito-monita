@@ -302,7 +302,7 @@ All motion uses `transform` and `opacity` only.
    - **Phone follow-along** (any window taller than wide): no stage. The group name and "7 of 12" in gold top-left, the parol top-right, the centre text ("Handa na?", "Si … ay si… Jun!", "Maligayang Pasko!") in a column, then "Nabunyag na": the latest six revealed pairs as white slips in two columns ("Huling 6 lang ang ipinapakita. 11 pa ang nakatiklop."), every pair after the finale. Big groups add the small progress string. The organizer's buttons (Start, Previous, Next) sit under it, so the phone is still the remote.
    - The stage keeps the state for each step in its markup; motion only plays the change. Bulbs light by switching their state attribute, with a CSS transition and a delay per bulb; no script runs per frame for them.
 
-Everywhere else there is no entrance animation. Motion only answers what the user did. The one ambient exception is the light string (see Light string): its controller modes on the landing and /me and its calm twinkle on forms, four opacity-only layers, about one flash a second per bulb at most, and none of it under reduced motion.
+Everywhere else there is no entrance animation. Motion only answers what the user did. The one ambient exception is the light string (see Light string): its controller modes on the landing and /me and its calm twinkle on forms, four opacity-only layers, about one flash a second per bulb at most, and none of it under reduced motion. Two small answers to a tap are described in section 15: the page transition on navigation and the demo's "Inihahanda" bowl.
 
 Reduced motion (`prefers-reduced-motion`): no flips, drops or sweeps. States cross-fade in 150ms.
 
@@ -315,7 +315,7 @@ Reduced motion (`prefers-reduced-motion`): no flips, drops or sweeps. States cro
 - Four font files, Latin subset, `font-display: swap`.
 - Lazy-load animation code per screen (landing, /me unfold, reveal).
 - Target: mobile Lighthouse performance 90 or higher, under 150 KB of JS on the join and /me routes.
-- Where it stands (`scripts/perf/js-weight.mjs`, Lighthouse 12 on a production build): join 144 KB, /me 149 KB (149.1, with the light string's controller: under 1 KB left), landing performance 95. The framework alone is about 135 KB, so member pages keep their own code small: no Motion on /me (press and fade-ins are CSS transitions and Web Animations), a small class merger in `lib/utils.ts` instead of a full tailwind-merge, the join drop loads only after joining, and nothing on /me imports `next/link`. (Cards with buttons stay in the main bundle: a lazy one shows before it can be tapped.)
+- Where it stands (`scripts/perf/js-weight.mjs`, Lighthouse 12 on a production build): join 146.4 KB, /me 149.7 KB (0.3 KB left), landing performance 93–95. The in-between states (section 15) cost about 1.5 KB on every page (the offline retry in Next's router, and the branded error page in place of Next's own); /me paid for them by loading its rare cards on demand (Mag-set ng PIN, switch member, monito updated) and keeping the paper module out of its JS. Anything new on /me needs a saving first. The framework alone is about 135 KB, so member pages keep their own code small: no Motion on /me (press and fade-ins are CSS transitions and Web Animations), a small class merger in `lib/utils.ts` instead of a full tailwind-merge, the join drop loads only after joining, and nothing on /me imports `next/link`. (Cards with buttons stay in the main bundle: a lazy one shows before it can be tapped.)
 
 ## 10. Accessibility
 
@@ -379,3 +379,71 @@ The screens in `docs/design/` were drawn before some product rules were settled.
 - **After the reveal** /me follows screen 11: the giver on the slip, "Tapos na ang reveal", the tags and the greeting. Wishlists and the theme sheet are gone by then.
 - **Join drop**: the overlay is the evening sky panel with the bowl, the parol and "Kasali ka na!".
 - **/me on laptops**: the personal link sits at the end of the right column, not under the slip as in screen 09. The slip block stays in view while the page scrolls (kept from the responsive pass), and with the link under it the left column was taller than a 768px window.
+
+## 15. In-between states
+
+Every wait, failure and dead end uses the same materials as the page it belongs to. Nothing generic: no spinners, no grey skeleton bars, no raw error text.
+
+### Loading (`components/loading-shapes.tsx`)
+Each page streams in behind its own materials, empty, with one line of copy in a `role="status"`: "Sandali lang…" in Chelsea Market display, then what's happening in soft text.
+
+| Page | Placeholder | Line |
+|---|---|---|
+| Join, come back, closed | The parol, three tags with their labels and "…", the listahan form with blank lines and four empty PIN boxes | Binubuksan ang listahan ng group. |
+| /me | The evening sky with the string, the sipit and a dashed `--ube-line` slip outline (the slip isn't here yet), the party and budget tags, a blank "Wishlist mo" listahan | Hinahanap ang slip mo. |
+| Organizer | The capiz card with 12 unlit progress bulbs ("Ilan na kaya?"), a dashed link box, a blank "Members" listahan | Binibilang ang mga kasali. |
+| Reveal | The dim parol frame (`#3D2A68`) on the night | Inaayos ang entablado para sa reveal. |
+
+Server-only markup and CSS: no JS, no motion.
+
+### Pending buttons (`lib/use-pending-label.ts`)
+Every form action is disabled while it runs, so nobody submits twice, and its label says what is happening, with the button's own verb:
+
+| Button | Pending |
+|---|---|
+| Join the group | Sumasali… |
+| Buksan ang slip ko | Binubuksan ang slip mo… |
+| Create group | Ginagawa ang group… |
+| Simulan ang demo | Inihahanda ang demo group… |
+| Oo, i-draw na / Oo, i-redraw / Tanggalin at i-redraw | Nagbubunot… / Nagbubunot ulit… |
+| I-save, I-save ang PIN | Sine-save… |
+| Add (bawal pair) | Dinadagdag… |
+| Oo, gumawa ng bago (new link) | Gumagawa ng link… |
+| Oo, tanggalin | Tinatanggal… |
+| Oo, simulan na (reveal) | Sinisimulan… |
+
+While the connection is down, any pending label reads **"Hinihintay ang signal…"** instead: the action waits and runs once the connection is back (Next's `experimental.useOffline`).
+
+### Demo start ("Inihahanda ang demo group…")
+Over the /demo page while the demo is built: the evening sky card of the join drop (parol, bowl on the bilao) with three paper slips dropping into the bowl one after another (a 1.35s loop, transform and opacity, CSS keyframes), the title in Chelsea Market and "Naglalagay ng 9 na slip sa bowl." Reduced motion: the slips rest in the bowl.
+
+### Wishlist (optimistic)
+- Add, edit and Alisin show at once. A wish that's saving shows "Sine-save…" (or "Hinihintay ang signal…") in place of Edit and Alisin.
+- If the server says no, the list rolls back by itself and the error message says what didn't save ("Hindi na-save ang “Mug”. …", "Hindi naalis ang “Payong”. …"). A failed add or edit puts what was typed back in its field with the field errors, so trying again is one tap.
+- Success is one line on the listahan in `--dahon` bold: "Na-save!" or "Naalis na!", announced (the full sentence is screen-reader text). The cursor returns to the add field.
+
+### Offline
+- A paper strip pinned to the bottom of the window: white, 1.5px ube border, 3px corners, an unlit bulb and "**Offline ka.** Itutuloy namin ang ginagawa mo pagbalik ng signal." When the connection returns: a lit gold bulb and "Balik na ang signal!" in `--dahon` for 3 seconds. A polite live region; no motion.
+- It is a small inline script in the root layout (`lib/offline-banner.ts`), so it works before hydration and costs no JS file.
+- Actions and navigations that fail offline wait and run again once the connection is back (never an error screen); their buttons say "Hinihintay ang signal…". A full page load offline still needs the network (no service worker).
+
+### Errors
+- **404** (`app/not-found.tsx`): the light string, the wordmark, a fallen slip under an empty sipit on the wire, "Naligaw ang slip na 'to", "Wala rito ang hinahanap mo. Baka kulang ang link, o may typo." and a hint to copy the GC link again; "Bumalik sa home" (filled) and "Gumawa ng group".
+- **Something broke** (`app/global-error.tsx`): a tipped slip, "Ay, may sumabit." and "Ligtas ang group at ang slip mo, subukan lang ulit.", or, offline, "Nawala ang signal"; "Subukan ulit" (filled, re-fetches) and "Bumalik sa home". Never the error text.
+
+### Link states (each says what to do next)
+- **Old personal link or saved login** (the organizer issued a new one): the fallen slip, a capiz card "Hindi na gumagana ang link na 'to", "Baka gumawa na ng bagong link ang organizer…", "Bumalik gamit ang PIN" (filled) and "Walang PIN o nakalimutan? Hingin ang bagong link sa organizer."
+- **Removed member**: "Wala ka na sa group na 'to", "Tinanggal ka ng organizer…", "Kung mali, i-message ang organizer.", "Bumalik sa home".
+- **Expired demo** (a group this browser was in, now gone; only demos are ever deleted): the fallen slip, "Tapos na ang demo na 'to", "Simulan ulit ang demo" (filled) and "Gumawa ng totoong group".
+- These pages show the wordmark as a plain link home.
+
+### Page transitions
+On navigation between the landing, /demo, /new, the organizer page and the 404, React's `<ViewTransition>`: the old page fades out (120ms), the new one fades in rising 8px (200ms). Only on navigation (refreshes and saved changes don't animate), and the light string holds still. Never on the signature moments: not on the reveal, and not on the join page or /me (the join drop hands off between them, and the slip unfolds on /me). Chromium (most Android phones, Chrome and Edge) and Firefox only: on WebKit (Safari, every iPhone browser) the page crashed during view transitions in testing, so a small inline script (`lib/view-transition-guard.ts`) turns them off there and pages just swap. None with reduced motion.
+
+### Icons and colour
+- Tab icon: the parol's disc and star (`app/icon.svg`, `favicon.ico`). Home screen: the whole parol on the ube evening sky (`apple-icon.png`, `public/icons/`), from `scripts/icons/make-icons.mjs`.
+- `theme-color` is ube `#3F1F63`. The manifest names the app "Monito Monita" and opens in the browser (`display: "browser"`): a standalone window on iPhone keeps its own cookies and would log people out of their group.
+
+### Feedback words
+Copy buttons say **"Copied!"** with a tick; saves say **"Na-save!"** (or "Na-save ang PIN mo!", "Na-save ang details."); removals say what's gone. A confirmation uses the same words as its button.
+

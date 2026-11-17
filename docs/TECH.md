@@ -29,7 +29,7 @@ Each tool has one clear job. Animation code is **lazy-loaded** only on the scree
 | **GSAP** + plugins (100% free, including formerly paid plugins) | Cinematic, choreographed timelines | Slip unfold sequence, the bowl draw and join drop, the party reveal (slip flips, bulbs lighting along the loop, the turning window, the parol finale) |
 | **Rive** (optional, decide after mockups) | Illustrated, interactive animations with state machines, tiny runtime | The bowl with slips tumbling, if SVG + GSAP isn't rich enough. Needs design time in the Rive editor |
 | **canvas-confetti** | Particle bursts | Gold star/parol sparkles at big moments only |
-| **View Transitions** (React / Next 16) | Smooth page-to-page transitions | Join → member home, member home → slip. Check Next 16 docs for current support |
+| **View Transitions** (React 19.3 `<ViewTransition>`) | Smooth page-to-page transitions | `components/page-transition.tsx`: a fade and 8px rise on navigation only (`default="none"`) on the landing, /demo, /new, the organizer page and the 404 (not the reveal, join or /me); off on WebKit (`lib/view-transition-guard.ts`, the page crashed in testing); no JS cost |
 | ~~opentype.js~~ | Not used | The slip's handwriting is an ink reveal moved with transforms (docs/DESIGN.md, section 8), so no font outlines ship to /me |
 
 **Not using three.js / 3D WebGL for v1.** It's heavy on budget phones and a big time sink. CSS 3D transforms + SVG + GSAP gets the paper-slip look. Revisit for the 2027 reveal screen.
@@ -105,6 +105,7 @@ No sign-up, but people still need to come back.
 - The **organizer** gets a separate organizer link with its own token.
 - Only **hashes** of tokens are stored in the database (like passwords).
 - Lost link? The organizer's "Get new link" issues a new token and deletes the member's device sessions, so every old link and cookie stops working.
+- **Why a link didn't work** (docs/DESIGN.md, "In-between states"): when a personal link's token doesn't log a device in, the proxy redirects to `/me?link=old` (or `?link=removed` when the token belonged to a removed member), unless the device is already logged in as an active member. A cookie whose token no longer matches is the `stale` session kind. /me then says the link no longer works and offers coming back with the PIN. A missing group with this browser's cookie for it (`hasGroupCookie`) can only be a deleted demo, so join, /me and the organizer page say the demo is over instead of a 404.
 
 ### Name + PIN (`server/pin.ts`)
 
@@ -188,6 +189,14 @@ One sandbox group per visitor (docs/PRODUCT.md, "Demo").
 - **Closed to others:** `joinGroup` refuses a demo (CLOSED), and its join page says "Demo group 'to" with a link to `/demo`. Come-back isn't offered. Demo pages are under `/g/*` (noindex); `/demo` is noindex too (metadata and `X-Robots-Tag`).
 - **Guide:** `components/demo/demo-guide.tsx`, server-only (no client code, no `next/link`), so /me's JS budget is unchanged. Reset is a plain `<form action>`.
 - **Leaks:** nothing changes: the visitor is an organizer and one member, with the same rules. `e2e/demo.spec.ts` runs the leak checks on /me, the organizer page, the reveal (before the start, at steps 1 and 4, after) and the closed join page.
+
+## Offline and errors
+
+- **`experimental.useOffline`** (next.config.ts): a navigation, refresh or Server Action whose fetch fails because the connection dropped stays pending and runs again once Next's connectivity check succeeds, instead of throwing. Buttons read `useOffline` through `lib/use-pending-label.ts` and say "Hinihintay ang signal…". The reveal's 2-second refresh simply waits too.
+- **Offline banner:** a small inline script in the root layout (`lib/offline-banner.ts`) on the browser's `offline`/`online` events: works before hydration and adds no JS file to the join page or /me. It appends its live region to `<body>` after load (React 19 skips unknown nodes in `<body>` when hydrating).
+- **Errors:** one boundary, `app/global-error.tsx` (self-contained: it ships with every page in place of Next's built-in one); `app/not-found.tsx` is server-only with plain links, because its client references load with every page (a `next/link` there put ~4 KB on /me).
+- **Wishlist** is optimistic (`useOptimistic`): the server's answer replaces it, a failure rolls it back.
+- **No PWA:** `app/manifest.ts` gives "Add to home screen" the name and icon, with `display: "browser"` and no service worker, so a full load offline still needs the network.
 
 ## Analytics (`server/analytics.ts`)
 
