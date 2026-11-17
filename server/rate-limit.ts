@@ -1,6 +1,6 @@
 /**
- * Per-IP limits on creating groups, joining, and coming back with name +
- * PIN (Upstash Redis + @upstash/ratelimit).
+ * Per-IP limits on creating groups, starting or resetting a demo, joining,
+ * and coming back with name + PIN (Upstash Redis + @upstash/ratelimit).
  *
  * - Each action has its own budget of requests per IP.
  * - Join and come-back also share a budget of FAILURES per IP: taken-name
@@ -16,11 +16,13 @@ import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 import { headers } from "next/headers";
 
-export type LimitedAction = "create" | "join" | "comeback";
+export type LimitedAction = "create" | "demo" | "join" | "comeback";
 
 /** Generous enough for a whole office joining from one Wi-Fi. */
 const ACTION_LIMITS: Record<LimitedAction, { tokens: number; window: `${number} ${"m" | "h"}` }> = {
   create: { tokens: 10, window: "1 h" },
+  // Starting a demo and "Reset demo" (each builds a whole group).
+  demo: { tokens: 20, window: "1 h" },
   join: { tokens: 30, window: "10 m" },
   comeback: { tokens: 30, window: "10 m" },
 };
@@ -51,6 +53,7 @@ function limiters(): Limiters | null {
     });
   cached = {
     create: make("create", ACTION_LIMITS.create),
+    demo: make("demo", ACTION_LIMITS.demo),
     join: make("join", ACTION_LIMITS.join),
     comeback: make("comeback", ACTION_LIMITS.comeback),
     failures: make("failures", FAILURE_LIMIT),
@@ -79,7 +82,7 @@ export async function allowRequest(action: LimitedAction, ip: string): Promise<b
   try {
     const [request, failures] = await Promise.all([
       l[action].limit(ip),
-      action === "create" ? null : l.failures.getRemaining(ip),
+      action === "join" || action === "comeback" ? l.failures.getRemaining(ip) : null,
     ]);
     return request.success && (failures === null || failures.remaining > 0);
   } catch (error) {

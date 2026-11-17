@@ -47,6 +47,8 @@ export function RevealScreen({
   backHref,
   controls,
   startExtra,
+  demoTag,
+  demoTools,
   speed,
 }: {
   data: ScreenData;
@@ -57,6 +59,10 @@ export function RevealScreen({
   controls?: React.ReactNode;
   /** Inside the ring under "Handa na?" (landscape only): "Gawing remote ang phone mo". */
   startExtra?: React.ReactNode;
+  /** Demo groups: the demo tag, beside "Back to organizer page" (top left, clear of the ring). */
+  demoTag?: React.ReactNode;
+  /** Demo groups: "My slip" and "Reset demo", before the sound and fullscreen tools. */
+  demoTools?: React.ReactNode;
 }) {
   const view = toStageView(data);
   const windowed = isWindowed(view.total);
@@ -99,15 +105,26 @@ export function RevealScreen({
       />
     ) : null;
 
+  const back = (
+    <Link
+      href={backHref}
+      className="flex min-h-11 items-center rounded-paper font-bold text-gabi-text underline decoration-[1.5px] underline-offset-[3px] focus-ring landscape:text-[clamp(16px,2.4vh,28px)]"
+    >
+      Back to organizer page
+    </Link>
+  );
   const tools = (
     <>
-      <Link
-        href={backHref}
-        className="flex min-h-11 items-center rounded-paper font-bold text-gabi-text underline decoration-[1.5px] underline-offset-[3px] focus-ring landscape:text-[clamp(16px,2.4vh,28px)]"
-      >
-        Back to organizer page
-      </Link>
-      <div className="flex items-center gap-1">
+      {demoTag ? (
+        <div className="flex flex-wrap items-start gap-x-6 gap-y-1">
+          {back}
+          {demoTag}
+        </div>
+      ) : (
+        back
+      )}
+      <div className="flex flex-wrap items-center gap-1 landscape:text-[clamp(16px,2.4vh,28px)]">
+        {demoTools}
         <button type="button" className={ICON_BUTTON} aria-pressed={sound.on} onClick={sound.toggle}>
           {sound.on ? <Volume2 aria-hidden className="size-5" /> : <VolumeX aria-hidden className="size-5" />}
           <span>Tunog: {sound.on ? "on" : "off"}</span>

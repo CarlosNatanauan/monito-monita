@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { analyticsConfig, buildCapture, hashGroupId, sendEvent } from "@/server/analytics";
+import { analyticsConfig, buildCapture, hashGroupId, sendEvent, sendFunnelEvent } from "@/server/analytics";
 
 const GROUP_ID = "7f0c1e7a-3b0e-4d7e-9f4a-0a1b2c3d4e5f";
 const config = { key: "phc_test", host: "https://eu.i.posthog.com" };
@@ -89,5 +89,39 @@ describe("sendEvent", () => {
     await expect(sendEvent(config, "slip_opened", GROUP_ID, {}, http500 as unknown as typeof fetch)).resolves.toBeUndefined();
     expect(warn).toHaveBeenCalledTimes(2);
     warn.mockRestore();
+  });
+});
+
+describe("demo groups and the funnel", () => {
+  const ok = () => vi.fn(async () => new Response(null, { status: 200 }));
+
+  it("drops funnel events from a demo group", async () => {
+    const fetchImpl = ok();
+    await sendFunnelEvent(config, "slip_opened", GROUP_ID, {}, { isDemo: async () => true, fetchImpl });
+    expect(fetchImpl).not.toHaveBeenCalled();
+  });
+
+  it("sends funnel events from a real group", async () => {
+    const fetchImpl = ok();
+    await sendFunnelEvent(config, "names_drawn", GROUP_ID, { members: 9, redraw: false }, { isDemo: async () => false, fetchImpl });
+    expect(fetchImpl).toHaveBeenCalledOnce();
+  });
+
+  it("drops the event when the demo check fails (a demo must never count)", async () => {
+    const fetchImpl = ok();
+    const warn = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const isDemo = async (): Promise<boolean> => {
+      throw new Error("db down");
+    };
+    await sendFunnelEvent(config, "member_joined", GROUP_ID, {}, { isDemo, fetchImpl });
+    expect(fetchImpl).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("demo_started has its own fixed-word properties, nothing identifying", () => {
+    const { body } = buildCapture(config, "demo_started", GROUP_ID, { custom_name: true, reset: false });
+    expect(body.event).toBe("demo_started");
+    expect(body.properties).toMatchObject({ custom_name: true, reset: false, group: hashGroupId(GROUP_ID) });
+    expect(JSON.stringify(body)).not.toContain(GROUP_ID);
   });
 });

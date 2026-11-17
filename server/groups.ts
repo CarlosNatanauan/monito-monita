@@ -253,3 +253,9 @@ export async function getGroupPreview(slug: string): Promise<{ name: string; par
     .limit(1);
   return row ?? null;
 }
+
+/** True for a one-click demo group (server/demo.ts). Unknown ids are not demos. */
+export async function isDemoGroup(groupId: string): Promise<boolean> {
+  const [row] = await db().select({ isDemo: groups.isDemo }).from(groups).where(eq(groups.id, groupId)).limit(1);
+  return row?.isDemo ?? false;
+}

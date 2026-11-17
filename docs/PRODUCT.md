@@ -31,6 +31,7 @@ The draw is table stakes. What makes this worth using:
 |---|---|
 | **Organizer** (HR, class officer, the tita who always plans) | Set it up in 2 minutes, draw fairly, keep everyone on track |
 | **Member** | Find out who they got, see the wishlist, know this week's theme |
+| **Visitor** (a recruiter or client looking at the portfolio) | Try the whole thing alone in about 2 minutes, without other people |
 
 ## Core user flows
 
@@ -85,6 +86,17 @@ The draw is table stakes. What makes this worth using:
 - Other occasions: Valentine's, birthdays, kris kringle any time of year
 - Installable app (PWA) with push notifications
 - Tagalog language option
+
+## Demo (one click, for a visitor alone)
+
+A recruiter or client should be able to experience the whole app in about 2 minutes, without needing other people.
+
+- **Entry:** "Subukan ang demo" on the landing page (a secondary button beside "Create your group", which stays the one primary button; on laptops in the same row, with "Titingin-tingin lang? …" under it) and `/demo`, a link for the portfolio. `/demo` asks for an optional name (default "Bisita") and has "Simulan ang demo".
+- **What it makes:** a fresh sandbox group per visitor, "Barkada Pasko {year}": 8 made-up members with Filipino names, codenames and wishlists, three theme weeks around today (one over, one this week, one next), a party 8 days away, budget ₱500, one bawal pair (Ate Joy and Kuya Ben), names already drawn, 5 made-up members already opened their slip. The visitor joined first (so the reveal starts with their slip) and is both the organizer and a member, with their slip still folded.
+- **Guide:** every demo page shows a gold tag "Demo group 'to. Mabubura after 24 hours." and, under it, a listahan with stars (not numbered steps): My slip (open your slip), Manage group (the dashboard), Reveal (to the finale), Gumawa ng totoong group, then "Reset demo". The page you're on says "nandito ka". On the reveal screen: the tag beside "Back to organizer page", "My slip" and "Reset demo" by the sound button.
+- **Everything works:** the unfold, wishlists, theme weeks, the organizer page, GC reminders, the bawal pair (shown; it's already drawn), remove member, redraw, get new link, the full reveal with the finale. No "Mag-set ng PIN" card.
+- **Reset demo** deletes the demo and builds a fresh one with the same visitor name (new link, folded slip, nothing revealed).
+- **Separate and safe:** demo groups expire after 24 hours (a daily cleanup, plus a cleanup whenever a demo starts). Starting or resetting is rate limited per network, and at most 200 demos are alive at once ("Ang daming nagde-demo ngayon…"). Joining from a shared demo link is closed ("Demo group 'to", with a link to make your own). Demos stay out of the analytics funnel. Real groups are never touched by demo cleanup.
 
 ## Coming back (name + PIN)
 

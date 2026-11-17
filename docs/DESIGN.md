@@ -151,12 +151,13 @@ What is built (`components/page.tsx`, checked by `e2e/layouts.spec.ts`):
 | Laptop, 1024px and up (iPad landscape included) | Two columns inside a 1120px container (32px gutters when the window is narrower): main column (flexible) and a 420px side column, 48px gap. Light string: one continuous wire across the full width, sagging between nails every 360px |
 
 What goes where on laptop. Asymmetric: text left, picture right, never centred.
-- **Landing:** brand, headline, line of copy, "Create your group", "Your groups" and "Paano 'to?" left; the evening sky with bowl and parol right (500px tall).
+- **Landing:** brand, headline, line of copy, "Create your group" with "Subukan ang demo" (secondary) beside it and a small line under them ("Titingin-tingin lang? …"), "Your groups" and "Paano 'to?" left; the evening sky with bowl and parol right (500px tall).
 - **Create group:** form and "Create group" left; "Preview sa GC" (the bubble and the share card) right. Phones show the preview under the form, above the button.
 - **Group ready:** heading with the parol and the capiz "Link ng group" card left; the organizer link card and "Pumunta sa group ko" right.
 - **Join, come back, closed:** heading, parol and tags left (with "Kasali ka na? Bumalik dito"); the listahan form, its error and the button right.
 - **/me:** greeting, the sky panel with the slip and the codename line left (after the draw, the theme sheet too, under the codename, so the columns end close together); the receiver's wishlist, tags, own wishlist and the personal link right (before the draw, the theme sheet as well). Right after joining the personal link comes first, under the greeting (its "I-send sa sarili mo" is the filled button then). Phones put it last otherwise.
 - **Organizer:** the header line holds the wordmark and, for someone who is also a member, the folder tabs on the right. Status, share, draw, reminder and the other cards left; the members listahan right. Below 840px everything stacks.
+- **Demo** (`/demo`): like join: "Subukan ang demo" with the parol and a "Nasa loob" listahan left; the name on a listahan, "Simulan ang demo" and a link to a real group right. On demo pages the guide sits at the top of the right column on /me (phones: right after the slip) and first on the organizer page's left column.
 - **Reveal:** a fixed 16:9 stage scaled to fit any landscape window. A phone held upright gets the follow-along view instead (section 8).
 
 Kept from the responsive pass:
@@ -208,6 +209,11 @@ The DOM keeps the phone order; the grid places each block on wider screens. On p
 ### Capiz card
 - White, 1.5px ube border, a 22px band of capiz panes along the top (pale gold, pale lilac, white, with ube lattice lines).
 - For status and sharing: "Names drawn", join progress, group link, the announce card. At most one per column.
+
+### Demo guide (demo groups only)
+- A gold gift tag, rotated -1°: "Demo group 'to. Mabubura after 24 hours." (Atkinson 700 15).
+- Under it a listahan with stars in the margin, never numbers: **My slip** · buksan ang slip mo, **Manage group** · ang dashboard, **Reveal** · hanggang sa finale, **Gumawa ng totoong group**, then the text button "Reset demo". The current page is bold text with "· nandito ka" instead of a link.
+- On the reveal screen: the tag (at most 17vw wide, two lines) beside "Back to organizer page", and "My slip" / "Reset demo" before the sound button. A demo has at most 9 slips; with 3 to 9 the ring leaves that header row free (left of the top slip, above 16vh). `e2e/demo.spec.ts` checks they never overlap a slip.
 
 ### Theme sheet
 - `--dahon` sheet with a cut fringe along the bottom edge. Lead-in in white bold 15, theme name in Chelsea Market 30 `--ilaw-lit`, meta in white 15.
@@ -292,6 +298,7 @@ All motion uses `transform` and `opacity` only.
    - **Large groups:** the ring always holds 12 slips. Past 12 members it is a moving window: on each step the oldest revealed slip slides out and the next codename slides in. A small 30-bulb string and "19 of 30" show overall progress.
    - **Finale:** after the last slip the button reads "Ilawan ang parol". Every bulb lights in a sweep, the parol frame behind the text turns gold, every slip gets a gold outline, and "Maligayang Pasko!" appears on a white paper banner in the centre (ube text, so it stays readable over the gold frame; at most 800px wide on the 1920 stage, so it stays inside the ring and never covers a slip). Gold paper stars fall for 3 seconds.
    - Readability: at 1920 by 1080 nothing is smaller than 24px; the name is about 190px.
+   - **Phone as remote** (start screen, landscape): "Gawing remote ang phone mo" inside the ring. "Ipakita ang QR" shows the QR code: ube-black modules on white with a quiet zone, 360px on the stage, left of the title, "I-scan gamit ang phone mo." and the buttons ("Itago ang QR", "I-send sa phone ko" or "Copy organizer link"). The line "N slips, N sikreto…" steps aside while it shows, so "Handa na?" and the QR fit inside the ring. Hidden by default (the screen may already be projected).
    - **Phone follow-along** (any window taller than wide): no stage. The group name and "7 of 12" in gold top-left, the parol top-right, the centre text ("Handa na?", "Si … ay si… Jun!", "Maligayang Pasko!") in a column, then "Nabunyag na": the latest six revealed pairs as white slips in two columns ("Huling 6 lang ang ipinapakita. 11 pa ang nakatiklop."), every pair after the finale. Big groups add the small progress string. The organizer's buttons (Start, Previous, Next) sit under it, so the phone is still the remote.
    - The stage keeps the state for each step in its markup; motion only plays the change. Bulbs light by switching their state attribute, with a CSS transition and a delay per bulb; no script runs per frame for them.
 

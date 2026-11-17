@@ -1,10 +1,15 @@
 import type { Metadata } from "next";
+import { headers } from "next/headers";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
+import { DemoRevealLinks, DemoRevealTag } from "@/components/demo/demo-guide";
 import { RevealScreen } from "@/components/reveal/reveal-screen";
 import "@/components/reveal/reveal.css";
+import { qrPath } from "@/lib/qr";
+import { requestOrigin } from "@/lib/request-origin";
 import { getCurrentOrganizer, getOwnToken, isValidSlug, personalLinkPath } from "@/server/auth";
+import { isDemoGroup } from "@/server/groups";
 import { getRevealView } from "@/server/reveal";
 import { RevealAutoRefresh } from "./auto-refresh";
 import { PhoneRemote, RevealControls, StartReveal } from "./reveal-controls";
@@ -55,11 +60,21 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
     );
   }
 
-  const [view, ownToken] = await Promise.all([getRevealView(organizer.groupId), getOwnToken("organizer", slug)]);
+  const [view, ownToken, isDemo, requestHeaders] = await Promise.all([
+    getRevealView(organizer.groupId),
+    getOwnToken("organizer", slug),
+    isDemoGroup(organizer.groupId),
+    headers(),
+  ]);
   if (!view) notFound();
   // "Gawing remote ang phone mo": the organizer's own link, from their cookie.
   const remotePath = ownToken ? personalLinkPath("organizer", slug, ownToken) : undefined;
   const backHref = `/g/${slug}/admin`;
+  // Its QR code, encoded here on the server: only this organizer's own
+  // screen (verified by their cookie above) ever gets it, and only before
+  // the start.
+  const remoteQr =
+    view.status === "DRAWN" && remotePath ? qrPath(`${requestOrigin(requestHeaders)}${remotePath}`) : undefined;
 
   if (view.status === "OPEN") {
     return (
@@ -76,18 +91,23 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
     );
   }
 
+  // Every element handed to the client screen has a key: with the QR's
+  // object prop, React (dev) can deliver these elements late and then
+  // checks them like list children ("unique key" warning on WebKit).
   return (
     <>
       {view.status !== "REVEALED" && <RevealAutoRefresh />}
       <RevealScreen
         data={view}
         backHref={backHref}
-        startExtra={view.status === "DRAWN" && remotePath ? <PhoneRemote remotePath={remotePath} /> : undefined}
+        demoTag={isDemo ? <DemoRevealTag key="demo-tag" /> : undefined}
+        demoTools={isDemo ? <DemoRevealLinks key="demo-links" slug={slug} /> : undefined}
+        startExtra={view.status === "DRAWN" && remotePath ? <PhoneRemote key="remote" remotePath={remotePath} qr={remoteQr} /> : undefined}
         controls={
           view.status === "DRAWN" ? (
-            <StartReveal slug={slug} />
+            <StartReveal key="start" slug={slug} />
           ) : view.status === "REVEALING" ? (
-            <RevealControls slug={slug} step={view.step} total={view.total} />
+            <RevealControls key="controls" slug={slug} step={view.step} total={view.total} />
           ) : undefined
         }
       />

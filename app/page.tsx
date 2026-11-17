@@ -44,9 +44,19 @@ export default function Home() {
           </div>
 
           <div className={cn(colClass, "lg:col-start-1 lg:row-start-2")}>
-            <Button asChild className="w-full lg:w-fit">
-              <Link href="/new">Create your group</Link>
-            </Button>
+            <div className="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:gap-4">
+              <Button asChild className="w-full lg:w-fit">
+                <Link href="/new">Create your group</Link>
+              </Button>
+              {/* The one-click demo, for a visitor who just wants to look around
+                  (a recruiter, a client). Secondary: one filled button per screen. */}
+              <Button asChild variant="secondary" className="w-full lg:h-[60px] lg:w-fit lg:px-6">
+                <Link href="/demo">Subukan ang demo</Link>
+              </Button>
+            </div>
+            <p className="-mt-1 text-small text-ube-soft lg:-mt-2">
+              Titingin-tingin lang? Sa demo, ikaw na ang buong grupo: 2 minuto, walang kailangang kasama.
+            </p>
 
             {/* Returning visitors: their groups, right under the main action.
                 It appears only after hydration (localStorage), so it sits

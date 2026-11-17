@@ -31,6 +31,8 @@ export const MAX_MEMBERS = 150;
 export const NAME_TAKEN_MESSAGE =
   "Kung kasali ka na, ilagay ang PIN mo. Kung bago ka, gumamit ng ibang pangalan (dagdagan ng initial ng apelyido).";
 
+export const DEMO_JOIN_CLOSED_MESSAGE = "Demo group 'to, kaya sarado ang pagsali.";
+
 export const joinSchema = z.object({
   slug: z.string().refine(isValidSlug, "Hindi mahanap ang group."),
   displayName: z
@@ -55,6 +57,8 @@ export interface GroupSummary {
   budget: number;
   timezone: string;
   status: GroupStatus;
+  /** A one-click demo group (server/demo.ts): joining is closed, pages show the demo guide. */
+  isDemo: boolean;
   memberCount: number;
 }
 
@@ -70,6 +74,7 @@ export async function getGroupSummary(slug: string): Promise<GroupSummary | null
       budget: groups.budget,
       timezone: groups.timezone,
       status: groups.status,
+      isDemo: groups.isDemo,
     })
     .from(groups)
     .where(eq(groups.slug, slug))
@@ -117,6 +122,7 @@ export async function getOrganizerView(groupId: string): Promise<OrganizerView |
       budget: groups.budget,
       timezone: groups.timezone,
       status: groups.status,
+      isDemo: groups.isDemo,
     })
     .from(groups)
     .where(eq(groups.id, groupId))
@@ -188,12 +194,14 @@ export async function joinGroup(slug: string, rawName: string, pin: string): Pro
   try {
     return await db().transaction(async (tx): Promise<JoinResult> => {
       const [group] = await tx
-        .select({ id: groups.id, status: groups.status })
+        .select({ id: groups.id, status: groups.status, isDemo: groups.isDemo })
         .from(groups)
         .where(eq(groups.slug, slug))
         .for("update")
         .limit(1);
       if (!group) return { ok: false, reason: "NOT_FOUND", message: "Hindi mahanap ang group." };
+      // A demo is one visitor's sandbox: a shared link can't join it.
+      if (group.isDemo) return { ok: false, reason: "CLOSED", message: DEMO_JOIN_CLOSED_MESSAGE };
       if (group.status !== "OPEN") {
         return { ok: false, reason: "CLOSED", message: "Sarado na ang sali. Na-draw na ang names." };
       }

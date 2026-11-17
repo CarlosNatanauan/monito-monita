@@ -42,6 +42,7 @@ Each tool has one clear job. Animation code is **lazy-loaded** only on the scree
 | End-to-end tests | **Playwright** on a mobile viewport (create → join → draw → open slip) |
 | Product analytics | **PostHog** (free tier), server-side events only: see "Analytics" below |
 | Share previews | `next/og` (built into Next.js) |
+| QR code (reveal remote) | **uqr** (unjs, zero dependencies), encoded on the server only (`lib/qr.ts`): the page gets a finished SVG path, so no QR code ships in any page's JS |
 | Email (later) | Resend |
 | Realtime (later) | Not needed for launch: the bowl refreshes by polling every few seconds while open. Pick a realtime service in December when building anonymous chat |
 
@@ -57,6 +58,7 @@ Group
   budget (int, in pesos), partyDate, timezone (default Asia/Manila)
   status: OPEN | DRAWN | REVEALING | REVEALED
   revealStep (int: pair on the reveal screen, 1-based, while REVEALING)
+  isDemo, demoExpiresAt                 -- one-click demo; a database check keeps them together
   organizerTokenHash
   organizationId (nullable — reserved for future office plans)
   createdAt
@@ -171,14 +173,27 @@ The server knows everything. The API must never leak it.
 - **Stage:** drawn at 1920×1080 and scaled to fit the window (`reveal-stage.tsx`, `reveal.css`); controls sit in the window's corners, 5% in. Phones (portrait) get the stage on top and big buttons below: the organizer's phone is the remote.
 - **State, then motion:** the stage always renders the exact state for the step (`ring.ts`), so a refresh mid-reveal is correct by construction. When the step or status changes while open (own tap, or the 2-second auto-refresh picking up the phone's tap), `transition.ts` works out what changed and a timeline animates from the old state into it: `reveal-timeline.ts` (GSAP, lazy-loaded after the screen is up) or, with reduced motion, `fade-transition.ts` (Web Animations cross-fades, no GSAP). Only `transform` and `opacity` animate (pre-painted gold outlines, the gold parol frame). Bulbs light by their `data-state` with a CSS transition and a per-bulb delay the timeline sets before the new state paints; no script runs per frame for them.
 - **Confetti** (`stars.ts`, canvas-confetti, gold stars only) loads while the last pair is on screen; never with reduced motion.
+- **Phone as remote** (`reveal-controls.tsx`, "Gawing remote ang phone mo", start screen only, landscape only): "Ipakita ang QR" shows a QR code of the organizer link (360px on the 1920 stage, about 6 cm on a 14" laptop; error correction L, so a link with a token is version 5, 37×37); "Itago ang QR" hides it; "I-send sa phone ko" / Copy stays as the fallback. Hidden until asked for, because the screen may already be on the projector. The reveal page encodes it on the server (`lib/qr.ts`, origin from `lib/request-origin.ts`) only after verifying the organizer cookie, so only the organizer's own screen ever gets it.
 - **Sound** (`sound.ts`): optional Web Audio bells, off by default, remembered per device in `localStorage`.
 - `/lab/reveal?n=3..150&step=0..n+1&speed=` shows the screen with made-up names (no database), for tuning and `scripts/perf/reveal-perf.mjs`.
+
+## Demo (`server/demo.ts`)
+
+One sandbox group per visitor (docs/PRODUCT.md, "Demo").
+
+- **Making one:** `/demo` posts to `startDemoAction` (`app/demo/actions.ts`, a plain form action, so it works before hydration; errors come back as `/demo?e=limit|full|name|failed`). It checks the per-IP `demo` budget, then `startDemo`: delete expired demos, refuse past `MAX_ACTIVE_DEMOS` (200) live ones, then `createDemoGroup`. That builds the plan (`demoPlan`, pure and unit tested: members, wishlists, theme weeks relative to today, the bawal pair) in **one transaction**: group (`is_demo`, `demo_expires_at` = now + 24h), theme weeks, the visitor first, 8 made-up members (random token hashes nobody holds, no PIN), wishlists, the pair, then the same `drawInTransaction` as a real draw. The visitor gets both cookies (organizer and member) and lands on `/me`.
+- **Reset demo:** `resetDemoAction` re-checks the organizer cookie, that the group is a demo and the rate limit; `resetDemo` deletes it (`deleteDemoGroup` matches `id AND is_demo`) and builds a new one with the visitor's current name. Old cookies are cleared.
+- **Cleanup:** `deleteExpiredDemos` is the only bulk delete of groups: `is_demo AND demo_expires_at IS NOT NULL AND demo_expires_at <= now`. The check constraint `groups_demo_expiry` (`is_demo = (demo_expires_at is not null)`) means a real group can't have an expiry at all. It runs when a demo starts and daily from **Vercel Cron** (`vercel.json`, 19:00 UTC = 3 AM Manila; Hobby allows daily) at `GET /api/cron/demo-cleanup`, which needs `Authorization: Bearer $CRON_SECRET` (`server/cron.ts`; refused when the secret is missing or under 16 characters). `tests/demo.db.test.ts` checks that cleanup (even with every demo counted as expired) and reset never delete a real group.
+- **Closed to others:** `joinGroup` refuses a demo (CLOSED), and its join page says "Demo group 'to" with a link to `/demo`. Come-back isn't offered. Demo pages are under `/g/*` (noindex); `/demo` is noindex too (metadata and `X-Robots-Tag`).
+- **Guide:** `components/demo/demo-guide.tsx`, server-only (no client code, no `next/link`), so /me's JS budget is unchanged. Reset is a plain `<form action>`.
+- **Leaks:** nothing changes: the visitor is an organizer and one member, with the same rules. `e2e/demo.spec.ts` runs the leak checks on /me, the organizer page, the reveal (before the start, at steps 1 and 4, after) and the closed join page.
 
 ## Analytics (`server/analytics.ts`)
 
 PostHog, sent **from the server only** (a `fetch` to PostHog's capture API inside `after()`, so it never slows down or breaks a request). There is no PostHog script in the browser, so there's no session recording, no autocapture of clicks or form inputs, no cookies, and no pageview URLs (which would contain slugs and tokens).
 
 - **Events (the funnel):** `group_created`, `member_joined`, `names_drawn`, `slip_opened` (first unfold only), `wishlist_item_added`, `reminder_copied`, `reveal_started`, `reveal_finished`. Tracked in Server Actions after the change succeeds.
+- **Demo groups are left out:** `track` checks the group (`isDemoGroup`, after the response) and drops funnel events from a demo; if that check fails, the event is dropped too. A demo sends only `demo_started` (`{ custom_name, reset }`) via `trackDemoStarted`.
 - **Identity:** the distinct id is a SHA-256 hash of the group's internal UUID (`group` property too), so a PostHog funnel over distinct ids is a funnel of groups. No person profiles (`$process_person_profile: false`), GeoIP off.
 - **Properties:** counts, booleans, or fixed words only, typed per event (e.g. `names_drawn: { members, redraw }`). Never names, PINs, tokens, slugs, wishlist text, or raw ids.
 - **Landing views (`server/landing-view.ts`):** `landing_viewed` is sent from `proxy.ts` (inside `event.waitUntil`) for real page loads of `/` only, so the landing page stays static. Its one property is `referrer_domain`: the referrer reduced to a bare domain (`l.facebook.com` → `facebook.com`, `old.reddit.com` → `reddit.com`; `direct`, `internal`, `app:<android package>`, or `other`), never the full referrer URL. Router prefetches, RSC requests, link-preview fetchers (`facebookexternalhit`) and bots aren't counted. Each event has a random one-off distinct id (not stored, no cookie), so visits can't be linked.
@@ -199,6 +214,7 @@ Per IP, sliding windows in Upstash Redis via `@upstash/ratelimit`:
 | Budget | Limit | Counts |
 |---|---|---|
 | Create group | 10 / hour | every create |
+| Demo | 20 / hour | every demo started or reset |
 | Join | 30 / 10 min | every join (generous for an office on one Wi-Fi) |
 | Come back | 30 / 10 min | every name + PIN try |
 | Failures | 10 / 15 min | taken-name results and failed come-backs; when used up, join and come-back stop for that IP |
@@ -218,6 +234,8 @@ app/
   g/[slug]/me/page.tsx          member home (my monito, wishlist, theme)
   g/[slug]/admin/page.tsx       organizer page
   g/[slug]/reveal/page.tsx      reveal screen
+  demo/page.tsx                 start a one-click demo
+  api/cron/demo-cleanup/        daily cleanup of expired demos (Vercel Cron)
 components/
   slip/, bowl/, reveal/         signature-moment components (lazy-loaded)
   ui/                           restyled shadcn components
@@ -241,4 +259,5 @@ e2e/
 - `.env` is never committed. Commit a `.env.example`.
 - **Own URL:** `NEXT_PUBLIC_SITE_URL` (production: `https://monitomonita-ph.vercel.app`, set in Vercel for Production only). Every link people see, copy or share, and the share images, use it when set; otherwise the address the page was opened on (`lib/site-url.ts`). Never a hardcoded domain.
 - Separate databases for development and production.
+- **Cron:** `CRON_SECRET` (16+ characters, Production) for the daily demo cleanup; Vercel sends it as the Bearer token.
 - Vercel preview deploys for every branch.

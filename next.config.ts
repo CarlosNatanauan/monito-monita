@@ -16,6 +16,9 @@ const nextConfig: NextConfig = {
         ],
       },
       { source: "/new", headers: [{ key: "Referrer-Policy", value: REFERRER_POLICY }] },
+      // The demo's start page and the cron job: never search results.
+      { source: "/demo", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+      { source: "/api/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
       // Prototypes: never indexed.
       { source: "/lab/:path*", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
     ];

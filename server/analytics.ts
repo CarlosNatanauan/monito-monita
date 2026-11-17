@@ -12,11 +12,16 @@
  * text, or the raw group id. No person profiles are created, and GeoIP is
  * off (the request comes from Vercel, not the user, anyway).
  *
+ * Demo groups (server/demo.ts) stay out of the funnel: `track` checks the
+ * group first and drops funnel events from a demo. A demo sends only its
+ * own `demo_started` event (trackDemoStarted).
+ *
  * Without POSTHOG_KEY (local dev, tests) nothing is sent. Sending happens
  * after the response (`after`) and never fails or slows down the request.
  */
 import { createHash } from "node:crypto";
 import { after } from "next/server";
+import { isDemoGroup } from "./groups";
 
 export interface AnalyticsEvents {
   group_created: { themes: number };
@@ -27,9 +32,13 @@ export interface AnalyticsEvents {
   reminder_copied: { kind: "invite" | "drawn" | "theme" };
   reveal_started: Record<string, never>;
   reveal_finished: Record<string, never>;
+  /** Outside the funnel: a one-click demo was made (or rebuilt with Reset demo). */
+  demo_started: { custom_name: boolean; reset: boolean };
 }
 
 export type AnalyticsEvent = keyof AnalyticsEvents;
+/** The group funnel: every event except the demo's own. */
+export type FunnelEvent = Exclude<AnalyticsEvent, "demo_started">;
 
 export interface AnalyticsConfig {
   key: string;
@@ -104,11 +113,39 @@ export async function sendEvent<E extends AnalyticsEvent>(
 }
 
 /**
- * Tracks a funnel event after the response is sent. Call from Server
- * Actions only, after the change succeeded. No-op without POSTHOG_KEY.
+ * Sends a funnel event unless the group is a demo. If the demo check
+ * itself fails, the event is dropped: a demo must never count as a group.
  */
-export function track<E extends AnalyticsEvent>(event: E, groupId: string, props: AnalyticsEvents[E]): void {
+export async function sendFunnelEvent<E extends FunnelEvent>(
+  config: AnalyticsConfig,
+  event: E,
+  groupId: string,
+  props: AnalyticsEvents[E],
+  { isDemo, fetchImpl = fetch }: { isDemo: (groupId: string) => Promise<boolean>; fetchImpl?: typeof fetch },
+): Promise<void> {
+  try {
+    if (await isDemo(groupId)) return;
+  } catch (error) {
+    console.warn(`analytics: ${event} dropped (demo check failed)`, error instanceof Error ? error.message : error);
+    return;
+  }
+  await sendEvent(config, event, groupId, props, fetchImpl);
+}
+
+/**
+ * Tracks a funnel event after the response is sent. Call from Server
+ * Actions only, after the change succeeded. No-op without POSTHOG_KEY;
+ * skipped for demo groups.
+ */
+export function track<E extends FunnelEvent>(event: E, groupId: string, props: AnalyticsEvents[E]): void {
   const config = analyticsConfig();
   if (!config) return;
-  after(() => sendEvent(config, event, groupId, props));
+  after(() => sendFunnelEvent(config, event, groupId, props, { isDemo: isDemoGroup }));
+}
+
+/** The demo's own event (not part of the group funnel). */
+export function trackDemoStarted(groupId: string, props: AnalyticsEvents["demo_started"]): void {
+  const config = analyticsConfig();
+  if (!config) return;
+  after(() => sendEvent(config, "demo_started", groupId, props));
 }

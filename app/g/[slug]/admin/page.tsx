@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { CopyLink } from "@/components/copy-link";
+import { DemoGuide } from "@/components/demo/demo-guide";
 import { joinStates, Lights } from "@/components/lights";
 import { Brand } from "@/components/brand";
 import { Narrow, pageClass } from "@/components/page";
@@ -299,12 +300,16 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
     </div>
   );
 
+  // Demo groups: the banner and what to try, first on the left.
+  const demoGuide = group.isDemo && <DemoGuide slug={slug} current="admin" />;
+
   // Phones: one column, in the order below for each stage. From 840px:
   // the members listahan on the right; everything else, in the same
   // order, on the left.
   const sections: Section[] = isOpen
     ? // Before the draw: get everyone in, set the bawal pairs, then draw.
       [
+        { key: "demo", node: demoGuide },
         { key: "share", node: shareLink },
         { key: "join", node: joinAsMember },
         { key: "exclusions", node: exclusions },
@@ -316,6 +321,7 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
       ]
     : // After the draw: track slips, remind the GC, then the rest.
       [
+        { key: "demo", node: demoGuide },
         { key: "reveal-now", node: (group.status === "REVEALING" || partyNear) && reveal },
         { key: "bunutan", node: bunutan },
         { key: "reminder", node: !justDrawn && reminder },

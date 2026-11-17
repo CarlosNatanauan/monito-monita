@@ -15,6 +15,7 @@
  */
 import { sql } from "drizzle-orm";
 import {
+  boolean,
   check,
   date,
   foreignKey,
@@ -55,11 +56,18 @@ export const groups = pgTable(
     // REVEALING; 0 before the reveal starts. Stored so a refreshed
     // projector or another device resumes at the same pair.
     revealStep: integer("reveal_step").notNull().default(0),
+    // One-click demo (server/demo.ts): a sandbox group made for one visitor,
+    // deleted after demoExpiresAt. A real group never has an expiry, so
+    // cleanup (is_demo AND expired) can't reach it.
+    isDemo: boolean("is_demo").notNull().default(false),
+    demoExpiresAt: timestamp("demo_expires_at", { withTimezone: true }),
     createdAt: createdAt(),
   },
   (t) => [
     check("groups_budget_non_negative", sql`${t.budget} >= 0`),
     check("groups_reveal_step_non_negative", sql`${t.revealStep} >= 0`),
+    check("groups_demo_expiry", sql`${t.isDemo} = (${t.demoExpiresAt} is not null)`),
+    index("groups_demo_expires_idx").on(t.demoExpiresAt).where(sql`${t.isDemo}`),
   ],
 );
 

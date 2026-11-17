@@ -104,6 +104,32 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
   // page): then the form plays the slip drop and moves on by itself.
   if (session.kind === "member" && !isActionRender(requestHeaders)) redirect(`/g/${slug}/me`);
 
+  // A demo is one visitor's sandbox, already drawn: a shared link can't
+  // join it (or come back to it). Point them to a demo of their own.
+  if (group.isDemo) {
+    return (
+      <JoinLayout
+        left={
+          <header className="flex flex-col gap-2">
+            <h1 className="font-head text-display lg:text-display-lg">Demo group &apos;to</h1>
+            <p>
+              Para sa isang bisita lang ang <strong>{group.name}</strong>, kaya sarado ang pagsali.
+            </p>
+          </header>
+        }
+        right={
+          <Capiz aria-labelledby="demo-closed-title">
+            <SectionTitle id="demo-closed-title">Gusto mong subukan?</SectionTitle>
+            <p>Gagawan ka namin ng sarili mong demo. Mabubura after 24 hours.</p>
+            <Button asChild className="w-full lg:w-fit">
+              <Link href="/demo">Subukan ang demo</Link>
+            </Button>
+          </Capiz>
+        }
+      />
+    );
+  }
+
   const isOpen = group.status === "OPEN";
   const isFull = group.memberCount >= MAX_MEMBERS;
   const comingBack = query.bumalik !== undefined && session.kind !== "removed";

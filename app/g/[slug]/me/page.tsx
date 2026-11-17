@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 import { PrivateLink } from "@/components/copy-link";
+import { DemoGuide } from "@/components/demo/demo-guide";
 import { colClass, colsClass, LightString, Name, Narrow, pageClass, stickyClass } from "@/components/page";
 import { RememberGroup } from "@/components/remember-group";
 import { RoleSwitch } from "@/components/role-switch";
@@ -158,6 +159,10 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
     </SecretCard>
   );
 
+  // Demo groups: the banner and the listahan of things to try. Phones read
+  // it right after the slip; laptops at the top of the right column.
+  const demoGuide = group.isDemo && <DemoGuide slug={slug} current="me" />;
+
   const codename = (
     <p className="text-ube-soft">
       Codename mo: <Name className="text-ube">{member.codename}</Name>
@@ -185,6 +190,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
             )}
           </div>
           <div className={cn(colClass, "lg:col-start-2 lg:row-start-1")}>
+            {demoGuide}
             <Capiz aria-labelledby="reveal-done-title">
               <SectionTitle id="reveal-done-title">Tapos na ang reveal</SectionTitle>
               {receiver && (
@@ -242,6 +248,8 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
 
   const rest = (
     <>
+      {demoGuide}
+
       {drawn && receiver && (
         <WhenOpened>
           <Listahan
@@ -260,7 +268,8 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
         </WhenOpened>
       )}
 
-      {!member.hasPin && <SetPinCard slug={slug} />}
+      {/* A demo visitor has no PIN to set (nobody comes back to a demo on another phone). */}
+      {!member.hasPin && !group.isDemo && <SetPinCard slug={slug} />}
 
       {drawn && themeSheet("lg:hidden")}
 
