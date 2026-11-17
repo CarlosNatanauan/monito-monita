@@ -1,13 +1,14 @@
 "use client";
 
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useOptimistic, useRef, useState, useTransition } from "react";
 import { WishRows, type WishItemData } from "@/components/wish-item";
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { Input } from "@/components/ui/input";
-import { Listahan, LstEmpty } from "@/components/ui/paper";
+import { Listahan, LstEmpty } from "@/components/ui/listahan";
+import { usePendingLabel } from "@/lib/use-pending-label";
 import { WISH_NOTE_MAX, WISH_TITLE_MAX, WISHLIST_MAX_ITEMS } from "@/lib/wish";
-import { addWishAction, deleteWishAction, updateWishAction, type WishActionResult } from "./actions";
+import { addWishAction, deleteWishAction, updateWishAction } from "./actions";
 
 interface Draft {
   title: string;
@@ -15,12 +16,26 @@ interface Draft {
   note: string;
 }
 
+type Errors = Record<string, string>;
+type Wish = WishItemData & { saving?: boolean };
+type Change = { add: Wish } | { edit: Wish } | { remove: string };
+
 const EMPTY: Draft = { title: "", url: "", note: "" };
+const ADD_FIELD = "wish-new";
+const toItem = (id: string, d: Draft): Wish => ({ id, title: d.title.trim(), url: d.url.trim() || null, note: d.note.trim() || null, saving: true });
 
 /**
  * "Wishlist mo" on a listahan (docs/design/08–10): each wish on a line
  * with Edit and Alisin, the one being edited as an input with Save, and
  * the add row at the bottom ("Hal. mug na cute" + Add).
+ *
+ * Optimistic (docs/DESIGN.md, "In-between states"): an added or edited
+ * wish shows at once with "Sine-save…" (or "Hinihintay ang signal…"
+ * offline: the save waits and goes through once the connection is back),
+ * and an Alisin takes it off at once. If the server says no, the list
+ * rolls back by itself and a clear message says what didn't save; what was
+ * typed goes back into the field, so trying again is one tap. After each
+ * action the cursor returns to the add field.
  */
 export function WishlistEditor({
   slug,
@@ -32,45 +47,129 @@ export function WishlistEditor({
   /** The budget, on its own line above the add row ("Hanggang ₱500 ang regalo."). */
   budgetLine: string;
 }) {
-  const [editingId, setEditingId] = useState<string | null>(null);
-  // Remounts the add form (clearing it) after each successful add.
-  const [addKey, setAddKey] = useState(0);
+  const [list, change] = useOptimistic<Wish[], Change>(items, (current, c) =>
+    "add" in c
+      ? [...current, c.add]
+      : "edit" in c
+        ? current.map((i) => (i.id === c.edit.id ? c.edit : i))
+        : current.filter((i) => i.id !== c.remove),
+  );
+  const [, startTransition] = useTransition();
+  const savingLabel = usePendingLabel(true, "", "Sine-save…");
+  const [editing, setEditing] = useState<{ id: string; draft?: Draft; errors?: Errors } | null>(null);
+  // The add form remounts (cleared) on every add, and with the draft and
+  // its errors if that add failed.
+  const [addForm, setAddForm] = useState<{ key: number; draft: Draft; errors?: Errors }>({ key: 0, draft: EMPTY });
+  // "Na-save!" fits one listahan line; the rest is for screen readers.
+  const [notice, setNotice] = useState<{ ok: boolean; text: string; detail?: string } | null>(null);
+
+  const focusAdd = () => requestAnimationFrame(() => document.getElementById(ADD_FIELD)?.focus());
+
+  const add = (draft: Draft) => {
+    setNotice(null);
+    setAddForm((f) => ({ key: f.key + 1, draft: EMPTY }));
+    const item = toItem(`new-${Date.now()}`, draft);
+    startTransition(async () => {
+      change({ add: item });
+      const result = await addWishAction({ slug, ...draft });
+      if (result.ok) return setNotice({ ok: true, text: "Na-save!", detail: `Nasa wishlist mo na ang “${item.title}”.` });
+      setAddForm((f) => ({ key: f.key + 1, draft, errors: result.fieldErrors }));
+      setNotice({ ok: false, text: `Hindi na-save ang “${item.title}”. ${result.fieldErrors ? "Pakicheck sa baba." : result.message}` });
+    });
+  };
+
+  const save = (id: string, draft: Draft) => {
+    setNotice(null);
+    setEditing(null);
+    focusAdd();
+    startTransition(async () => {
+      change({ edit: toItem(id, draft) });
+      const result = await updateWishAction({ slug, itemId: id, ...draft });
+      if (result.ok) return setNotice({ ok: true, text: "Na-save!" });
+      setEditing({ id, draft, errors: result.fieldErrors });
+      setNotice({ ok: false, text: `Hindi na-save ang pagbabago. ${result.fieldErrors ? "Pakicheck sa itaas." : result.message}` });
+    });
+  };
+
+  const remove = (item: Wish) => {
+    setNotice(null);
+    focusAdd();
+    startTransition(async () => {
+      change({ remove: item.id });
+      const result = await deleteWishAction({ slug, itemId: item.id });
+      setNotice(
+        result.ok
+          ? { ok: true, text: "Naalis na!", detail: `Wala na sa wishlist mo ang “${item.title}”.` }
+          : { ok: false, text: `Hindi naalis ang “${item.title}”. ${result.message}` },
+      );
+    });
+  };
 
   return (
     <Listahan title="Wishlist mo" titleId="my-wishlist-title">
-      {items.length === 0 && (
+      {list.length === 0 && (
         <LstEmpty lines={["Wala pang laman ang wishlist mo.", "Add something para sa monito mo."]} />
       )}
 
-      {items.length > 0 && (
+      {list.length > 0 && (
         <ul aria-label="Wishlist mo">
-          {items.map((item) =>
-            editingId === item.id ? (
-              <li key={item.id}>
+          {list.map((item) => (
+            <li key={item.id} aria-busy={item.saving || undefined}>
+              {editing?.id === item.id ? (
                 <WishForm
-                  initial={{ title: item.title, url: item.url ?? "", note: item.note ?? "" }}
+                  initial={editing.draft ?? { title: item.title, url: item.url ?? "", note: item.note ?? "" }}
+                  initialErrors={editing.errors}
                   mode="edit"
-                  onSubmit={(draft) => updateWishAction({ slug, itemId: item.id, ...draft })}
-                  onDone={() => setEditingId(null)}
+                  onSubmit={(draft) => save(item.id, draft)}
+                  onCancel={() => {
+                    setEditing(null);
+                    focusAdd();
+                  }}
                 />
-              </li>
-            ) : (
-              <li key={item.id}>
-                <ItemRows slug={slug} item={item} onEdit={() => setEditingId(item.id)} />
-              </li>
-            ),
-          )}
+              ) : (
+                <WishRows
+                  item={item}
+                  actions={
+                    item.saving ? (
+                      <span className="text-small text-ube-soft">{savingLabel}</span>
+                    ) : (
+                      <span className="-mr-1.5 flex">
+                        <Button type="button" variant="link" onClick={() => setEditing({ id: item.id })} aria-label={`Edit ${item.title}`}>
+                          Edit
+                        </Button>
+                        <Button type="button" variant="link" aria-label={`Alisin ang ${item.title}`} onClick={() => remove(item)}>
+                          Alisin
+                        </Button>
+                      </span>
+                    )
+                  }
+                />
+              )}
+            </li>
+          ))}
         </ul>
       )}
 
-      {items.length < WISHLIST_MAX_ITEMS ? (
+      {/* What just happened, announced: "Na-save!" or what didn't save. */}
+      <div aria-live="polite">
+        {notice?.ok && (
+          <p data-wish-notice className="lst-row justify-start font-bold text-dahon">
+            {notice.text}
+            {notice.detail && <span className="sr-only"> {notice.detail}</span>}
+          </p>
+        )}
+      </div>
+      {notice && !notice.ok && <ErrorMessage className="my-2">{notice.text}</ErrorMessage>}
+
+      {list.length < WISHLIST_MAX_ITEMS ? (
         <WishForm
-          key={addKey}
-          initial={EMPTY}
+          key={addForm.key}
+          initial={addForm.draft}
+          initialErrors={addForm.errors}
           mode="add"
           budgetLine={budgetLine}
-          onSubmit={(draft) => addWishAction({ slug, ...draft })}
-          onDone={() => setAddKey((k) => k + 1)}
+          autoFocus={addForm.key > 0}
+          onSubmit={add}
         />
       ) : (
         <p className="lst-row text-small text-ube-soft">Hanggang {WISHLIST_MAX_ITEMS} items lang ang wishlist.</p>
@@ -79,63 +178,32 @@ export function WishlistEditor({
   );
 }
 
-function ItemRows({ slug, item, onEdit }: { slug: string; item: WishItemData; onEdit: () => void }) {
-  const [pending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
-  return (
-    <>
-      <WishRows
-        item={item}
-        actions={
-          <span className="-mr-1.5 flex">
-            <Button type="button" variant="link" onClick={onEdit} aria-label={`Edit ${item.title}`}>
-              Edit
-            </Button>
-            <Button
-              type="button"
-              variant="link"
-              disabled={pending}
-              aria-label={`Delete ${item.title}`}
-              onClick={() =>
-                startTransition(async () => {
-                  const result = await deleteWishAction({ slug, itemId: item.id });
-                  if (!result.ok) setError(result.message);
-                })
-              }
-            >
-              Alisin
-            </Button>
-          </span>
-        }
-      />
-      {error && <ErrorMessage className="my-2">{error}</ErrorMessage>}
-    </>
-  );
-}
-
 /**
  * Adding: one two-line row ("Hal. mug na cute" + Add), with link and note
  * behind "Lagyan ng link o note". Editing: the title with Save, then the
- * link and note, and Cancel.
+ * link and note, and Cancel. Hands the draft up and is done: the list
+ * shows it at once (optimistic).
  */
 function WishForm({
   initial,
+  initialErrors,
   mode,
   onSubmit,
-  onDone,
+  onCancel,
   budgetLine,
+  autoFocus,
 }: {
   initial: Draft;
+  initialErrors?: Errors;
   mode: "add" | "edit";
-  onSubmit: (draft: Draft) => Promise<WishActionResult>;
-  onDone: () => void;
+  onSubmit: (draft: Draft) => void;
+  onCancel?: () => void;
   budgetLine?: string;
+  autoFocus?: boolean;
 }) {
   const [draft, setDraft] = useState<Draft>(initial);
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [message, setMessage] = useState<string | null>(null);
-  const [extras, setExtras] = useState(mode === "edit");
-  const [pending, startTransition] = useTransition();
+  const [errors, setErrors] = useState<Errors>(initialErrors ?? {});
+  const [extras, setExtras] = useState(mode === "edit" || Boolean(initial.url || initial.note));
 
   const set = (field: keyof Draft) => (value: string) => {
     setDraft((d) => ({ ...d, [field]: value }));
@@ -159,22 +227,21 @@ function WishForm({
 
   const submit = (event: React.FormEvent) => {
     event.preventDefault();
-    setMessage(null);
-    startTransition(async () => {
-      const result = await onSubmit(draft);
-      if (result.ok) return onDone();
-      setErrors(result.fieldErrors ?? {});
-      if (!result.fieldErrors) setMessage(result.message);
-    });
+    // The one check worth doing here: an empty wish never shows up and vanishes.
+    if (!draft.title.trim()) {
+      setErrors({ title: "Pakilagay kung ano ang gusto mo." });
+      return titleRef.current?.focus();
+    }
+    onSubmit(draft);
   };
 
   return (
     <form onSubmit={submit} noValidate>
-      {message && <ErrorMessage className="my-2">{message}</ErrorMessage>}
       {budgetLine && <p className="lst-row text-small text-ube-soft">{budgetLine}</p>}
       <div className="lst-row2">
         <Input
           ref={titleRef}
+          id={mode === "add" ? ADD_FIELD : undefined}
           size="row"
           value={draft.title}
           onChange={(e) => set("title")(e.target.value)}
@@ -182,12 +249,12 @@ function WishForm({
           aria-label="Ano ang gusto mo?"
           aria-invalid={errors.title ? true : undefined}
           maxLength={WISH_TITLE_MAX}
-          autoFocus={mode === "edit"}
+          autoFocus={mode === "edit" || autoFocus}
           required
           className="flex-1"
         />
-        <Button type="submit" variant="secondary" disabled={pending}>
-          {mode === "add" ? (pending ? "…" : "Add") : pending ? "Sine-save…" : "Save"}
+        <Button type="submit" variant="secondary">
+          {mode === "add" ? "Add" : "Save"}
         </Button>
       </div>
       {errors.title && <ErrorMessage className="my-2">{errors.title}</ErrorMessage>}
@@ -216,9 +283,9 @@ function WishForm({
               aria-invalid={errors.note ? true : undefined}
             />
           </TextRow>
-          {mode === "edit" && (
+          {onCancel && (
             <div className="lst-row justify-start">
-              <Button type="button" variant="link" className="-ml-1.5" disabled={pending} onClick={onDone}>
+              <Button type="button" variant="link" className="-ml-1.5" onClick={onCancel}>
                 Cancel
               </Button>
             </div>

@@ -1,4 +1,4 @@
-import { LstEmpty } from "@/components/ui/paper";
+import { LstEmpty } from "@/components/ui/listahan";
 import { displayDomain } from "@/lib/wish";
 
 export interface WishItemData {
