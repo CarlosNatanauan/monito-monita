@@ -166,8 +166,10 @@ test("demo: start, unfold, organizer, reveal to the finale, reset, leaks", async
     await page.getByRole("button", { name: "Manage Mang Jun", exact: true }).click();
     await page.getByRole("button", { name: "Remove Mang Jun", exact: true }).click();
     await page.getByRole("button", { name: "Oo, tanggalin" }).click();
+    // Wait for the answer: removed (patched), or "needs a redraw" (depends on the random draw).
     const redraw = page.getByRole("button", { name: "Tanggalin at i-redraw" });
-    if (await redraw.isVisible().catch(() => false)) await redraw.click();
+    await expect(redraw.or(page.getByText(/^Natanggal si Mang Jun/))).toBeVisible();
+    if (await redraw.isVisible()) await redraw.click();
     await expect(members.getByText("Mang Jun", { exact: true })).toHaveCount(0);
     await expect(members.getByRole("listitem")).toHaveCount(8);
 

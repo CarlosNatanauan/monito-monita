@@ -147,6 +147,10 @@ test("in-between states: loading, pending, optimistic, offline, link states", as
     await context.setOffline(true);
     const banner = page.locator("[data-offline-banner]");
     await expect(banner).toContainText("Offline ka.");
+    // Next sets its offline state in a transition: give it a moment to render
+    // before the tap (a tap in the same instant bundles the two updates, so the
+    // label would only change once the action settles).
+    await page.waitForTimeout(1000);
     await page.getByLabel("Ano ang gusto mo?").fill("Tumbler");
     await page.getByRole("button", { name: "Add", exact: true }).click();
     const list = page.getByRole("list", { name: "Wishlist mo" });
