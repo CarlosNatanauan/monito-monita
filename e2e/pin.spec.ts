@@ -350,7 +350,7 @@ test("name + PIN: join, come back, taken name, lockout, unlock, reset, after the
 
     // Phone A's cookie and the old link no longer work.
     await anaA.page.goto(`/g/${slug}/me`);
-    await expect(anaA.page.getByText("Hindi ka pa namin kilala sa device na 'to.")).toBeVisible();
+    await expect(anaA.page.getByText("Hindi na gumagana ang link na 'to")).toBeVisible();
     await anaA.page.getByRole("link", { name: "Bumalik gamit ang PIN" }).click();
     await submitComeBack(anaA.page, "1234", "Ana");
     await expectWrong(anaA.page);

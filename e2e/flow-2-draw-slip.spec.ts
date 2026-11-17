@@ -260,11 +260,13 @@ test("draw and slip: draw, unfold, lost link, redraw, leaks", async ({ browser }
 
     // Ben's old cookie no longer works on his phone…
     await ben.page.goto(`/g/${slug}/me`);
-    await expect(ben.page.getByText("Hindi ka pa namin kilala sa device na 'to.")).toBeVisible();
+    await expect(ben.page.getByText("Hindi na gumagana ang link na 'to")).toBeVisible();
+    await expect(ben.page.getByRole("link", { name: "Bumalik gamit ang PIN" })).toBeVisible();
     // …nor does his old link on another phone.
     const oldLinkPhone = await newPerson("Ben (old link)");
     await oldLinkPhone.page.goto(benLink);
-    await expect(oldLinkPhone.page.getByText("Hindi ka pa namin kilala sa device na 'to.")).toBeVisible();
+    await expect(oldLinkPhone.page).toHaveURL(new RegExp(`/g/${slug}/me[?]link=old$`));
+    await expect(oldLinkPhone.page.getByText("Hindi na gumagana ang link na 'to")).toBeVisible();
     await oldLinkPhone.context.close();
 
     // The new link works, and his slip is still open.

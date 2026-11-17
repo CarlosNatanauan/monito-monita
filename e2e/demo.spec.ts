@@ -139,6 +139,7 @@ test("demo: start, unfold, organizer, reveal to the finale, reset, leaks", async
     await page.getByLabel("Ano ang gusto mo?").fill("Libro ni Bob Ong");
     await page.getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.getByRole("list", { name: "Wishlist mo" }).getByText("Libro ni Bob Ong", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Edit Libro ni Bob Ong" })).toBeVisible();
     await shot(page, "me-opened");
     expectMemberPageClean(await capturePage(page, `/g/${slug}/me`), await getTruth(slug), VISITOR);
   });

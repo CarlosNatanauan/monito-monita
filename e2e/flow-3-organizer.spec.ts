@@ -185,7 +185,7 @@ test("organizer: bawal pairs, remove after the draw, leaks", async ({ browser },
     }
 
     await joy.page.goto(`/g/${slug}/me`);
-    await expect(joy.page.getByText("Tinanggal ka ng organizer sa group na 'to.")).toBeVisible();
+    await expect(joy.page.getByText("Wala ka na sa group na 'to")).toBeVisible();
 
     await leakCheck(remaining);
   });

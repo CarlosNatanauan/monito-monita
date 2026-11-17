@@ -293,18 +293,18 @@ test("setup and join: create, join, organizer, wishlists, reminder", async ({ br
 
     // On Marco's phone: told he was removed, with no way to rejoin from there…
     await marco.page.reload();
-    await expect(marco.page.getByText("Tinanggal ka ng organizer sa group na 'to.")).toBeVisible();
-    await expect(marco.page.getByText("Kung mali ito, kausapin ang organizer.")).toBeVisible();
+    await expect(marco.page.getByText("Wala ka na sa group na 'to")).toBeVisible();
+    await expect(marco.page.getByText("Kung mali, i-message ang organizer.", { exact: false })).toBeVisible();
     await expect(marco.page.getByRole("link", { name: "Join the group" })).toHaveCount(0);
     await shot(marco.page, "marco-removed-notice");
     await marco.page.goto(shareUrl);
-    await expect(marco.page.getByText("Tinanggal ka ng organizer sa group na 'to.")).toBeVisible();
+    await expect(marco.page.getByText("Wala ka na sa group na 'to")).toBeVisible();
     await expect(marco.page.getByLabel("Pangalan mo")).toHaveCount(0);
-    // …and neither does his personal link on yet another phone.
+    // …and neither does his personal link on yet another phone: it says he was removed.
     const marco3 = await newPerson("Marco (third phone)");
     await marco3.page.goto(marcoLink);
-    await expect(marco3.page).toHaveURL(new RegExp(`/g/${slug}/me$`));
-    await expect(marco3.page.getByText("Hindi ka pa namin kilala sa device na 'to.")).toBeVisible();
+    await expect(marco3.page).toHaveURL(new RegExp(`/g/${slug}/me[?]link=removed$`));
+    await expect(marco3.page.getByText("Wala ka na sa group na 'to")).toBeVisible();
     await shot(marco3.page, "marco-link-dead");
   });
 
@@ -319,7 +319,8 @@ test("setup and join: create, join, organizer, wishlists, reminder", async ({ br
   await test.step("an unknown group link shows not found", async () => {
     const { page } = joy;
     await page.goto("/g/zzzzzzzzzzzz");
-    await expect(page.getByText("This page could not be found.")).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Naligaw ang slip na 'to" })).toBeVisible();
+    await expect(page.getByRole("link", { name: "Bumalik sa home" })).toHaveAttribute("href", "/");
     await shot(page, "unknown-group");
   });
 
@@ -337,6 +338,8 @@ test("setup and join: create, join, organizer, wishlists, reminder", async ({ br
     if (note) await page.getByLabel("Note (optional)").fill(note);
     await page.getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.getByRole("list", { name: "Wishlist mo" }).getByText(title, { exact: true })).toBeVisible();
+    // Shown at once (optimistic); saved when its Edit button replaces "Sine-save…".
+    await expect(page.getByRole("button", { name: `Edit ${title}` })).toBeVisible();
   }
 
   await test.step("wishlists: empty state, add, edit (before the draw)", async () => {
@@ -359,6 +362,7 @@ test("setup and join: create, join, organizer, wishlists, reminder", async ({ br
     await page.getByRole("list", { name: "Wishlist mo" }).getByLabel("Ano ang gusto mo?").fill("Mug na cute (blue)");
     await page.getByRole("button", { name: "Save" }).click();
     await expect(myList.getByText("Mug na cute (blue)", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Edit Mug na cute (blue)" })).toBeVisible();
     await addWish(page, "Plant (small lang)");
     await shot(page, "joy-wishlist");
 
@@ -368,7 +372,10 @@ test("setup and join: create, join, organizer, wishlists, reminder", async ({ br
     await page.getByLabel("Link (optional)").fill("javascript:alert(1)");
     await page.getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.getByText("Hindi valid ang link. Dapat http o https.")).toBeVisible();
+    // Rolled back, with what was typed back in the field to fix.
     await expect(page.getByRole("list", { name: "Wishlist mo" }).getByText("Sketchy")).toHaveCount(0);
+    await expect(page.getByLabel("Ano ang gusto mo?")).toHaveValue("Sketchy");
+    await expect(page.getByText("Hindi na-save ang “Sketchy”.", { exact: false })).toBeVisible();
     // Leave the half-filled form behind.
     await page.reload();
 
@@ -404,6 +411,7 @@ test("setup and join: create, join, organizer, wishlists, reminder", async ({ br
     await expect(page.getByLabel("Ano ang gusto mo?")).toHaveValue("Scarf");
     await page.getByRole("button", { name: "Add", exact: true }).click();
     await expect(page.getByRole("list", { name: "Wishlist mo" }).getByText("Scarf", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Edit Scarf" })).toBeVisible();
     await expect(page.getByText("Pakilagay kung ano ang gusto mo.")).toHaveCount(0);
   });
 
