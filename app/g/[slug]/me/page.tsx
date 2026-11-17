@@ -33,7 +33,6 @@ import { GoneGroupNotice, GroupFacts, OldLinkNotice, PlainBrand, RemovedNotice }
 import { MonitoReveal, MonitoSlip, WhenOpened } from "./monito-reveal";
 import { CleanWelcomeParam, MonitoUpdatedNotice, SetPinCard, SwitchConfirm } from "./rare-cards";
 import { WishlistEditor } from "./wishlist-editor";
-import { PageTransition } from "@/components/page-transition";
 
 export const metadata: Metadata = {
   title: "My monito · Monito Monita",
@@ -43,13 +42,11 @@ export default function MemberHomePage({ params, searchParams }: PageProps<"/g/[
   return (
     <>
       <LightString controller />
-      <PageTransition>
-        <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
-          <Suspense fallback={<MeFallback />}>
-            <MemberHome params={params} searchParams={searchParams} />
-          </Suspense>
-        </main>
-      </PageTransition>
+      <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
+        <Suspense fallback={<MeFallback />}>
+          <MemberHome params={params} searchParams={searchParams} />
+        </Suspense>
+      </main>
     </>
   );
 }

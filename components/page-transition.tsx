@@ -7,11 +7,14 @@ import { ViewTransition } from "react";
  * (elsewhere pages just swap). Only on navigation: `default="none"` keeps
  * refreshes, Server Action results and streamed content from animating.
  *
- * Never on the signature moments: the reveal page has no transition (its
- * 2-second refresh and its timelines stay untouched), the bowl and the
- * slip unfold play inside a page, and the join drop has finished before
- * /me comes in. The light string sits outside it, so it stays lit and
- * still across the change. Reduced motion: no animation (globals.css).
+ * Used on the landing, /demo, /new, the organizer page and the 404. Never
+ * on the signature moments: not on the reveal (its 2-second refresh and
+ * timelines stay untouched), and not on the join page or /me, which the
+ * join drop hands off between and where the slip unfolds. (React starts a
+ * view transition whenever one of these mounts, and snapshotting the drop's
+ * 3D slip crashed WebKit in testing.) The light string sits outside it, so
+ * it stays lit and still across the change. Reduced motion: no animation
+ * (globals.css).
  */
 export function PageTransition({ children }: { children: React.ReactNode }) {
   return (

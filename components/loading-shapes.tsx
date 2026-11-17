@@ -1,7 +1,7 @@
 import { Art } from "@/components/art/symbols";
 import { Lights, openedStates } from "@/components/lights";
 import { colClass, colsClass } from "@/components/page";
-import { Capiz, Listahan, SectionTitle } from "@/components/ui/paper";
+import { Capiz } from "@/components/ui/paper";
 import { cn } from "@/lib/utils";
 
 /*
@@ -31,6 +31,19 @@ function Lines({ count }: { count: number }) {
         <div key={i} className="lst-row" />
       ))}
     </>
+  );
+}
+
+/**
+ * A listahan with its title and blank lines. Not the Listahan component:
+ * its title is a card title, and a placeholder isn't a card.
+ */
+function BlankList({ title, lines, className }: { title: string; lines: number; className?: string }) {
+  return (
+    <div aria-hidden className={cn("listahan min-w-0", className)}>
+      <p className="lst-title text-ube-soft lg:text-section-lg">{title}</p>
+      <Lines count={lines} />
+    </div>
   );
 }
 
@@ -108,9 +121,7 @@ export function MeFallback() {
           <EmptyTag tone="gold" label="Party" />
           <EmptyTag tone="pink" label="Budget" />
         </div>
-        <Listahan aria-hidden title="Wishlist mo">
-          <Lines count={4} />
-        </Listahan>
+        <BlankList title="Wishlist mo" lines={4} />
       </div>
     </div>
   );
@@ -129,15 +140,13 @@ export function AdminFallback() {
         <Capiz aria-hidden>
           <Lights
             plan={openedStates(0, 12)}
-            label={<SectionTitle as="p" className="text-ube-soft">Ilan na kaya?</SectionTitle>}
+            label={<p className="font-head text-section text-ube-soft lg:text-section-lg">Ilan na kaya?</p>}
             rowClassName="mx-auto h-9 w-full max-w-[420px] lg:h-[52px]"
           />
           <div className="h-[46px] rounded-paper border-[1.5px] border-dashed border-ube-line bg-papel" />
         </Capiz>
       </div>
-      <Listahan aria-hidden title="Members" className="min-[840px]:col-start-2 min-[840px]:row-start-1">
-        <Lines count={6} />
-      </Listahan>
+      <BlankList title="Members" lines={6} className="min-[840px]:col-start-2 min-[840px]:row-start-1" />
     </div>
   );
 }

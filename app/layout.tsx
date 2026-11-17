@@ -3,6 +3,7 @@ import { ArtSymbols } from "@/components/art/symbols";
 import { fontVariables } from "./fonts";
 import { OFFLINE_BANNER_SCRIPT } from "@/lib/offline-banner";
 import { serverSiteUrl } from "@/lib/server-site-url";
+import { VIEW_TRANSITION_GUARD_SCRIPT } from "@/lib/view-transition-guard";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
@@ -38,6 +39,8 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         {children}
         {/* The offline banner: an inline script, so it works before hydration (lib/offline-banner.ts). */}
         <script dangerouslySetInnerHTML={{ __html: OFFLINE_BANNER_SCRIPT }} />
+        {/* No page transitions on WebKit (lib/view-transition-guard.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: VIEW_TRANSITION_GUARD_SCRIPT }} />
       </body>
     </html>
   );

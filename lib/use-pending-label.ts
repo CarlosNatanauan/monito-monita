@@ -12,5 +12,9 @@ export const WAITING_FOR_SIGNAL = "Hinihintay ang signal…";
  */
 export function usePendingLabel(pending: boolean, idle: string, busy: string): string {
   const offline = useOffline();
-  return pending ? (offline ? WAITING_FOR_SIGNAL : busy) : idle;
+  if (!pending) return idle;
+  // Next sets its offline state in a transition, which can wait behind the
+  // very action that's pending; the browser's own flag is read right away.
+  const browserOffline = typeof navigator !== "undefined" && typeof window !== "undefined" && navigator.onLine === false;
+  return offline || browserOffline ? WAITING_FOR_SIGNAL : busy;
 }

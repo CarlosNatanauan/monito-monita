@@ -17,7 +17,6 @@ import { colClass, colsClass, LightString, pageClass } from "@/components/page";
 import { JoinFallback } from "@/components/loading-shapes";
 import { GoneGroupNotice, GroupFacts, RemovedNotice, WithParol } from "./group-facts";
 import { JoinForm } from "./join-form";
-import { PageTransition } from "@/components/page-transition";
 
 /**
  * The join link's share preview (Messenger, Facebook): the group's name and
@@ -43,14 +42,12 @@ export default function JoinPage({ params, searchParams }: PageProps<"/g/[slug]"
   return (
     <>
       <LightString />
-      <PageTransition>
-        <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
-          <Brand />
-          <Suspense fallback={<JoinFallback />}>
-            <JoinContent params={params} searchParams={searchParams} />
-          </Suspense>
-        </main>
-      </PageTransition>
+      <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
+        <Brand />
+        <Suspense fallback={<JoinFallback />}>
+          <JoinContent params={params} searchParams={searchParams} />
+        </Suspense>
+      </main>
     </>
   );
 }
