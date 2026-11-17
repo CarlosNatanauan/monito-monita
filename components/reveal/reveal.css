@@ -211,6 +211,11 @@
   max-width: 860px;
   overflow-wrap: anywhere;
 }
+/* "Ipakita ang QR" on the start screen: the QR takes the line's place, so
+   "Handa na?" and the QR still fit inside the ring. */
+.rv-centre:has([data-qr-open]) .rv-centre-line {
+  display: none;
+}
 /* The finale: "Maligayang Pasko!" on white paper, ube text, readable over the gold frame.
    800px wide at most, so it stays inside the ring: the nearest slips (the
    corners at 12 slots) start about 80px past its sides, tilt included. */

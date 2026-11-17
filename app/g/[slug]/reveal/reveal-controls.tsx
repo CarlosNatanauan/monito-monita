@@ -6,21 +6,29 @@ import { GOLD_BUTTON, NIGHT_BUTTON, useRevealKeys } from "@/components/reveal/co
 import { useCanShare, useOrigin } from "@/components/copy-link";
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
+import type { QrPath } from "@/lib/qr";
 import { moveRevealFormAction, startRevealAction } from "./actions";
 
 /**
  * "Gawing remote ang phone mo" (persona test C7), on the laptop's "Handa
- * na?" screen: sends the organizer link to the organizer's own phone (the
- * share sheet, or Copy where there is none). The link is never shown on
- * this screen, which may already be on the projector. It sits inside the
- * ring under "Handa na?" (stage pixels, scaled with the stage), so it never
- * covers a slip; a phone held upright doesn't show the stage at all (that
- * phone already is the remote).
+ * na?" screen: a QR code of the organizer link to scan with the
+ * organizer's own phone, with "I-send sa phone ko" (the share sheet) or
+ * Copy as the fallback. The screen may already be on the projector, so
+ * neither the link nor the QR shows until "Ipakita ang QR" (like a private
+ * link's "Ipakita"); the QR then takes the place of the explanation line.
+ * It sits inside the ring under "Handa na?" (stage pixels, scaled with the
+ * stage), so it never covers a slip; a phone held upright doesn't show the
+ * stage at all (that phone already is the remote).
+ *
+ * The QR is encoded on the server (lib/qr.ts) and arrives as a finished
+ * SVG path: no QR library in any page's JS. Only the organizer's own
+ * reveal screen renders this (it holds their link).
  */
-export function PhoneRemote({ remotePath }: { remotePath: string }) {
+export function PhoneRemote({ remotePath, qr }: { remotePath: string; qr?: QrPath }) {
   const origin = useOrigin();
   const canShare = useCanShare();
   const [done, setDone] = useState<"copied" | "failed" | null>(null);
+  const [showQr, setShowQr] = useState(false);
   const url = origin ? `${origin}${remotePath}` : "";
 
   const send = async () => {
@@ -37,28 +45,85 @@ export function PhoneRemote({ remotePath }: { remotePath: string }) {
     }
   };
 
+  const sendButton = (
+    <button type="button" className={REMOTE_BUTTON} disabled={!url} onClick={send}>
+      {canShare ? "I-send sa phone ko" : done === "copied" ? "Copied!" : "Copy organizer link"}
+    </button>
+  );
+  const qrToggle = qr && (
+    <button
+      type="button"
+      className={REMOTE_BUTTON}
+      aria-expanded={showQr}
+      aria-controls="remote-qr"
+      onClick={() => setShowQr((s) => !s)}
+    >
+      {showQr ? "Itago ang QR" : "Ipakita ang QR"}
+    </button>
+  );
+  const status = (
+    <>
+      {done === "copied" && <p role="status">I-paste sa chat mo sa sarili mo, tapos buksan sa phone.</p>}
+      {done === "failed" && <p role="status">Hindi na-send. Buksan na lang ang organizer link sa phone mo.</p>}
+    </>
+  );
+  const title = (
+    <h2 id="remote-title" className="font-head text-[32px] leading-none text-white">
+      Gawing remote ang phone mo
+    </h2>
+  );
+
+  if (qr && showQr) {
+    // The QR on white with a quiet zone, 360px on the 1920 stage (about
+    // 6 cm on a 14" laptop): big enough to scan from arm's length.
+    return (
+      <section
+        aria-labelledby="remote-title"
+        data-qr-open
+        className="mt-1 flex max-w-[860px] items-center gap-8 border-t-[1.5px] border-gabi-line pt-4 text-left text-[26px] leading-[1.25] text-gabi-text"
+      >
+        <svg
+          id="remote-qr"
+          role="img"
+          aria-label="QR code ng organizer link"
+          viewBox={`-2 -2 ${qr.size + 4} ${qr.size + 4}`}
+          shapeRendering="crispEdges"
+          className="size-[360px] shrink-0 bg-papel"
+        >
+          <path d={qr.d} fill="#1E1238" />
+        </svg>
+        <div className="flex flex-col items-start gap-3">
+          {title}
+          <p className="font-bold text-white">I-scan gamit ang phone mo.</p>
+          <p>Tapos i-tap ang Party reveal sa phone.</p>
+          <div className="flex flex-wrap gap-3">
+            {qrToggle}
+            {sendButton}
+          </div>
+          {status}
+        </div>
+      </section>
+    );
+  }
+
   return (
     <section
       aria-labelledby="remote-title"
       className="mt-4 flex max-w-[860px] flex-col items-center gap-2 border-t-[1.5px] border-gabi-line pt-4 text-[26px] leading-[1.25] text-gabi-text"
     >
-      <h2 id="remote-title" className="font-head text-[32px] leading-none text-white">
-        Gawing remote ang phone mo
-      </h2>
+      {title}
       <p>Buksan ang organizer link sa phone, tapos i-tap ang Party reveal.</p>
-      <button
-        type="button"
-        className="h-[54px] cursor-pointer rounded-btn border-[1.5px] border-gabi-text px-6 text-[26px] font-bold text-gabi-text focus-ring disabled:cursor-not-allowed"
-        disabled={!url}
-        onClick={send}
-      >
-        {canShare ? "I-send sa phone ko" : done === "copied" ? "Copied!" : "Copy organizer link"}
-      </button>
-      {done === "copied" && <p role="status">I-paste sa chat mo sa sarili mo, tapos buksan sa phone.</p>}
-      {done === "failed" && <p role="status">Hindi na-send. Buksan na lang ang organizer link sa phone mo.</p>}
+      <div className="flex flex-wrap justify-center gap-3">
+        {qrToggle}
+        {sendButton}
+      </div>
+      {status}
     </section>
   );
 }
+
+const REMOTE_BUTTON =
+  "h-[54px] cursor-pointer rounded-btn border-[1.5px] border-gabi-text px-6 text-[26px] font-bold text-gabi-text focus-ring disabled:cursor-not-allowed";
 
 /** "Simulan ang reveal", with a confirm (redraws and removals lock after). */
 export function StartReveal({ slug }: { slug: string }) {
