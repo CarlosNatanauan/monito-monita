@@ -163,6 +163,7 @@ The server knows everything. The API must never leak it.
 ## Reveal (`server/reveal.ts`)
 
 - The organizer opens `/g/[slug]/reveal` (organizer only) and taps **Start the reveal**: the group becomes `REVEALING` at step 1.
+- **Auto-refresh** (`reveal/auto-refresh.tsx`): while the reveal is open and the tab visible, a steady 2-second interval calls `router.refresh()`, one refresh in flight at a time; a refresh still pending after 8 seconds no longer blocks the next one, so a projector laptop never stops following the phone. A hidden tab stops and catches up when shown.
 - **Next / Previous** move along the loop, starting with the first member to join. The step is stored on the group (`revealStep`), so a refreshed projector or another device (organizer link on a laptop) resumes at the same pair. Each move sends the step the screen was showing; if the server already moved (double tap, second device), nothing changes and the screen catches up.
 - Next on the last pair ("Ilawan ang parol") sets the group to `REVEALED`. Then the reveal screen plays the finale and shows every pair, and each member's /me shows "Ang nagbigay sa'yo ay…" (their own giver only).
 - Once the reveal starts, redraws and removals are blocked (the loop on screen must not change). There is no going back to `DRAWN`.

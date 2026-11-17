@@ -63,14 +63,17 @@ test("join and come back: missing PIN, taken name, honorifics, PIN hints (C1–C
     await page.goto(group.sharePath);
     await page.getByLabel("Pangalan mo").fill("Migs R.");
     const join = page.getByRole("button", { name: "Join the group" });
-    const before = await join.boundingBox();
+    // Where the button is on the page (not in the window: WebKit scrolls a
+    // little to show the focused PIN box, which isn't a layout shift).
+    const pageY = () => join.evaluate((el) => el.getBoundingClientRect().top + window.scrollY);
+    const before = await pageY();
     await join.click();
     const form = page.getByRole("form", { name: "Sumali" });
     await expect(form.getByRole("alert")).toHaveText("Pakilagay ang 4-digit PIN.");
     await expect(page.getByText("Tandaan mo 'to", { exact: false })).toHaveCount(0);
     await expect(page.getByLabel("4-digit PIN")).toBeFocused();
     // Same spot: nothing grew above the button.
-    expect((await join.boundingBox())!.y).toBeCloseTo(before!.y, 0);
+    expect(await pageY()).toBeCloseTo(before, 0);
     await expect(join).toBeInViewport({ ratio: 1 });
 
     // C2: "migs" is taken → two equal choices; "Hindi ako 'yan" keeps the name, with a hint.

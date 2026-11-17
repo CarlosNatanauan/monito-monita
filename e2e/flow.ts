@@ -20,7 +20,20 @@ export function people(browser: Browser, testInfo: TestInfo) {
 
   function watch(page: Page, label: string) {
     page.on("console", (msg) => {
-      if (msg.type() === "error") problems.push(`[${label}] console.error on ${page.url()}: ${msg.text()}`);
+      if (msg.type() !== "error") return;
+      // The same WebKit race as the "Load failed" page errors below: the test
+      // leaves the reveal screen while its 2-second refresh is in flight, the
+      // fetch is aborted, and Next logs it before falling back. The person has
+      // already left; flow-4's "stayed" marker still catches any unexpected
+      // full reload of a screen that stays open.
+      if (
+        browser.browserType().name() === "webkit" &&
+        /\/reveal$/.test(new URL(page.url()).pathname) &&
+        /^Failed to fetch RSC payload for \S+\/reveal\. Falling back to browser navigation\. TypeError: Load failed$/.test(msg.text())
+      ) {
+        return;
+      }
+      problems.push(`[${label}] console.error on ${page.url()}: ${msg.text()}`);
     });
     page.on("pageerror", (error) => {
       // WebKit reports a refresh fetch cancelled by leaving the page (the
