@@ -1,5 +1,6 @@
 "use client";
 
+import { usePendingLabel } from "@/lib/use-pending-label";
 import { useState, useTransition } from "react";
 import { Name } from "@/components/page";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export function ExclusionsSection({
   const [second, setSecond] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const addLabel = usePendingLabel(pending, "Add", "Dinadagdag…");
   // A to Z in the dropdowns (the list itself stays in join order elsewhere).
   const byName = [...members].sort((a, b) => a.displayName.localeCompare(b.displayName, "en", { sensitivity: "base" }));
 
@@ -113,7 +115,7 @@ export function ExclusionsSection({
               </Select>
             </label>
             <Button type="button" variant="secondary" onClick={add} disabled={pending || !first || !second} aria-label="Add pair">
-              {pending ? "…" : "Add"}
+              {addLabel}
             </Button>
           </div>
         )}

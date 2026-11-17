@@ -1,33 +1,10 @@
 import type { Metadata, Viewport } from "next";
-import { Atkinson_Hyperlegible, Chelsea_Market, Gochi_Hand } from "next/font/google";
 import { ArtSymbols } from "@/components/art/symbols";
+import { fontVariables } from "./fonts";
+import { OFFLINE_BANNER_SCRIPT } from "@/lib/offline-banner";
 import { serverSiteUrl } from "@/lib/server-site-url";
 import { cn } from "@/lib/utils";
 import "./globals.css";
-
-// Everything else: body, labels, secondary buttons, helper text.
-const atkinson = Atkinson_Hyperlegible({
-  subsets: ["latin"],
-  weight: ["400", "700"],
-  display: "swap",
-  variable: "--font-atkinson",
-});
-
-// Headings, primary buttons, tag values. Hand-lettered; never a person's name.
-const chelsea = Chelsea_Market({
-  subsets: ["latin"],
-  weight: "400",
-  display: "swap",
-  variable: "--font-chelsea",
-});
-
-// Gochi Hand is only for people's names and codenames.
-const gochi = Gochi_Hand({
-  subsets: ["latin"],
-  weight: "400",
-  display: "swap",
-  variable: "--font-gochi",
-});
 
 // Absolute URLs for share images: NEXT_PUBLIC_SITE_URL in production
 // (https://monitomonita-ph.vercel.app), else the deploy's own URL.
@@ -39,23 +16,28 @@ export const metadata: Metadata = {
   metadataBase: serverSiteUrl(),
   title: "Monito Monita",
   description: DESCRIPTION,
+  applicationName: "Monito Monita",
+  appleWebApp: { title: "Monito Monita" },
   // The generic preview: home, and every page without its own (including
   // /me and the organizer page, which never get a group-specific one).
   openGraph: { title: SHARE_TITLE, description: DESCRIPTION, siteName: "Monito Monita", type: "website" },
   twitter: { card: "summary_large_image", title: SHARE_TITLE, description: DESCRIPTION },
 };
 
+// Ube, like the buttons and the evening sky: the browser bar matches the brand.
 export const viewport: Viewport = {
-  themeColor: "#eee9f6",
+  themeColor: "#3f1f63",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={cn("h-full antialiased", atkinson.variable, chelsea.variable, gochi.variable)}>
+    <html lang="en" className={cn("h-full antialiased", fontVariables)}>
       <body className="flex min-h-full flex-col">
         {/* Every illustration, once, as <symbol>s (components/art/symbols.tsx). */}
         <ArtSymbols />
         {children}
+        {/* The offline banner: an inline script, so it works before hydration (lib/offline-banner.ts). */}
+        <script dangerouslySetInnerHTML={{ __html: OFFLINE_BANNER_SCRIPT }} />
       </body>
     </html>
   );

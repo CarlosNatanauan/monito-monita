@@ -1,7 +1,8 @@
 "use client";
 
+import { usePendingLabel } from "@/lib/use-pending-label";
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { submitWithoutReset } from "@/lib/forms";
@@ -49,6 +50,7 @@ export function ComeBackForm({
   showNewLink?: "always" | "phone";
 }) {
   const [state, formAction, pending] = useActionState(comeBackAction, initialState);
+  const openLabel = usePendingLabel(pending, "Buksan ang slip ko", "Binubuksan ang slip mo…");
   // The error hides as soon as a field is edited, until the next submit.
   const [editedAfter, setEditedAfter] = useState<ComeBackState | null>(null);
   // Failed tries in this browser (each result counted once).
@@ -59,6 +61,10 @@ export function ComeBackForm({
     if (state.status === "error") setFailures((n) => n + 1);
   }
   const loud = failures >= LOUD_HINT_AFTER;
+  // After "Mali ang pangalan o PIN": the cursor goes back to the PIN (the name stays).
+  useEffect(() => {
+    if (state.status === "error") document.getElementById("comeback-pin")?.focus();
+  }, [state]);
   const error = state.status === "error" && editedAfter !== state ? state : null;
   const edited = () => {
     if (editedAfter !== state) setEditedAfter(state);
@@ -130,7 +136,7 @@ export function ComeBackForm({
           )}
         </div>
         <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Sandali…" : "Buksan ang slip ko"}
+          {openLabel}
         </Button>
       </form>
       {onNew && (

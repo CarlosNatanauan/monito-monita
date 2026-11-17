@@ -1,5 +1,6 @@
 "use client";
 
+import { usePendingLabel } from "@/lib/use-pending-label";
 import { useState, useTransition, type ReactNode } from "react";
 import { Lights, openedStates } from "@/components/lights";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,8 @@ export function DrawSection({
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const drawLabel = usePendingLabel(pending, "Oo, i-draw na", "Nagbubunot…");
+  const redrawLabel = usePendingLabel(pending, "Oo, i-redraw", "Nagbubunot ulit…");
 
   const run = (mode: "draw" | "redraw") => {
     setError(null);
@@ -73,7 +76,7 @@ export function DrawSection({
             <p className="text-small text-ube-soft">Once names are drawn, joining closes.</p>
             <div className="flex flex-wrap gap-2.5">
               <Button type="button" disabled={pending} onClick={() => run("draw")}>
-                {pending ? "Nagdi-draw…" : "Oo, i-draw na"}
+                {drawLabel}
               </Button>
               <Button type="button" variant="secondary" disabled={pending} onClick={() => setConfirming(false)}>
                 Huwag muna
@@ -111,7 +114,7 @@ export function DrawSection({
             </p>
             <div className="flex flex-wrap gap-2.5">
               <Button type="button" variant="secondary" disabled={pending} onClick={() => run("redraw")}>
-                {pending ? "Nagre-redraw…" : "Oo, i-redraw"}
+                {redrawLabel}
               </Button>
               <Button type="button" variant="link" disabled={pending} onClick={() => setConfirming(false)}>
                 Huwag

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePendingLabel } from "@/lib/use-pending-label";
 import { useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
@@ -16,6 +17,7 @@ export function SetPinCard({ slug }: { slug: string }) {
   const [error, setError] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   const [pending, startTransition] = useTransition();
+  const saveLabel = usePendingLabel(pending, "I-save ang PIN", "Sine-save…");
 
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -48,12 +50,12 @@ export function SetPinCard({ slug }: { slug: string }) {
           />
           {error && <ErrorMessage id="set-pin-error">{error}</ErrorMessage>}
           <Button type="submit" variant="secondary" className="self-start" disabled={pending}>
-            {pending ? "Sine-save…" : "I-save ang PIN"}
+            {saveLabel}
           </Button>
         </form>
       ) : (
         <p className="flex items-center gap-2 font-bold text-dahon">
-          <CheckIcon /> Tapos na.
+          <CheckIcon /> Na-save!
         </p>
       )}
     </Capiz>

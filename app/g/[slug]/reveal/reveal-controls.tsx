@@ -1,5 +1,6 @@
 "use client";
 
+import { usePendingLabel } from "@/lib/use-pending-label";
 import { ChevronLeft, Play } from "lucide-react";
 import { useActionState, useRef, useState, useTransition } from "react";
 import { GOLD_BUTTON, NIGHT_BUTTON, useRevealKeys } from "@/components/reveal/controls";
@@ -130,6 +131,7 @@ export function StartReveal({ slug }: { slug: string }) {
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
+  const startLabel = usePendingLabel(pending, "Oo, simulan na", "Sinisimulan…");
 
   const start = () => {
     setError(null);
@@ -153,7 +155,7 @@ export function StartReveal({ slug }: { slug: string }) {
           </p>
           <div className="flex flex-wrap gap-2">
             <Button type="button" variant="gold" className={GOLD_BUTTON} disabled={pending} onClick={start}>
-              {pending ? "Sandali…" : "Oo, simulan na"}
+              {startLabel}
             </Button>
             <Button
               type="button"

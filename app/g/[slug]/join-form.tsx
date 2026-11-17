@@ -1,5 +1,6 @@
 "use client";
 
+import { usePendingLabel } from "@/lib/use-pending-label";
 import { useActionState, useEffect, useState, type ReactNode } from "react";
 import { JoinDrop, preloadDrop } from "@/components/bowl/lazy-join-drop";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ export function JoinForm({
   footer?: ReactNode;
 }) {
   const [state, formAction, pending] = useActionState(joinAction, initialState);
+  const joinLabel = usePendingLabel(pending, "Join the group", "Sumasali…");
   // The error hides as soon as a field is edited, until the next submit.
   const [editedAfter, setEditedAfter] = useState<JoinState | null>(null);
   // After a taken name: which choice they made, for this result.
@@ -129,7 +131,7 @@ export function JoinForm({
         {error?.field === "displayName" && <ErrorMessage id="join-error">{error.message}</ErrorMessage>}
         {error && error.field === null && <ErrorMessage>{error.message}</ErrorMessage>}
         <Button type="submit" className="w-full" disabled={pending}>
-          {pending ? "Sumasali…" : "Join the group"}
+          {joinLabel}
         </Button>
       </form>
       {footer}

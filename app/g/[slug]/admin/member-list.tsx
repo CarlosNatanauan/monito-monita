@@ -1,5 +1,6 @@
 "use client";
 
+import { usePendingLabel } from "@/lib/use-pending-label";
 import { useState, useTransition } from "react";
 import { Input } from "@/components/ui/input";
 import { PrivateLink } from "@/components/copy-link";
@@ -85,6 +86,9 @@ export function MemberList({
   // The laptop box: scrolled to the end (hides the "Scroll" cue).
   const [atEnd, setAtEnd] = useState(false);
   const [pending, startTransition] = useTransition();
+  const newLinkLabel = usePendingLabel(pending, "Oo, gumawa ng bago", "Gumagawa ng link…");
+  const removeLabel = usePendingLabel(pending, "Oo, tanggalin", "Tinatanggal…");
+  const removeRedrawLabel = usePendingLabel(pending, "Tanggalin at i-redraw", "Nagbubunot ulit…");
 
   const title = `Members (${members.length})`;
   if (members.length === 0) {
@@ -297,7 +301,7 @@ export function MemberList({
                     </label>
                     <div className="flex flex-wrap gap-2.5">
                       <Button type="button" variant="secondary" disabled={pending} onClick={() => reissue(member.id)}>
-                        {pending ? "Gumagawa…" : "Oo, gumawa ng bago"}
+                        {newLinkLabel}
                       </Button>
                       <Button type="button" variant="link" disabled={pending} onClick={close}>
                         Huwag
@@ -337,7 +341,7 @@ export function MemberList({
                     </p>
                     <div className="flex flex-wrap gap-2.5">
                       <Button type="button" variant="secondary" disabled={pending} onClick={() => remove(member.id)}>
-                        {pending ? "Tinatanggal…" : "Oo, tanggalin"}
+                        {removeLabel}
                       </Button>
                       <Button type="button" variant="link" disabled={pending} onClick={close}>
                         Huwag
@@ -357,7 +361,7 @@ export function MemberList({
                     </p>
                     <div className="flex flex-wrap gap-2.5">
                       <Button type="button" variant="secondary" disabled={pending} onClick={() => remove(member.id, true)}>
-                        {pending ? "Sandali…" : "Tanggalin at i-redraw"}
+                        {removeRedrawLabel}
                       </Button>
                       <Button
                         type="button"

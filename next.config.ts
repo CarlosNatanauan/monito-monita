@@ -24,6 +24,13 @@ const nextConfig: NextConfig = {
     ];
   },
   partialPrefetching: true,
+  experimental: {
+    // A Server Action, navigation or refresh that fails because the
+    // connection dropped waits and runs again once it's back, instead of
+    // throwing; `useOffline` (next/offline) drives the offline banner and
+    // the "Hinihintay ang signal…" button labels.
+    useOffline: true,
+  },
   turbopack: {
     rules: {
       "*.css": {

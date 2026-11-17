@@ -1,5 +1,6 @@
 "use client";
 
+import { usePendingLabel } from "@/lib/use-pending-label";
 import { useActionState, useEffect, useState, useSyncExternalStore } from "react";
 import { Field, ThemeWeeksEditor, useThemeDrafts } from "@/components/group-fields";
 import { Button } from "@/components/ui/button";
@@ -69,6 +70,7 @@ function DetailsForm({
   onClose: (saved: boolean) => void;
 }) {
   const [state, formAction, pending] = useActionState<DetailsState, FormData>(updateDetailsAction, { status: "idle" });
+  const saveLabel = usePendingLabel(pending, "I-save", "Sine-save…");
   const [name, setName] = useState(details.name);
   const [budget, setBudget] = useState(String(details.budget));
   const [partyDate, setPartyDate] = useState(details.partyDate);
@@ -184,7 +186,7 @@ function DetailsForm({
 
       <div className="flex flex-wrap gap-2.5">
         <Button type="submit" variant="secondary" disabled={pending}>
-          {pending ? "Sine-save…" : "I-save"}
+          {saveLabel}
         </Button>
         <Button type="button" variant="link" disabled={pending} onClick={() => onClose(false)}>
           Huwag na

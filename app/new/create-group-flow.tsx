@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useState, useSyncExternalStore } from "react";
+import { usePendingLabel } from "@/lib/use-pending-label";
+import { useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Field, ThemeWeeksEditor, useThemeDrafts } from "@/components/group-fields";
 import { useOrigin } from "@/components/copy-link";
 import { colClass, colsClass } from "@/components/page";
@@ -66,6 +67,13 @@ function CreateGroupForm({
   // These fields are controlled; submitting before hydration would bypass
   // React (and its validation display), so wait until it's ready.
   const hydrated = useHydrated();
+  const createLabel = usePendingLabel(pending, "Create group", "Ginagawa ang group…");
+  // After a failed create: the cursor goes to the first field to fix.
+  const formRef = useRef<HTMLFormElement>(null);
+  useEffect(() => {
+    if (state.status !== "error") return;
+    formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+  }, [state]);
 
   // A field error hides as soon as that field is edited, until the next
   // submit. Cleared keys are tied to the result that produced them.
@@ -124,7 +132,7 @@ function CreateGroupForm({
   );
 
   return (
-    <form onSubmit={submitWithoutReset(formAction)} className={colsClass} noValidate aria-label="Gumawa ng group">
+    <form ref={formRef} onSubmit={submitWithoutReset(formAction)} className={colsClass} noValidate aria-label="Gumawa ng group">
       <div className={cn(colClass, "lg:col-start-1 lg:row-start-1")}>
         <h1 className="font-head text-title lg:mt-2.5 lg:text-title-lg">Gumawa ng group</h1>
         {showBanner && state.status === "error" && <ErrorMessage>{state.message}</ErrorMessage>}
@@ -204,7 +212,7 @@ function CreateGroupForm({
       <div className={cn(colClass, "lg:col-start-2 lg:row-span-2 lg:row-start-1 lg:mt-2.5")}>{previewBlock}</div>
 
       <Button type="submit" className="w-full lg:col-start-1 lg:row-start-2 lg:w-fit" disabled={pending || !hydrated}>
-        {pending ? "Ginagawa na…" : "Create group"}
+        {createLabel}
       </Button>
     </form>
   );
