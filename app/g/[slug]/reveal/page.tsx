@@ -1,15 +1,16 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { DemoRevealLinks, DemoRevealTag } from "@/components/demo/demo-guide";
 import { RevealScreen } from "@/components/reveal/reveal-screen";
 import "@/components/reveal/reveal.css";
 import { qrPath } from "@/lib/qr";
 import { requestOrigin } from "@/lib/request-origin";
-import { getCurrentOrganizer, getOwnToken, isValidSlug, personalLinkPath } from "@/server/auth";
-import { isDemoGroup } from "@/server/groups";
+import { getCurrentOrganizer, getOwnToken, hasGroupCookie, isValidSlug, personalLinkPath } from "@/server/auth";
+import { getGroupPreview, isDemoGroup } from "@/server/groups";
+import { RevealFallback } from "@/components/loading-shapes";
 import { getRevealView } from "@/server/reveal";
 import { RevealAutoRefresh } from "./auto-refresh";
 import { PhoneRemote, RevealControls, StartReveal } from "./reveal-controls";
@@ -30,7 +31,7 @@ export const metadata: Metadata = {
  */
 export default function RevealPage({ params }: PageProps<"/g/[slug]/reveal">) {
   return (
-    <Suspense fallback={<Plain>Sandali lang…</Plain>}>
+    <Suspense fallback={<RevealFallback />}>
       <RevealContent params={params} />
     </Suspense>
   );
@@ -49,6 +50,11 @@ async function RevealContent({ params }: Pick<PageProps<"/g/[slug]/reveal">, "pa
   if (!isValidSlug(slug)) notFound();
 
   const organizer = await getCurrentOrganizer(slug);
+  if (!organizer && !(await getGroupPreview(slug))) {
+    // An expired demo: the organizer page says so (and where to go next).
+    if (await hasGroupCookie(slug)) redirect(`/g/${slug}/admin`);
+    notFound();
+  }
   if (!organizer) {
     return (
       <Plain>

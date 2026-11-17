@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import { Button, buttonVariants } from "@/components/ui/button";
 import { Capiz, SectionTitle } from "@/components/ui/paper";
 import { cn } from "@/lib/utils";
-import { getMemberSession, isValidSlug } from "@/server/auth";
+import { getMemberSession, hasGroupCookie, isValidSlug } from "@/server/auth";
 import { getGroupSummary, MAX_MEMBERS } from "@/server/members";
 import { getGroupPreview } from "@/server/groups";
 import { formatPartyDate } from "@/lib/format";
@@ -14,8 +14,10 @@ import { OG_SIZE } from "@/components/og/share-card";
 import { ComeBackForm } from "./come-back-form";
 import { Brand } from "@/components/brand";
 import { colClass, colsClass, LightString, pageClass } from "@/components/page";
-import { GroupFacts, PageFallback, RemovedNotice, WithParol } from "./group-facts";
+import { JoinFallback } from "@/components/loading-shapes";
+import { GoneGroupNotice, GroupFacts, RemovedNotice, WithParol } from "./group-facts";
 import { JoinForm } from "./join-form";
+import { PageTransition } from "@/components/page-transition";
 
 /**
  * The join link's share preview (Messenger, Facebook): the group's name and
@@ -41,12 +43,14 @@ export default function JoinPage({ params, searchParams }: PageProps<"/g/[slug]"
   return (
     <>
       <LightString />
-      <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
-        <Brand />
-        <Suspense fallback={<PageFallback />}>
-          <JoinContent params={params} searchParams={searchParams} />
-        </Suspense>
-      </main>
+      <PageTransition>
+        <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
+          <Brand />
+          <Suspense fallback={<JoinFallback />}>
+            <JoinContent params={params} searchParams={searchParams} />
+          </Suspense>
+        </main>
+      </PageTransition>
     </>
   );
 }
@@ -98,7 +102,17 @@ async function JoinContent({ params, searchParams }: PageProps<"/g/[slug]">) {
     getMemberSession(slug),
     headers(),
   ]);
-  if (!group) notFound();
+  if (!group) {
+    // Gone, but this browser was in it: a demo that expired or was reset.
+    if (await hasGroupCookie(slug)) {
+      return (
+        <div className="flex flex-col gap-[18px] lg:max-w-[560px] lg:pt-2.5">
+          <GoneGroupNotice />
+        </div>
+      );
+    }
+    notFound();
+  }
   // Already joined on this device: go straight to their page. Except while
   // rendering the join action's result (the cookie it sets re-renders this
   // page): then the form plays the slip drop and moves on by itself.

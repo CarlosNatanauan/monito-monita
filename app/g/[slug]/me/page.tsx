@@ -19,6 +19,7 @@ import {
   getMemberSession,
   getOwnToken,
   getPendingSwitch,
+  hasGroupCookie,
   isValidSlug,
   personalLinkPath,
 } from "@/server/auth";
@@ -27,13 +28,12 @@ import { getThemeWeeks } from "@/server/groups";
 import { getGroupSummary } from "@/server/members";
 import { getOwnGiver } from "@/server/reveal";
 import { getReceiverWishlist, listWishlist } from "@/server/wishlists";
-import { GroupFacts, PageFallback, RemovedNotice } from "../group-facts";
+import { MeFallback } from "@/components/loading-shapes";
+import { GoneGroupNotice, GroupFacts, OldLinkNotice, PlainBrand, RemovedNotice } from "../group-facts";
 import { MonitoReveal, MonitoSlip, WhenOpened } from "./monito-reveal";
-import { MonitoUpdatedNotice } from "./monito-updated";
-import { CleanWelcomeParam } from "./rare-cards";
-import { SetPinCard } from "./set-pin-card";
-import { SwitchConfirm } from "./switch-confirm";
+import { CleanWelcomeParam, MonitoUpdatedNotice, SetPinCard, SwitchConfirm } from "./rare-cards";
 import { WishlistEditor } from "./wishlist-editor";
+import { PageTransition } from "@/components/page-transition";
 
 export const metadata: Metadata = {
   title: "My monito · Monito Monita",
@@ -43,11 +43,13 @@ export default function MemberHomePage({ params, searchParams }: PageProps<"/g/[
   return (
     <>
       <LightString controller />
-      <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
-        <Suspense fallback={<PageFallback />}>
-          <MemberHome params={params} searchParams={searchParams} />
-        </Suspense>
-      </main>
+      <PageTransition>
+        <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
+          <Suspense fallback={<MeFallback />}>
+            <MemberHome params={params} searchParams={searchParams} />
+          </Suspense>
+        </main>
+      </PageTransition>
     </>
   );
 }
@@ -68,14 +70,40 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
     getCurrentOrganizer(slug),
     getPendingSwitch(slug),
   ]);
-  if (!group) notFound();
+  if (!group) {
+    // Gone, but this browser was in it: a demo that expired or was reset.
+    if (await hasGroupCookie(slug)) {
+      return (
+        <Narrow>
+          <PlainBrand />
+          <GoneGroupNotice />
+        </Narrow>
+      );
+    }
+    notFound();
+  }
 
-  if (session.kind === "removed") {
+  // The proxy says why a personal link didn't log this device in.
+  const linkProblem = query.link === "removed" ? "removed" : query.link === "old" ? "old" : null;
+
+  if (session.kind === "removed" || (session.kind !== "member" && linkProblem === "removed")) {
     return (
       <Narrow>
         <RememberGroup slug={slug} name={group.name} role="member" forget />
+        <PlainBrand />
         <GroupTitle>{group.name}</GroupTitle>
         <RemovedNotice />
+      </Narrow>
+    );
+  }
+
+  if (session.kind === "stale" || (session.kind === "none" && linkProblem === "old")) {
+    return (
+      <Narrow>
+        <RememberGroup slug={slug} name={group.name} role="member" forget />
+        <PlainBrand />
+        <GroupTitle>{group.name}</GroupTitle>
+        <OldLinkNotice slug={slug} />
       </Narrow>
     );
   }
@@ -84,9 +112,10 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
     return (
       <Narrow>
         <RememberGroup slug={slug} name={group.name} role="member" forget />
+        <PlainBrand />
         <GroupTitle>{group.name}</GroupTitle>
-        <Capiz>
-          <SectionTitle>Hindi ka pa namin kilala sa device na &apos;to.</SectionTitle>
+        <Capiz aria-labelledby="unknown-device-title">
+          <SectionTitle id="unknown-device-title">Hindi ka pa namin kilala sa device na &apos;to.</SectionTitle>
           <p className="text-ube-soft">
             Kung kasali ka na, bumalik gamit ang pangalan at PIN mo, o buksan ang personal link mo.
           </p>

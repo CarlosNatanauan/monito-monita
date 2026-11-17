@@ -6,6 +6,7 @@ import {
   authCookieName,
   authCookieOptions,
   findMemberByToken,
+  isRemovedMemberToken,
   isValidLinkToken,
   isWellFormedToken,
   markLinkOpened,
@@ -64,7 +65,18 @@ export async function proxy(request: NextRequest, event: NextFetchEvent) {
     }
 
     const member = await findMemberByToken(link.slug, token);
-    if (!member) return response;
+    if (!member) {
+      // A link that no longer works: say why on /me (replaced by a new
+      // link, or the member was removed), unless this device is already
+      // logged in as an active member (then the page just shows them).
+      const existing = request.cookies.get(authCookieName("member", link.slug))?.value;
+      if (existing && (await findMemberByToken(link.slug, existing))) return response;
+      cleanUrl.searchParams.set("link", (await isRemovedMemberToken(link.slug, token)) ? "removed" : "old");
+      const explained = NextResponse.redirect(cleanUrl, 303);
+      explained.headers.set("Referrer-Policy", REFERRER_POLICY);
+      explained.headers.set("Cache-Control", "no-store");
+      return explained;
+    }
 
     const cookieName = authCookieName("member", link.slug);
     const existing = request.cookies.get(cookieName)?.value;

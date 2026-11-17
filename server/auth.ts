@@ -221,6 +221,7 @@ export async function isRemovedMemberToken(slug: string, token: string): Promise
 export type MemberSession =
   | { kind: "member"; member: CurrentMember }
   | { kind: "removed" } // this device's member was removed by the organizer
+  | { kind: "stale" } // a cookie whose link no longer works (the organizer issued a new one)
   | { kind: "none" };
 
 /** Who this device is in group `slug`: an active member, a removed one, or nobody. */
@@ -230,7 +231,20 @@ export async function getMemberSession(slug: string): Promise<MemberSession> {
   if (!token) return { kind: "none" };
   const member = await findMemberByToken(slug, token);
   if (member) return { kind: "member", member };
-  return (await isRemovedMemberToken(slug, token)) ? { kind: "removed" } : { kind: "none" };
+  if (await isRemovedMemberToken(slug, token)) return { kind: "removed" };
+  return isWellFormedToken(token) ? { kind: "stale" } : { kind: "none" };
+}
+
+/**
+ * True if this browser has a member or organizer cookie for `slug`. When
+ * the group itself is gone, that means it was a demo this browser had
+ * (only demo groups are ever deleted): the page says the demo is over
+ * instead of a bare "not found".
+ */
+export async function hasGroupCookie(slug: string): Promise<boolean> {
+  if (!isValidSlug(slug)) return false;
+  const jar = await cookies();
+  return jar.has(authCookieName("member", slug)) || jar.has(authCookieName("organizer", slug));
 }
 
 /**

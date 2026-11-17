@@ -11,6 +11,7 @@ import { WithParol } from "../g/[slug]/group-facts";
 import { NameLine } from "../g/[slug]/name-line";
 import { startDemoAction, type DemoError } from "./actions";
 import { StartDemoButton } from "./start-button";
+import { PageTransition } from "@/components/page-transition";
 
 export const metadata: Metadata = {
   title: "Subukan ang demo · Monito Monita",
@@ -42,44 +43,46 @@ export default function DemoPage({ searchParams }: PageProps<"/demo">) {
   return (
     <>
       <LightString />
-      <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
-        <Brand />
-        <div className={cn(colsClass, "lg:pt-2.5")}>
-          <div className={cn(colClass, "lg:col-start-1 lg:row-start-1")}>
-            <WithParol>
-              <p className="font-bold">Titingin-tingin lang?</p>
-              <h1 className="mt-1 font-head text-display lg:text-display-lg">Subukan ang demo</h1>
-            </WithParol>
-            <p className="max-w-[440px] lg:text-[19px]">
-              Isang buong bunutan na para sa&apos;yo lang. Mga 2 minuto, walang kailangang kasama.
-            </p>
-            <Listahan title="Nasa loob" titleId="demo-inside" className="w-full lg:max-w-[440px]">
-              <ul aria-labelledby="demo-inside">
-                {INSIDE.map((line) => (
-                  <LstStarRow key={line}>{line}</LstStarRow>
-                ))}
-              </ul>
-            </Listahan>
-          </div>
+      <PageTransition>
+        <main className={cn(pageClass, "pt-1.5 lg:pt-3")}>
+          <Brand />
+          <div className={cn(colsClass, "lg:pt-2.5")}>
+            <div className={cn(colClass, "lg:col-start-1 lg:row-start-1")}>
+              <WithParol>
+                <p className="font-bold">Titingin-tingin lang?</p>
+                <h1 className="mt-1 font-head text-display lg:text-display-lg">Subukan ang demo</h1>
+              </WithParol>
+              <p className="max-w-[440px] lg:text-[19px]">
+                Isang buong bunutan na para sa&apos;yo lang. Mga 2 minuto, walang kailangang kasama.
+              </p>
+              <Listahan title="Nasa loob" titleId="demo-inside" className="w-full lg:max-w-[440px]">
+                <ul aria-labelledby="demo-inside">
+                  {INSIDE.map((line) => (
+                    <LstStarRow key={line}>{line}</LstStarRow>
+                  ))}
+                </ul>
+              </Listahan>
+            </div>
 
-          <div className={cn(colClass, "lg:col-start-2 lg:row-start-1")}>
-            <form action={startDemoAction} className="flex flex-col gap-[18px] lg:gap-[22px]" aria-label="Simulan ang demo">
-              <div className="listahan">
-                <p className="lst-row font-bold">Anong itatawag namin sa&apos;yo?</p>
-                <NameLine id="demo-name" name="name" placeholder="Bisita" maxLength={40} autoComplete="given-name" />
-                <p className="lst-row text-small text-ube-soft">Optional. Mabubura ang demo after 24 hours.</p>
-              </div>
-              <Suspense>
-                <DemoErrorMessage searchParams={searchParams} />
-              </Suspense>
-              <StartDemoButton />
-            </form>
-            <Link href="/new" className={cn(buttonVariants({ variant: "link" }), "w-fit px-0 text-body")}>
-              Gagawa na ng totoong group? Dito
-            </Link>
+            <div className={cn(colClass, "lg:col-start-2 lg:row-start-1")}>
+              <form action={startDemoAction} className="flex flex-col gap-[18px] lg:gap-[22px]" aria-label="Simulan ang demo">
+                <div className="listahan">
+                  <p className="lst-row font-bold">Anong itatawag namin sa&apos;yo?</p>
+                  <NameLine id="demo-name" name="name" placeholder="Bisita" maxLength={40} autoComplete="given-name" />
+                  <p className="lst-row text-small text-ube-soft">Optional. Mabubura ang demo after 24 hours.</p>
+                </div>
+                <Suspense>
+                  <DemoErrorMessage searchParams={searchParams} />
+                </Suspense>
+                <StartDemoButton />
+              </form>
+              <Link href="/new" className={cn(buttonVariants({ variant: "link" }), "w-fit px-0 text-body")}>
+                Gagawa na ng totoong group? Dito
+              </Link>
+            </div>
           </div>
-        </div>
-      </main>
+        </main>
+      </PageTransition>
     </>
   );
 }

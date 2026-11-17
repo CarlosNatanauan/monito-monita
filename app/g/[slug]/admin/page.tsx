@@ -17,19 +17,21 @@ import { mostHaveOpened } from "@/lib/reminder";
 import { daysBetween, getThemeStatus } from "@/lib/theme-status";
 import { formatShortDate, THEME_WEEK_TAG, themeWeekStates, todayIn } from "@/lib/theme-weeks";
 import { cn } from "@/lib/utils";
-import { getCurrentMember, getCurrentOrganizer, isValidSlug } from "@/server/auth";
+import { getCurrentMember, getCurrentOrganizer, hasGroupCookie, isValidSlug } from "@/server/auth";
 import type { GroupStatus } from "@/server/db/schema";
 import { checkDrawFeasibility } from "@/server/draw-check";
 import { countAssignments, countSlipsOpened, hasOpenedOwnSlip } from "@/server/draw-service";
 import { getDrawSetup, toExclusions } from "@/server/exclusions";
-import { editableDetails } from "@/server/groups";
+import { editableDetails, getGroupPreview } from "@/server/groups";
 import { getOrganizerView } from "@/server/members";
-import { GroupFacts, PageFallback } from "../group-facts";
+import { AdminFallback } from "@/components/loading-shapes";
+import { GoneGroupNotice, GroupFacts } from "../group-facts";
 import { DrawSection } from "./draw-section";
 import { EditDetails } from "./edit-details";
 import { ExclusionsSection } from "./exclusions-section";
 import { MemberList } from "./member-list";
 import { ReminderCard } from "./reminder-card";
+import { PageTransition } from "@/components/page-transition";
 
 export const metadata: Metadata = {
   title: "Organizer · Monito Monita",
@@ -47,15 +49,17 @@ const organizerPageClass = cn(pageClass, "pt-[22px] min-[840px]:max-w-[calc(1120
 
 export default function OrganizerPage({ params }: PageProps<"/g/[slug]/admin">) {
   return (
+    <PageTransition>
     <Suspense
       fallback={
         <main className={organizerPageClass}>
-          <PageFallback />
+          <AdminFallback />
         </main>
       }
     >
       <OrganizerContent params={params} />
     </Suspense>
+    </PageTransition>
   );
 }
 
@@ -80,6 +84,21 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
   if (!isValidSlug(slug)) notFound();
 
   const organizer = await getCurrentOrganizer(slug);
+  if (!organizer && !(await getGroupPreview(slug))) {
+    // Gone, but this browser was in it: a demo that expired or was reset.
+    if (!(await hasGroupCookie(slug))) notFound();
+    return (
+      <>
+        <HeaderLine slug={slug} tabs={false} />
+        <main className={organizerPageClass}>
+          <Narrow>
+            <RememberGroup slug={slug} name="" role="organizer" forget />
+            <GoneGroupNotice />
+          </Narrow>
+        </main>
+      </>
+    );
+  }
   if (!organizer) {
     return (
       <>
@@ -88,12 +107,15 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
           <Narrow>
             {/* This device's organizer link no longer works: drop it from "Your groups". */}
             <RememberGroup slug={slug} name="" role="organizer" forget />
-            <Capiz>
-              <SectionTitle>Para sa organizer lang ang page na &apos;to.</SectionTitle>
+            <Capiz aria-labelledby="organizer-only-title">
+              <SectionTitle id="organizer-only-title">Para sa organizer lang ang page na &apos;to.</SectionTitle>
               <p className="text-ube-soft">
                 Kung ikaw ang organizer, buksan ang organizer link mo (yung binigay nang ginawa mo ang group). Kung member
                 ka, gamitin ang personal link mo.
               </p>
+              <Button asChild variant="secondary" className="self-start">
+                <Link href={`/g/${slug}/me`}>Pumunta sa slip ko</Link>
+              </Button>
             </Capiz>
           </Narrow>
         </main>
