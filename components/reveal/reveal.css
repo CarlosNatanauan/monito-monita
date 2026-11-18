@@ -23,6 +23,26 @@
   }
 }
 
+/* Projector mode (landscape): after 3 s without the mouse the controls
+   (back link, sound, fullscreen, Lahat ng pairs, Start / Next / Previous)
+   fade out; a mouse move or a tap brings them back (use-idle.ts). Keyboard
+   focus shows them, and the keys work while they're hidden. They stay
+   clickable, so a tap where a button is still presses it. The phone held
+   upright is the remote: its buttons never hide. */
+@media (orientation: landscape) {
+  .rv-autohide {
+    transition: opacity 300ms ease;
+  }
+  .rv-screen[data-idle="true"] .rv-autohide:not(:has(:focus-visible)) {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rv-autohide {
+    transition: none;
+  }
+}
+
 .rv-stage {
   position: absolute;
   left: 50%;

@@ -12,6 +12,7 @@ import { ICON_BUTTON, NIGHT_BUTTON, useFullscreen } from "./controls";
 import { RevealStage, type StagePair, type StageView } from "./reveal-stage";
 import "./reveal.css";
 import { useRevealSound } from "./sound";
+import { useIdle } from "./use-idle";
 
 export type ScreenData =
   | { status: "DRAWN"; groupName: string; total: number }
@@ -68,6 +69,8 @@ export function RevealScreen({
   const windowed = isWindowed(view.total);
   const sound = useRevealSound();
   const fullscreen = useFullscreen();
+  // Projector mode: the controls fade out after 3 s without the mouse (landscape only, reveal.css).
+  const idle = useIdle();
 
   // Large groups: after the finale (or straight away after a refresh), the full list of pairs.
   const [showList, setShowList] = useState(view.status === "REVEALED" && windowed);
@@ -149,7 +152,10 @@ export function RevealScreen({
   // CSS places them in the stage's corners (landscape) or under the
   // follow-along view (portrait).
   return (
-    <div className="rv-screen relative flex min-h-dvh flex-1 flex-col text-white landscape:h-dvh landscape:overflow-hidden">
+    <div
+      className="rv-screen relative flex min-h-dvh flex-1 flex-col text-white landscape:h-dvh landscape:overflow-hidden"
+      data-idle={idle ? "true" : undefined}
+    >
       <RevealStage
         view={view}
         showList={showList}
@@ -163,12 +169,14 @@ export function RevealScreen({
       />
 
       {/* Bottom left, clear of the ring: at 16:9 the ring's lower-left slip
-          starts about 24vw in, so this stays within 18vw and a long group
-          name is cut short instead of running into it (the count stays). */}
+          starts about 24vw in, so this stays within 18vw. The name has its
+          own line (it wraps if it must, never cut short) and the count sits
+          under it. Always shown, also while the controls are hidden. */}
       <footer className="z-10 hidden max-w-[18vw] flex-col gap-1 text-[clamp(16px,2.4vh,28px)] font-bold text-gabi-text landscape:absolute landscape:bottom-[5vh] landscape:left-[5vw] landscape:flex">
-        <p className="flex min-w-0 whitespace-nowrap">
-          <span className="min-w-0 truncate">{view.groupName}</span>
-          <span className="shrink-0">&nbsp;· {count}</span>
+        <p className="flex min-w-0 flex-col">
+          <span className="line-clamp-2 [overflow-wrap:anywhere]">{view.groupName}</span>
+          <span className="sr-only"> · </span>
+          <span>{count}</span>
         </p>
         {progress}
       </footer>
@@ -176,13 +184,13 @@ export function RevealScreen({
       <FollowAlong view={view} count={count} progress={progress} />
 
       {(controls || listToggle) && (
-        <footer className="z-10 flex flex-col gap-3 px-5 pt-4 landscape:absolute landscape:right-[5vw] landscape:bottom-[5vh] landscape:max-w-[60vw] landscape:flex-row landscape:items-end landscape:p-0">
+        <footer className="rv-autohide z-10 flex flex-col gap-3 px-5 pt-4 landscape:absolute landscape:right-[5vw] landscape:bottom-[5vh] landscape:max-w-[60vw] landscape:flex-row landscape:items-end landscape:p-0">
           {listToggle}
           {controls}
         </footer>
       )}
 
-      <header className="z-10 flex flex-wrap items-center justify-between gap-2 px-5 pt-6 pb-8 portrait:mt-auto landscape:absolute landscape:inset-x-[5vw] landscape:top-[5vh] landscape:p-0">
+      <header className="rv-autohide z-10 flex flex-wrap items-center justify-between gap-2 px-5 pt-6 pb-8 portrait:mt-auto landscape:absolute landscape:inset-x-[5vw] landscape:top-[5vh] landscape:p-0">
         {tools}
       </header>
     </div>

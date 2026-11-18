@@ -470,3 +470,72 @@ test("party reveal on a projector: ring, steps, phone as remote, a group of 30, 
     expect(problems, problems.join("\n")).toEqual([]);
   });
 });
+
+test("projector mode: controls hide after 3 s without the mouse, keys still work, the group name is never cut", async ({ browser }) => {
+  test.setTimeout(180_000);
+  const group = await seedGroup("Barkada Christmas 2026", TWELVE);
+  const { context, page } = await projector(browser, "projector mode");
+  await openAsOrganizer(page, group);
+  await page.getByRole("button", { name: "Simulan ang reveal" }).click();
+  await page.getByRole("button", { name: "Oo, simulan na" }).click();
+  await expect(count(page, "1 of 12")).toBeVisible();
+  await idle(page);
+
+  const header = page.locator("header.rv-autohide");
+  const buttons = page.locator("footer.rv-autohide");
+  const info = page.locator("footer:has([data-count])");
+  await page.mouse.move(960, 540);
+  await expect(header).toHaveCSS("opacity", "1");
+  await expect(buttons).toHaveCSS("opacity", "1");
+
+  await test.step("hidden after 3 s without the mouse; the group name and count stay", async () => {
+    await page.waitForTimeout(3500);
+    await expect(header).toHaveCSS("opacity", "0");
+    await expect(buttons).toHaveCSS("opacity", "0");
+    await expect(info).toHaveCSS("opacity", "1");
+    await shot(page, "projector-mode-hidden");
+  });
+
+  await test.step("Space still moves on while they're hidden", async () => {
+    await page.keyboard.press("Space");
+    await expect(count(page, "2 of 12")).toBeVisible();
+    await expect(header).toHaveCSS("opacity", "0");
+  });
+
+  await test.step("a mouse move or a tap brings them back", async () => {
+    await page.mouse.move(400, 300);
+    await expect(header).toHaveCSS("opacity", "1");
+    await expect(buttons).toHaveCSS("opacity", "1");
+    await page.waitForTimeout(3500);
+    await expect(header).toHaveCSS("opacity", "0");
+    await page.mouse.down();
+    await page.mouse.up();
+    await expect(header).toHaveCSS("opacity", "1");
+  });
+
+  await test.step("keyboard focus shows them", async () => {
+    await page.waitForTimeout(3500);
+    await expect(header).toHaveCSS("opacity", "0");
+    await page.keyboard.press("Tab");
+    // Whichever control group holds the keyboard focus shows again.
+    await expect(page.locator(".rv-autohide:has(:focus-visible)")).toHaveCSS("opacity", "1");
+    await page.evaluate(() => (document.activeElement as HTMLElement | null)?.blur?.());
+  });
+
+  await test.step("the full group name, never cut short, at 1920×1080, 1366×768 and 1280×720", async () => {
+    for (const [w, h] of [
+      [1920, 1080],
+      [1366, 768],
+      [1280, 720],
+    ]) {
+      await page.setViewportSize({ width: w, height: h });
+      await expect(page.locator("footer p").first()).toHaveText("E2E Barkada Christmas 2026 · 2 of 12");
+      const cut = await page.locator("footer p span").first().evaluate((el) => el.scrollWidth > el.clientWidth || el.scrollHeight > el.clientHeight);
+      expect(cut, `the group name is cut short at ${w}×${h}`).toBe(false);
+      await expectProjectorLayout(page, `projector mode at ${w}×${h}`);
+    }
+  });
+
+  await context.close();
+  expect(problems, problems.join("\n")).toEqual([]);
+});
