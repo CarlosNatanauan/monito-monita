@@ -7,7 +7,7 @@ import type React from "react";
 import { AbsoluteFill, Sequence, useCurrentFrame } from "remotion";
 import { SCENE, type SceneId } from "../lib/time";
 
-export const PRE: Record<SceneId, number> = { s01: 0, s02: 0, s03: 0, s04: 16, s05: 0, s06: 13, s07: 10, s08: 14, s09: 9 };
+export const PRE: Record<SceneId, number> = { s01: 0, s02: 0, s03: 0, s04: 16, s05: 0, s06: 13, s07: 10, s08: 16, s09: 9 };
 export const POST: Record<SceneId, number> = { s01: 18, s02: 1, s03: 3, s04: 14, s05: 3, s06: 10, s07: 0, s08: 9, s09: 0 };
 
 export const useLocal = (id: SceneId) => useCurrentFrame() - PRE[id];

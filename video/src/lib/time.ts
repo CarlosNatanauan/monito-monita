@@ -14,8 +14,15 @@ export const EIGHTH = BEAT / 2;
 export const V0 = music.v0Seconds * FPS; // the first downbeat
 export const DURATION = music.durationInFrames;
 
+/**
+ * The intro (01 and 02) is 3.5 bars: 01 is 6 beats and the music's E bar
+ * before the groove is cut to 2 beats. From video bar 2 on, every bar
+ * starts this much earlier, so 03 onwards stays on the music's downbeats.
+ */
+export const INTRO_DROP = (music.introDropBeats ?? 0) * BEAT;
+
 /** Exact (fractional) frame of video bar `bar`, plus `beat` beats. */
-export const at = (bar: number, beat = 0) => V0 + bar * BAR + beat * BEAT;
+export const at = (bar: number, beat = 0) => V0 + bar * BAR + beat * BEAT - (bar >= 2 ? INTRO_DROP : 0);
 /** The same, on a whole frame. */
 export const F = (bar: number, beat = 0) => Math.round(at(bar, beat));
 

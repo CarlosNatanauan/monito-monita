@@ -1,12 +1,14 @@
 /**
- * The 52-second demo (video/storyboard/STORYBOARD.md). Plain Sequences with
+ * The 51-second demo (video/storyboard/STORYBOARD.md). Plain Sequences with
  * manual overlaps, so a transition never moves a cut off its bar line.
  */
 import type React from "react";
-import { AbsoluteFill } from "remotion";
+import { AbsoluteFill, Sequence } from "remotion";
 import { Soundtrack } from "./audio/Soundtrack";
 import { C } from "./lib/theme";
+import { DURATION } from "./lib/time";
 import { SceneSeq } from "./scenes/common";
+import { Night, NIGHT_IN } from "./scenes/Night";
 import { S01Intro } from "./scenes/S01Intro";
 import { S02Problem } from "./scenes/S02Problem";
 import { S03Create } from "./scenes/S03Create";
@@ -41,7 +43,10 @@ export const MonitoDemo: React.FC<{ muted?: boolean }> = ({ muted = false }) => 
     <SceneSeq id="s07" name="07 Party reveal">
       <S07Reveal />
     </SceneSeq>
-    {/* 09 under 08: the sheet of 08 lifts away to reveal it. */}
+    {/* The evening sky under 08 and 09 (one place): the finale dissolves into it. */}
+    <Sequence name="Night sky (08-09)" from={NIGHT_IN[0]} durationInFrames={DURATION - NIGHT_IN[0]}>
+      <Night />
+    </Sequence>
     <SceneSeq id="s09" name="09 Outro">
       <S09Outro />
     </SceneSeq>

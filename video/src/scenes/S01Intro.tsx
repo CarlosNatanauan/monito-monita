@@ -73,13 +73,13 @@ export const S01Intro: React.FC = () => {
         <LightString variant="sky" top={4} lit={(i) => lf >= CATCH + 1 + i / 3} />
         <Headline frame={lf}
           text={"Monito\nMonita"}
-          start={CATCH - 7}
+          start={CATCH - 11}
           size={190}
           lineHeight={0.98}
           color="#fff"
           style={{ position: "absolute", left: 150, top: 292 }}
         />
-        <Line frame={lf} start={CATCH + 2} size={50} color={C.gabiText} lineHeight={1.32} style={{ position: "absolute", left: 152, top: 706 }}>
+        <Line frame={lf} start={CATCH - 3} size={50} color={C.gabiText} lineHeight={1.32} style={{ position: "absolute", left: 152, top: 706 }}>
           The Filipino exchange gift,
           <br />
           in one link

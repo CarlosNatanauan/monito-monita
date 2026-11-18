@@ -1,6 +1,6 @@
 /**
  * Post steps after a render (Remotion's bundled ffmpeg):
- *   node scripts/render/post.mjs loudness   out/monito-monita-demo.mp4: -14 LUFS integrated, true peak under -1 dBTP (video copied)
+ *   node scripts/render/post.mjs loudness [file]   out/monito-monita-demo.mp4 (or out/<file>): -14 LUFS integrated, true peak under -1 dBTP (video copied)
  *   node scripts/render/post.mjs loop       out/loop-full.webm -> out/monito-monita-loop.webm (1280x720)
  *                                           and out/monito-monita-loop.gif (640x360, 15 fps, one shared palette, under 5 MB)
  */
@@ -18,7 +18,7 @@ const out = (f) => join(VIDEO, "out", f);
 
 const step = process.argv[2];
 if (step === "loudness") {
-  const src = out("monito-monita-demo.mp4");
+  const src = out(process.argv[3] ?? "monito-monita-demo.mp4");
   const log = ff(["-i", src, "-vn", "-af", "loudnorm=I=-14:TP=-1:LRA=11:print_format=json", "-f", "null", "-"]);
   const m = JSON.parse(log.slice(log.lastIndexOf("{"), log.lastIndexOf("}") + 1));
   const gain = -14 - Number(m.input_i);

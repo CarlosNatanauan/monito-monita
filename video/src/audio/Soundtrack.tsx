@@ -118,7 +118,7 @@ export const Soundtrack: React.FC = () => {
       </Sequence>
 
       {/* 01: night, the bulbs come on */}
-      <Sfx at={s01} src="sfx/crickets.wav" volume={(f) => lin(f, [0, 6, 100, 135], [0, 0.11, 0.11, 0])} name="crickets" />
+      <Sfx at={s01} src="sfx/crickets.wav" volume={(f) => lin(f, [0, 6, 80, 112], [0, 0.11, 0.11, 0])} name="crickets" />
       <Sfx at={s01 + 18} src="sfx/bulbs-run.wav" volume={0.32} />
       <Sfx at={s02 - 2} src="sfx/paper-air.wav" volume={0.2} name="tilt" />
 
@@ -182,7 +182,6 @@ export const Soundtrack: React.FC = () => {
       <Sfx at={s07 + PRESS + 4} src="sfx/glock-gliss.wav" volume={0.29} />
       {/* The recording opens with a room murmur and peaks 1.7 s in: the murmur builds under the press, the cheer lands on the banner. */}
       <Sfx at={cheer - 51} src="crowd-cheer.mp3" volume={(f) => lin(f, [0, 8, 51, 110, 150], [0, 0.36, 0.42, 0.34, 0])} name="cheer" />
-      <Sfx at={s08 - 14} src="sfx/fringe-rustle.wav" volume={0.24} name="fringe" />
 
       {/* 08: each tag catches on the wire with a note */}
       {TAG_CATCH.map((f, i) => (
@@ -191,7 +190,7 @@ export const Soundtrack: React.FC = () => {
           <Sfx at={s08 + f} src={`sfx/glock-${["B5", "Ds6", "Fs6", "B6"][i]}.wav`} volume={0.2} />
         </Sequence>
       ))}
-      <Sfx at={s08 + LIFT[0] - 1} src="sfx/paper-air.wav" volume={0.18} name="sheet lifts" />
+      <Sfx at={s08 + LIFT[0] - 1} src="sfx/paper-air.wav" volume={0.18} name="string raised" />
 
       {/* 09: the slip clips on; the night comes back */}
       <Sfx at={s09 + SLIP_CATCH} src="sfx/clothespin-click.wav" volume={0.32} />

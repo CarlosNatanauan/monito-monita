@@ -30,7 +30,8 @@ function buildMusic() {
   const BAR = music.barSeconds;
   const BEAT = BAR / 4;
   const songBar = (k) => music.songBar0Seconds + k * BAR;
-  const vidBar = (n) => music.v0Seconds + n * BAR;
+  // The intro is short by introDropBeats: from video bar 2 on, bars start that much earlier.
+  const vidBar = (n) => music.v0Seconds + n * BAR - (n >= 2 ? (music.introDropBeats ?? 0) * BEAT : 0);
   const total = music.durationInFrames / music.fps;
   const N = len(total);
   const outL = zeros(N);

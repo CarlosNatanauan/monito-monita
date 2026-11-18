@@ -92,18 +92,21 @@ export const GcBubble: React.FC<{ link: string; style?: React.CSSProperties; siz
  * A gift tag: pointed top with a punched hole (scene 08). One fact per tag.
  * The hole is at (w/2, 34); the tag hangs from it.
  */
-export const GiftTag: React.FC<{ w?: number; h?: number; tint: string; title: string; line: string; style?: React.CSSProperties }> = ({
+/** `hole` is whatever is behind the tag (the punched hole shows it); `outline` edges the paper. */
+export const GiftTag: React.FC<{ w?: number; h?: number; tint: string; title: string; line: string; hole?: string; outline?: string; style?: React.CSSProperties }> = ({
   w = 400,
   h = 400,
   tint,
   title,
   line,
+  hole = C.lilac,
+  outline,
   style,
 }) => (
   <div style={{ position: "absolute", width: w, height: h, ...style }}>
     <svg width={w} height={h} viewBox={`0 0 ${w} ${h}`} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
-      <path d={`M0 ${78} L${w / 2} 0 L${w} ${78} L${w} ${h} L0 ${h} Z`} fill={tint} />
-      <circle cx={w / 2} cy={34} r={10} fill={C.lilac} />
+      <path d={`M0 ${78} L${w / 2} 0 L${w} ${78} L${w} ${h} L0 ${h} Z`} fill={tint} stroke={outline} strokeWidth={outline ? 2.5 : 0} strokeLinejoin="round" />
+      <circle cx={w / 2} cy={34} r={10} fill={hole} stroke={outline} strokeWidth={outline ? 2 : 0} />
     </svg>
     <div style={{ position: "absolute", left: 38, right: 30, top: 112 }}>
       <div style={{ fontFamily: FONT.head, fontSize: 46, lineHeight: 1.05, color: C.ube, whiteSpace: "nowrap" }}>{title}</div>
