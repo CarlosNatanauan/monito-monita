@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&amp;family=Chelsea+Market&amp;family=Gochi+Hand&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#D9D6DE;color:#3F1F63;font-family:'Atkinson Hyperlegible',sans-serif}
+a{color:#3F1F63}a:hover{color:#1F6B45}
+</style>
+</helmet>
+<div style="padding:96px;display:flex;flex-direction:column;gap:120px;width:2712px">
+
+<header style="display:flex;flex-direction:column;gap:28px">
+  <div style="font:72px/1.05 'Chelsea Market';">Monito Monita: portfolio demo storyboard</div>
+  <div style="font:700 28px/1.4 'Atkinson Hyperlegible';color:#5A4A6B">60 s · 1920×1080 · 30 fps · 1800 frames · Remotion · music at 96 BPM, one bar = 2.5 s = 75 frames, every cut on a bar line</div>
+  <div style="display:flex;height:96px;margin-top:12px;font:700 22px/1.2 'Atkinson Hyperlegible'">
+    <div style="width:226px;background:#3F1F63;color:#fff;padding:14px 16px;box-sizing:border-box;border-right:2px solid #D9D6DE">01 Intro<br>0:00 · 5.0 s</div>
+    <div style="width:226px;background:#EEE9F6;padding:14px 16px;box-sizing:border-box;border-right:2px solid #D9D6DE">02 Problem<br>0:05 · 5.0 s</div>
+    <div style="width:339px;background:#EEE9F6;padding:14px 16px;box-sizing:border-box;border-right:2px solid #D9D6DE">03 Create group<br>0:10 · 7.5 s</div>
+    <div style="width:339px;background:#EEE9F6;padding:14px 16px;box-sizing:border-box;border-right:2px solid #D9D6DE">04 Join<br>0:17.5 · 7.5 s</div>
+    <div style="width:339px;background:#3F1F63;color:#fff;padding:14px 16px;box-sizing:border-box;border-right:2px solid #D9D6DE">05 Slip unfold<br>0:25 · 7.5 s</div>
+    <div style="width:226px;background:#EEE9F6;padding:14px 16px;box-sizing:border-box;border-right:2px solid #D9D6DE">06 Organizer<br>0:32.5 · 5.0 s</div>
+    <div style="width:339px;background:#1E1238;color:#fff;padding:14px 16px;box-sizing:border-box;border-right:2px solid #D9D6DE">07 Reveal + finale<br>0:37.5 · 7.5 s</div>
+    <div style="width:452px;background:#EEE9F6;padding:14px 16px;box-sizing:border-box;border-right:2px solid #D9D6DE">08 How it's built<br>0:45 · 10.0 s</div>
+    <div style="width:226px;background:#3F1F63;color:#fff;padding:14px 16px;box-sizing:border-box">09 Outro<br>0:55 · 5.0 s</div>
+  </div>
+  <div style="font:400 24px/1.5 'Atkinson Hyperlegible';max-width:1920px;text-wrap:pretty">Each frame below is the key moment of its scene, at final size. App screens in the device frames stand in for the real recordings. Full timings, easing, camera and sound cues are in STORYBOARD.md.</div>
+</header>
+
+<!-- 01 INTRO -->
+<div style="display:grid;grid-template-columns:1920px 720px;gap:72px;align-items:start">
+  <div id="f01" data-screen-label="01 Intro" style="position:relative;width:1920px;height:1080px;overflow:hidden;background:repeating-conic-gradient(from 0deg at 1400px 225px,#3F1F63 0deg 6deg,#4A2873 6deg 12deg)">
+    <svg viewBox="0 0 1440 40" width="1920" height="53.3" style="position:absolute;left:0;top:0;display:block"><defs><g id="skyswagA"><path d="M0 6Q180 30 360 6" fill="none" stroke="#B9A6D9" stroke-width="1.3"></path><ellipse cx="20" cy="17.5" rx="5" ry="8" transform="rotate(8 20 17.5)" fill="#F4C542" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="49" cy="19.6" rx="6" ry="7" transform="rotate(-6 49 19.6)" fill="#C4283A" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="78" cy="23.6" rx="5.5" ry="8.5" transform="rotate(5 78 23.6)" fill="#FFE9A3" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="107" cy="25" rx="6" ry="8" transform="rotate(-9 107 25)" fill="#1F6B45" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="136" cy="25.8" rx="5" ry="7.5" transform="rotate(4 136 25.8)" fill="#F4C542" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="165" cy="26.9" rx="6.5" ry="8" transform="rotate(-4 165 26.9)" fill="#C4283A" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="194" cy="25.9" rx="5.5" ry="7" transform="rotate(7 194 25.9)" fill="#FFE9A3" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="223" cy="26.8" rx="6" ry="8.5" transform="rotate(-7 223 26.8)" fill="#1F6B45" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="252" cy="25.1" rx="5" ry="8" transform="rotate(6 252 25.1)" fill="#F4C542" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="281" cy="22.7" rx="6" ry="7.5" transform="rotate(-5 281 22.7)" fill="#C4283A" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="310" cy="20.7" rx="5.5" ry="8" transform="rotate(9 310 20.7)" fill="#FFE9A3" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="339" cy="16.6" rx="6" ry="7" transform="rotate(-8 339 16.6)" fill="#1F6B45" stroke="#1E1238" stroke-width="1.2"></ellipse></g></defs><use href="#skyswagA" x="0"></use><use href="#skyswagA" x="360"></use><use href="#skyswagA" x="720"></use><use href="#skyswagA" x="1080"></use></svg>
+    <div style="position:absolute;left:1399px;top:12px;width:2px;height:52px;background:#B9A6D9"></div>
+    <img src="final/svg/parol.svg" alt="" style="position:absolute;left:1235px;top:60px;width:330px;height:467.5px;transform:rotate(-5deg);transform-origin:165px 0">
+    <div style="position:absolute;left:0;bottom:0;width:740px;height:72px;background:#2C1548"></div>
+    <img src="final/svg/simbahan.svg" alt="" style="position:absolute;right:0;bottom:0;width:1200px;height:360px">
+    <div style="position:absolute;left:150px;top:290px">
+      <div style="font:190px/0.98 'Chelsea Market';color:#fff">Monito<br>Monita</div>
+      <div style="margin-top:44px;font:400 50px/1.3 'Atkinson Hyperlegible';color:#EBDFF8">The Filipino exchange gift,<br>in one link</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:22px;font:400 24px/1.45 'Atkinson Hyperlegible'">
+    <div style="display:flex;gap:18px;align-items:baseline"><span style="font:64px/1 'Chelsea Market'">01</span><span style="font:40px/1.1 'Chelsea Market'">Intro</span></div>
+    <div style="font-weight:700;color:#5A4A6B">0:00.0 – 0:05.0 · 5.0 s · bars 1–2 · f0–149</div>
+    <div><b>Text</b><br>“Monito Monita” · “The Filipino exchange gift, in one link”</div>
+    <div><b>Moves</b><br>Parol drops on its string (f0–14), catches and swings to rest (spring, f14–54). Bulbs switch on left to right (f18–42). Church windows light (f40). Title letters in word by word (f24–40), line two rises in (f44–58), holds 3 s.</div>
+    <div><b>Camera</b><br>Slow push 1.00 → 1.04, whole scene.</div>
+    <div><b>Out</b><br>Tilt down: sky slides up, lilac page rises in (18 f, f141–159).</div>
+    <div><b>Sound</b><br>Crickets, low. Bandurria tremolo. Bamboo chime on the drop, rope creak on the catch, glass tinks with the bulbs.</div>
+  </div>
+</div>
+
+<!-- 02 PROBLEM -->
+<div style="display:grid;grid-template-columns:1920px 720px;gap:72px;align-items:start">
+  <div id="f02" data-screen-label="02 Problem" style="position:relative;width:1920px;height:1080px;overflow:hidden;background:#EEE9F6">
+    <svg viewBox="0 0 1440 40" width="1920" height="53.3" style="position:absolute;left:0;top:0;display:block">
+      <defs><g id="offswag"><path d="M0 6Q180 30 360 6" fill="none" stroke="#3F1F63" stroke-width="1.3"></path><g fill="#fff" stroke="#3F1F63" stroke-width="1.2"><ellipse cx="20" cy="17.5" rx="5" ry="8" transform="rotate(8 20 17.5)"></ellipse><ellipse cx="49" cy="19.6" rx="6" ry="7" transform="rotate(-6 49 19.6)"></ellipse><ellipse cx="78" cy="23.6" rx="5.5" ry="8.5" transform="rotate(5 78 23.6)"></ellipse><ellipse cx="107" cy="25" rx="6" ry="8" transform="rotate(-9 107 25)"></ellipse><ellipse cx="136" cy="25.8" rx="5" ry="7.5" transform="rotate(4 136 25.8)"></ellipse><ellipse cx="165" cy="26.9" rx="6.5" ry="8" transform="rotate(-4 165 26.9)"></ellipse><ellipse cx="194" cy="25.9" rx="5.5" ry="7" transform="rotate(7 194 25.9)"></ellipse><ellipse cx="223" cy="26.8" rx="6" ry="8.5" transform="rotate(-7 223 26.8)"></ellipse><ellipse cx="252" cy="25.1" rx="5" ry="8" transform="rotate(6 252 25.1)"></ellipse><ellipse cx="281" cy="22.7" rx="6" ry="7.5" transform="rotate(-5 281 22.7)"></ellipse><ellipse cx="310" cy="20.7" rx="5.5" ry="8" transform="rotate(9 310 20.7)"></ellipse><ellipse cx="339" cy="16.6" rx="6" ry="7" transform="rotate(-8 339 16.6)"></ellipse></g></g></defs>
+      <use href="#offswag" x="0"></use><use href="#offswag" x="360"></use><use href="#offswag" x="720"></use><use href="#offswag" x="1080"></use>
+    </svg>
+    <div style="position:absolute;left:140px;top:130px;width:820px;display:flex;flex-direction:column;gap:14px;font:84px/1.06 'Chelsea Market';color:#3F1F63">
+      <div>Bunutan on paper.</div>
+      <div>Chaos in the group chat.</div>
+    </div>
+    <div style="position:absolute;left:180px;top:930px;width:200px;height:96px;background:#fff;border:2px solid #3F1F63;transform:rotate(-4deg);box-shadow:6px 8px 0 rgba(30,18,56,.45)"><svg viewBox="0 0 200 96" width="200" height="96" style="display:block"><path d="M0 0 200 96" stroke="#B9A6D9" stroke-width="2"></path></svg></div>
+    <div style="position:absolute;left:520px;top:950px;width:200px;height:96px;background:#fff;border:2px solid #3F1F63;transform:rotate(9deg);box-shadow:6px 8px 0 rgba(30,18,56,.45)"><svg viewBox="0 0 200 96" width="200" height="96" style="display:block"><path d="M200 0 0 96" stroke="#B9A6D9" stroke-width="2"></path></svg></div>
+    <div style="position:absolute;left:150px;top:520px;width:300px;height:150px;background:#fff;border:2px solid #3F1F63;transform:rotate(-7deg);box-shadow:6px 8px 0 rgba(30,18,56,.45);display:flex;align-items:center;justify-content:center;font:68px/1 'Gochi Hand'">Joy</div>
+    <div style="position:absolute;left:500px;top:570px;width:380px;height:150px;background:#fff;border:2px solid #3F1F63;transform:rotate(5deg);box-shadow:6px 8px 0 rgba(30,18,56,.45);display:flex;align-items:center;justify-content:center;font:68px/1 'Gochi Hand'">Tita Luz</div>
+    <div style="position:absolute;left:200px;top:750px;width:330px;height:150px;background:#fff;border:2px solid #3F1F63;transform:rotate(4deg);box-shadow:6px 8px 0 rgba(30,18,56,.45);display:flex;align-items:center;justify-content:center;font:68px/1 'Gochi Hand'">
+      <span style="position:relative">Marco<svg viewBox="0 0 220 40" width="220" height="40" style="position:absolute;left:-14px;top:22px;overflow:visible"><path d="M0 22C40 10 80 26 120 14S190 8 220 18" fill="none" stroke="#3F1F63" stroke-width="6" stroke-linecap="round"></path></svg></span>
+    </div>
+    <div style="position:absolute;left:600px;top:790px;width:270px;height:140px;background:#fff;border:2px solid #3F1F63;transform:rotate(-9deg);box-shadow:6px 8px 0 rgba(30,18,56,.45);display:flex;align-items:center;justify-content:center;font:68px/1 'Gochi Hand'">Bea?</div>
+    <div style="position:absolute;left:840px;top:900px;width:190px;height:92px;background:#fff;border:2px solid #3F1F63;transform:rotate(14deg);box-shadow:6px 8px 0 rgba(30,18,56,.45)"><svg viewBox="0 0 190 92" width="190" height="92" style="display:block"><path d="M0 92 190 0" stroke="#B9A6D9" stroke-width="2"></path></svg></div>
+
+    <div style="position:absolute;left:1080px;top:96px;display:flex;flex-direction:column;gap:4px"><div style="font:32px/1 'Gochi Hand'">Marco</div><div style="background:#fff;border:2px solid #3F1F63;border-radius:4px 24px 24px 24px;padding:18px 28px;font:400 36px/1.3 'Atkinson Hyperlegible'">Wait, I picked my own name</div></div>
+    <div style="position:absolute;left:1240px;top:226px;display:flex;flex-direction:column;gap:4px"><div style="font:32px/1 'Gochi Hand'">Bea</div><div style="background:#fff;border:2px solid #3F1F63;border-radius:4px 24px 24px 24px;padding:18px 28px;font:400 36px/1.3 'Atkinson Hyperlegible'">Redo the bunutan?</div></div>
+    <div style="position:absolute;left:1010px;top:352px;display:flex;flex-direction:column;gap:4px"><div style="font:32px/1 'Gochi Hand'">Tita Luz</div><div style="background:#fff;border:2px solid #3F1F63;border-radius:4px 24px 24px 24px;padding:18px 28px;font:400 36px/1.3 'Atkinson Hyperlegible'">Who picked me? Asking lang</div></div>
+    <div style="position:absolute;left:1290px;top:470px;display:flex;flex-direction:column;gap:4px"><div style="font:32px/1 'Gochi Hand'">Jun</div><div style="background:#fff;border:2px solid #3F1F63;border-radius:4px 24px 24px 24px;padding:18px 28px;font:400 36px/1.3 'Atkinson Hyperlegible'">Can Migs still join?</div></div>
+    <div style="position:absolute;left:1070px;top:596px;display:flex;flex-direction:column;gap:4px"><div style="font:32px/1 'Gochi Hand'">Aira</div><div style="background:#fff;border:2px solid #3F1F63;border-radius:4px 24px 24px 24px;padding:18px 28px;font:400 36px/1.3 'Atkinson Hyperlegible'">Budget ulit? 500 or 1000?</div></div>
+    <div style="position:absolute;left:1220px;top:716px;display:flex;flex-direction:column;gap:4px"><div style="font:32px/1 'Gochi Hand'">Carlo</div><div style="background:#fff;border:2px solid #3F1F63;border-radius:4px 24px 24px 24px;padding:18px 28px;font:400 36px/1.3 'Atkinson Hyperlegible'">Lost my slip, sorry</div></div>
+    <div style="position:absolute;left:1110px;top:838px;display:flex;flex-direction:column;gap:4px"><div style="font:32px/1 'Gochi Hand'">Kuya Ben</div><div style="background:#fff;border:2px solid #3F1F63;border-radius:4px 24px 24px 24px;padding:18px 28px;font:400 36px/1.3 'Atkinson Hyperlegible'">Kailan party ulit?</div></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:22px;font:400 24px/1.45 'Atkinson Hyperlegible'">
+    <div style="display:flex;gap:18px;align-items:baseline"><span style="font:64px/1 'Chelsea Market'">02</span><span style="font:40px/1.1 'Chelsea Market'">The problem</span></div>
+    <div style="font-weight:700;color:#5A4A6B">0:05.0 – 0:10.0 · 5.0 s · bars 3–4 · f150–299</div>
+    <div><b>Text</b><br>“Bunutan on paper.” · “Chaos in the group chat.”</div>
+    <div><b>Moves</b><br>The light string is off. Paper slips flutter down and land (f156–186, 5 f apart). Line one letters in (f168). Chat bubbles pop in from the right, faster and faster, overlapping (f186–246). Line two letters in (f196).</div>
+    <div><b>Camera</b><br>Slow push 1.00 → 1.03.</div>
+    <div><b>Out</b><br>Clean-up: every slip and bubble drops off the bottom (f286–300) while the caption stays; hard cut on the downbeat.</div>
+    <div><b>Sound</b><br>Melody tries to start and stumbles. Paper flutters, soft chat pops rising in pitch, a sweep as it all falls, half a beat of silence.</div>
+  </div>
+</div>
+
+<!-- 03 CREATE -->
+<div style="display:grid;grid-template-columns:1920px 720px;gap:72px;align-items:start">
+  <div id="f03" data-screen-label="03 Create group" style="position:relative;width:1920px;height:1080px;overflow:hidden;background:#EEE9F6">
+    <div style="position:absolute;left:0;top:0;display:flex">
+      <img src="final/svg/light-string.svg" alt="" style="width:480px;height:54px;display:block">
+      <img src="final/svg/light-string.svg" alt="" style="width:480px;height:54px;display:block">
+      <img src="final/svg/light-string.svg" alt="" style="width:480px;height:54px;display:block">
+      <img src="final/svg/light-string.svg" alt="" style="width:480px;height:54px;display:block">
+    </div>
+    <div style="position:absolute;left:140px;top:290px;width:650px;display:flex;flex-direction:column;gap:24px">
+      <div style="font:84px/1.06 'Chelsea Market';white-space:nowrap">Start a group.</div>
+      <div style="font:400 38px/1.35 'Atkinson Hyperlegible';color:#5A4A6B;text-wrap:pretty">Set the party date, budget and weekly themes. Then share one link in the GC.</div>
+    </div>
+    <div style="position:absolute;left:800px;top:170px;width:1000px;height:640px;background:#3F1F63;border-radius:22px 18px 24px 18px;padding:20px;box-sizing:border-box">
+      <div style="width:960px;height:600px;overflow:hidden;background:#EEE9F6;border-radius:4px"><img src="final/png/03-group-ready-laptop.png" alt="" style="width:960px;display:block"></div>
+    </div>
+    <div style="position:absolute;left:730px;top:810px;width:1140px;height:30px;background:#D9D0E2;border:2.5px solid #3F1F63;border-radius:2px 2px 20px 18px;box-sizing:border-box"></div>
+    <div style="position:absolute;left:1220px;top:810px;width:160px;height:12px;background:#B9A6D9;border-radius:0 0 8px 8px"></div>
+    <div style="position:absolute;left:942px;top:477px;width:64px;height:64px;border:3px solid #3F1F63;border-radius:50%;box-sizing:border-box;opacity:.75"></div>
+    <svg viewBox="0 0 30 42" width="40" height="56" style="position:absolute;left:972px;top:506px;overflow:visible"><path d="M2 2V34L10 27 15.5 39.5 21 37 15.5 25H26Z" fill="#3F1F63" stroke="#fff" stroke-width="2.5" stroke-linejoin="round"></path></svg>
+    <div style="position:absolute;left:560px;top:720px;width:840px;background:#fff;border:2.5px solid #3F1F63;border-radius:4px 26px 26px 26px;padding:24px 34px;box-sizing:border-box;font:400 34px/1.35 'Atkinson Hyperlegible'">Hi barkada! Sali na dito:<br><b style="font-weight:700">monitomonita-ph.vercel.app/g/barkada-2026</b></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:22px;font:400 24px/1.45 'Atkinson Hyperlegible'">
+    <div style="display:flex;gap:18px;align-items:baseline"><span style="font:64px/1 'Chelsea Market'">03</span><span style="font:40px/1.1 'Chelsea Market'">Create a group</span></div>
+    <div style="font-weight:700;color:#5A4A6B">0:10.0 – 0:17.5 · 7.5 s · bars 5–7 · f300–524</div>
+    <div><b>Text</b><br>“Start a group.” · “Set the party date, budget and weekly themes. Then share one link in the GC.”</div>
+    <div><b>Moves</b><br>Bulbs switch on with the downbeat. Laptop rises in (f300–318). Recording R1: form typed, GC preview updates, “Create group” clicked (f420), ready page. “Copy link” clicked (f456): the GC message lifts out of the laptop as a large paper bubble (f456–476).</div>
+    <div><b>Camera</b><br>Push 1.00 → 1.35 onto the GC preview (f336–372), pull back to 1.15 on the link box (f432–456), back to 1.00 for the bubble.</div>
+    <div><b>Out</b><br>Link hand-off: camera pans right one frame width (f510–528); the bubble stays put and travels into the phone.</div>
+    <div><b>Sound</b><br>Full rondalla groove enters on the downbeat. Light laptop typing, two soft clicks, a paper pop when the bubble lifts.</div>
+  </div>
+</div>
+
+<!-- 04 JOIN -->
+<div style="display:grid;grid-template-columns:1920px 720px;gap:72px;align-items:start">
+  <div id="f04" data-screen-label="04 Join" style="position:relative;width:1920px;height:1080px;overflow:hidden;background:#EEE9F6">
+    <div style="position:absolute;left:0;top:0;display:flex">
+      <img src="final/svg/light-string.svg" alt="" style="width:480px;height:54px;display:block">
+      <img src="final/svg/light-string.svg" alt="" style="width:480px;height:54px;display:block">
+      <img src="final/svg/light-string.svg" alt="" style="width:480px;height:54px;display:block">
+      <img src="final/svg/light-string.svg" alt="" style="width:480px;height:54px;display:block">
+    </div>
+    <div style="position:absolute;left:140px;top:200px;width:760px;display:flex;flex-direction:column;gap:24px">
+      <div style="font:84px/1.06 'Chelsea Market'">Join with a name and a PIN.</div>
+      <div style="font:400 38px/1.35 'Atkinson Hyperlegible';color:#5A4A6B">No account, no app to install.</div>
+    </div>
+    <img src="final/svg/bilao.svg" alt="" style="position:absolute;left:760px;top:890px;width:480px;height:100px">
+    <img src="final/svg/bowl.svg" alt="" style="position:absolute;left:800px;top:630px;width:400px;height:300px">
+    <div style="position:absolute;left:1340px;top:82px;width:438px;height:915px;background:#3F1F63;border-radius:58px 52px 60px 52px;padding:14px;box-sizing:border-box">
+      <div style="position:relative;width:410px;height:887px;overflow:hidden;background:#EEE9F6;border-radius:46px 40px 48px 40px">
+        <img src="final/png/04-join-phone.png" alt="" style="width:410px;display:block;margin-top:34px">
+        <div style="position:absolute;left:150px;top:10px;width:110px;height:26px;background:#3F1F63;border-radius:13px"></div>
+      </div>
+    </div>
+    <div style="position:absolute;left:1090px;top:520px;width:270px;height:116px;background:#fff;border:2px solid #3F1F63;transform:rotate(-14deg);box-shadow:6px 8px 0 rgba(30,18,56,.45);display:flex;align-items:center;justify-content:center;font:68px/1 'Gochi Hand'">Joy</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:22px;font:400 24px/1.45 'Atkinson Hyperlegible'">
+    <div style="display:flex;gap:18px;align-items:baseline"><span style="font:64px/1 'Chelsea Market'">04</span><span style="font:40px/1.1 'Chelsea Market'">Join</span></div>
+    <div style="font-weight:700;color:#5A4A6B">0:17.5 – 0:25.0 · 7.5 s · bars 8–10 · f525–749</div>
+    <div><b>Text</b><br>“Join with a name and a PIN.” · “No account, no app to install.”</div>
+    <div><b>Moves</b><br>The bubble shrinks into the phone and its link is tapped (f544). Recording R2: name “Joy” typed, four PIN taps (f612–630), “Join the group” (f656). The slip “Joy” lifts off the screen, folds, and drops past the bezel into the bowl on the bilao (f658–693). Phone lands on the folded slip.</div>
+    <div><b>Camera</b><br>Push 1.00 → 1.25 on the form so the PIN boxes read large (f560–600), pull back to 1.00 for the drop (f658–682).</div>
+    <div><b>Out</b><br>Push through the phone screen into its sky panel (f738–762), matched cut to the vector rebuild at f750.</div>
+    <div><b>Sound</b><br>Phone taps, four wooden PIN taps rising in pitch, paper lift and fold, slip landing in glass, small bowl rattle, an air pull into the push.</div>
+  </div>
+</div>
+
+<!-- 05 UNFOLD -->
+<div style="display:grid;grid-template-columns:1920px 720px;gap:72px;align-items:start">
+  <div id="f05" data-screen-label="05 Slip unfold" style="position:relative;width:1920px;height:1080px;overflow:hidden;background:repeating-conic-gradient(from 0deg at 1720px 155px,#3F1F63 0deg 6deg,#4A2873 6deg 12deg)">
+            <div style="position:absolute;left:680px;top:95px;width:1000px;height:1000px;border-radius:50%;background:repeating-conic-gradient(from 4deg,#F4C542 0deg 10deg,transparent 10deg 20deg)"></div>
+    <svg viewBox="0 0 1920 1080" width="1920" height="1080" style="position:absolute;left:0;top:0"><path d="M-10 170Q900 430 1930 200" fill="none" stroke="#fff" stroke-width="3"></path></svg>
+    <div style="position:absolute;left:1719px;top:0;width:2px;height:32px;background:#B9A6D9"></div>
+    <img src="final/svg/parol.svg" alt="" style="position:absolute;left:1595px;top:30px;width:250px;height:354px;transform:rotate(3deg);transform-origin:125px 0">
+    <div style="position:absolute;left:730px;top:340px;width:900px;height:470px;background:#fff;transform:rotate(3deg);transform-origin:450px 0;box-shadow:6px 8px 0 rgba(30,18,56,.45);display:flex;align-items:center;justify-content:center;font:300px/1 'Gochi Hand';color:#3F1F63">Carlo</div>
+    <img src="final/svg/clothespin.svg" alt="" style="position:absolute;left:1160px;top:262px;width:40px;height:115px;transform:rotate(3deg)">
+    <div style="position:absolute;left:130px;top:360px;width:520px;display:flex;flex-direction:column;gap:18px">
+      <div style="font:84px/1.06 'Chelsea Market';color:#fff">Ang monito mo ay…</div>
+      <div style="font:400 38px/1.35 'Atkinson Hyperlegible';color:#EBDFF8">Your monito is…</div>
+    </div>
+    <div style="position:absolute;left:130px;top:860px;width:520px;font:700 40px/1.3 'Atkinson Hyperlegible';color:#fff">Only you can see<br>who you got.</div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:22px;font:400 24px/1.45 'Atkinson Hyperlegible'">
+    <div style="display:flex;gap:18px;align-items:baseline"><span style="font:64px/1 'Chelsea Market'">05</span><span style="font:40px/1.1 'Chelsea Market'">The slip unfold</span></div>
+    <div style="font-weight:700;color:#5A4A6B">0:25.0 – 0:32.5 · 7.5 s · bars 11–13 · f750–974</div>
+    <div><b>Text</b><br>“Ang monito mo ay…” · “Your monito is…” · name “Carlo” · “Only you can see who you got.” Folded state also shows the label “Tap to open your bunutan”.</div>
+    <div><b>Moves</b><br>Folded slip sways on the string; heading and translation letter in (f770, f790). Tap (f804). Label drops away; slip unfolds in 3D (f806–824); ray disc scales 0.6 → 1 (f816–831); “Carlo” draws as pen strokes on the bar 12 downbeat (f825–852). Bottom line rises in (f856).</div>
+    <div><b>Camera</b><br>Drift in 1.00 → 1.06 toward the slip, a small spring kick on the unfold, slow pull back to 1.00 (f830–960).</div>
+    <div><b>Out</b><br>Cut-paper wipe: a lilac sheet with a hand-cut edge slides in from the right (16 f, f962–978).</div>
+    <div><b>Sound</b><br>Music drops to one held chord. Clothespin creak, a tap, a long paper unfold, pen scratch with the strokes, music returns on the name.</div>
+  </div>
+</div>
+
+<!-- 06 ORGANIZER -->
+<div style="display:grid;grid-template-columns:1920px 720px;gap:72px;align-items:start">
+  <div id="f06" data-screen-label="06 Organizer" style="position:relative;width:1920px;height:1080px;overflow:hidden;background:#EEE9F6">
+    <svg viewBox="0 0 1920 230" width="1920" height="230" style="position:absolute;left:0;top:0"><path d="M40 40Q960 200 1880 40" fill="none" stroke="#3F1F63" stroke-width="3"></path><ellipse cx="120" cy="86.3" rx="21" ry="31" transform="rotate(5 120 86.3)" fill="#F4C542" stroke="#3F1F63" stroke-width="3"></ellipse><ellipse cx="273" cy="108.4" rx="22" ry="33" transform="rotate(-5 273 108.4)" fill="#F4C542" stroke="#3F1F63" stroke-width="3"></ellipse><ellipse cx="426" cy="126.0" rx="23" ry="31" transform="rotate(5 426 126.0)" fill="#F4C542" stroke="#3F1F63" stroke-width="3"></ellipse><ellipse cx="579" cy="139.3" rx="21" ry="33" transform="rotate(-5 579 139.3)" fill="#F4C542" stroke="#3F1F63" stroke-width="3"></ellipse><ellipse cx="732" cy="148.1" rx="22" ry="31" transform="rotate(5 732 148.1)" fill="#F4C542" stroke="#3F1F63" stroke-width="3"></ellipse><ellipse cx="885" cy="152.5" rx="23" ry="33" transform="rotate(-5 885 152.5)" fill="#F4C542" stroke="#3F1F63" stroke-width="3"></ellipse><ellipse cx="1038" cy="152.4" rx="21" ry="31" transform="rotate(5 1038 152.4)" fill="#F4C542" stroke="#3F1F63" stroke-width="3"></ellipse><path d="M1161 148.0h-12M1221 148.0h12M1171 178.0l-9 9M1211 178.0l9 9" fill="none" stroke="#C99A1A" stroke-width="4" stroke-linecap="round"></path><ellipse cx="1191" cy="148.0" rx="22" ry="33" transform="rotate(-5 1191 148.0)" fill="#FFE9A3" stroke="#3F1F63" stroke-width="3"></ellipse><ellipse cx="1344" cy="139.1" rx="23" ry="31" transform="rotate(5 1344 139.1)" fill="#fff" stroke="#3F1F63" stroke-width="3"></ellipse><ellipse cx="1497" cy="125.7" rx="21" ry="33" transform="rotate(-5 1497 125.7)" fill="#fff" stroke="#3F1F63" stroke-width="3"></ellipse><ellipse cx="1650" cy="108.0" rx="22" ry="31" transform="rotate(5 1650 108.0)" fill="#fff" stroke="#3F1F63" stroke-width="3"></ellipse><ellipse cx="1803" cy="85.8" rx="23" ry="33" transform="rotate(-5 1803 85.8)" fill="#fff" stroke="#3F1F63" stroke-width="3"></ellipse></svg>
+    <div style="position:absolute;left:0;top:222px;width:1920px;text-align:center;font:700 40px/1.2 'Atkinson Hyperlegible'">8 of 12 have opened their slip</div>
+    <div style="position:absolute;left:140px;top:420px;width:600px;display:flex;flex-direction:column;gap:24px">
+      <div style="font:84px/1.06 'Chelsea Market'">Watch the lights fill up.</div>
+      <div style="font:400 38px/1.35 'Atkinson Hyperlegible';color:#5A4A6B">See who opened their slip. Never who got whom.</div>
+    </div>
+    <div style="position:absolute;left:800px;top:330px;width:1000px;height:640px;background:#3F1F63;border-radius:22px 18px 24px 18px;padding:20px;box-sizing:border-box">
+      <div style="width:960px;height:600px;overflow:hidden;background:#EEE9F6;border-radius:4px"><img src="final/png/14-organizer-after-draw-laptop.png" alt="" style="width:960px;display:block"></div>
+    </div>
+    <div style="position:absolute;left:730px;top:970px;width:1140px;height:30px;background:#D9D0E2;border:2.5px solid #3F1F63;border-radius:2px 2px 20px 18px;box-sizing:border-box"></div>
+    <div style="position:absolute;left:1220px;top:970px;width:160px;height:12px;background:#B9A6D9;border-radius:0 0 8px 8px"></div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:22px;font:400 24px/1.45 'Atkinson Hyperlegible'">
+    <div style="display:flex;gap:18px;align-items:baseline"><span style="font:64px/1 'Chelsea Market'">06</span><span style="font:40px/1.1 'Chelsea Market'">The organizer</span></div>
+    <div style="font-weight:700;color:#5A4A6B">0:32.5 – 0:37.5 · 5.0 s · bars 14–15 · f975–1124</div>
+    <div><b>Text</b><br>“Watch the lights fill up.” · “See who opened their slip. Never who got whom.” · live count “1 of 12 … 12 of 12 have opened their slip”.</div>
+    <div><b>Moves</b><br>The page's light string becomes the progress string: one big bulb per member. Bulbs light on eighth notes (f994–1097), newest one pale with drawn rays; the count and the laptop's “Opened” ticks update in sync. All 12 lit, one pale flash.</div>
+    <div><b>Camera</b><br>Slow push 1.00 → 1.05.</div>
+    <div><b>Out</b><br>Lights down: the page sinks from lilac to ube and the caption turns white (f1104–1120), then caption and laptop slide out left (f1118–1132). The lit string stays.</div>
+    <div><b>Sound</b><br>A glockenspiel note per bulb, rising on a pentatonic scale. A light-switch click, then a small party murmur fades in.</div>
+  </div>
+</div>
+
+<!-- 07 REVEAL -->
+<div style="display:grid;grid-template-columns:1920px 720px;gap:72px;align-items:start">
+  <div style="display:flex;flex-direction:column;gap:48px">
+    <div id="f07" data-screen-label="07 Reveal TV" style="position:relative;width:1920px;height:1080px;overflow:hidden;background:#3F1F63">
+      <svg viewBox="0 0 1920 230" width="1920" height="230" style="position:absolute;left:0;top:0"><path d="M40 40Q960 200 1880 40" fill="none" stroke="#9C87C4" stroke-width="3"></path><ellipse cx="120" cy="86.3" rx="21" ry="31" transform="rotate(5 120 86.3)" fill="#F4C542" stroke="#1E1238" stroke-width="3"></ellipse><ellipse cx="273" cy="108.4" rx="22" ry="33" transform="rotate(-5 273 108.4)" fill="#F4C542" stroke="#1E1238" stroke-width="3"></ellipse><ellipse cx="426" cy="126.0" rx="23" ry="31" transform="rotate(5 426 126.0)" fill="#F4C542" stroke="#1E1238" stroke-width="3"></ellipse><ellipse cx="579" cy="139.3" rx="21" ry="33" transform="rotate(-5 579 139.3)" fill="#F4C542" stroke="#1E1238" stroke-width="3"></ellipse><ellipse cx="732" cy="148.1" rx="22" ry="31" transform="rotate(5 732 148.1)" fill="#F4C542" stroke="#1E1238" stroke-width="3"></ellipse><ellipse cx="885" cy="152.5" rx="23" ry="33" transform="rotate(-5 885 152.5)" fill="#F4C542" stroke="#1E1238" stroke-width="3"></ellipse><ellipse cx="1038" cy="152.4" rx="21" ry="31" transform="rotate(5 1038 152.4)" fill="#F4C542" stroke="#1E1238" stroke-width="3"></ellipse><ellipse cx="1191" cy="148.0" rx="22" ry="33" transform="rotate(-5 1191 148.0)" fill="#F4C542" stroke="#1E1238" stroke-width="3"></ellipse><ellipse cx="1344" cy="139.1" rx="23" ry="31" transform="rotate(5 1344 139.1)" fill="#F4C542" stroke="#1E1238" stroke-width="3"></ellipse><ellipse cx="1497" cy="125.7" rx="21" ry="33" transform="rotate(-5 1497 125.7)" fill="#F4C542" stroke="#1E1238" stroke-width="3"></ellipse><ellipse cx="1650" cy="108.0" rx="22" ry="31" transform="rotate(5 1650 108.0)" fill="#F4C542" stroke="#1E1238" stroke-width="3"></ellipse><ellipse cx="1803" cy="85.8" rx="23" ry="33" transform="rotate(-5 1803 85.8)" fill="#F4C542" stroke="#1E1238" stroke-width="3"></ellipse></svg>
+      <div style="position:absolute;left:0;top:950px;width:1920px;height:130px;background:#2C1548"></div>
+      <div style="position:absolute;left:840px;top:924px;width:60px;height:26px;background:#1E1238"></div>
+      <div style="position:absolute;left:1680px;top:924px;width:60px;height:26px;background:#1E1238"></div>
+      <div style="position:absolute;left:700px;top:256px;width:1164px;height:674px;background:#1E1238;border:3px solid #9C87C4;border-radius:14px 10px 16px 10px;padding:19px;box-sizing:border-box">
+        <img src="final/png/16-reveal-mid-laptop.png" alt="" style="width:1120px;height:630px;display:block;object-fit:cover">
+      </div>
+      <div style="position:absolute;left:130px;top:400px;width:520px;font:76px/1.06 'Chelsea Market';color:#fff">Reveal it together at the party.</div>
+    </div>
+    <div id="f07b" data-screen-label="07b Finale" style="position:relative;width:1920px;height:1080px;overflow:hidden;background:#1E1238">
+      <img src="final/png/18-reveal-finale-laptop.png" alt="" style="position:absolute;left:0;top:0;width:1920px;height:1080px;object-fit:cover">
+      <img src="final/svg/star.svg" alt="" style="position:absolute;left:300px;top:40px;width:70px;height:70px;transform:rotate(14deg)">
+      <img src="final/svg/star.svg" alt="" style="position:absolute;left:560px;top:250px;width:52px;height:52px;transform:rotate(-20deg)">
+      <img src="final/svg/star.svg" alt="" style="position:absolute;left:1110px;top:225px;width:84px;height:84px;transform:rotate(8deg)">
+      <img src="final/svg/star.svg" alt="" style="position:absolute;left:1240px;top:20px;width:60px;height:60px;transform:rotate(-12deg)">
+      <img src="final/svg/star.svg" alt="" style="position:absolute;left:1478px;top:410px;width:70px;height:70px;transform:rotate(24deg)">
+      <img src="final/svg/star.svg" alt="" style="position:absolute;left:1760px;top:90px;width:56px;height:56px;transform:rotate(-6deg)">
+      <img src="final/svg/star.svg" alt="" style="position:absolute;left:56px;top:372px;width:58px;height:58px;transform:rotate(-28deg)">
+      <img src="final/svg/star.svg" alt="" style="position:absolute;left:1858px;top:300px;width:50px;height:50px;transform:rotate(18deg)">
+      <img src="final/svg/star.svg" alt="" style="position:absolute;left:72px;top:628px;width:64px;height:64px;transform:rotate(10deg)">
+      <img src="final/svg/star.svg" alt="" style="position:absolute;left:1530px;top:890px;width:56px;height:56px;transform:rotate(-16deg)">
+      <img src="final/svg/star.svg" alt="" style="position:absolute;left:560px;top:950px;width:48px;height:48px;transform:rotate(22deg)">
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:22px;font:400 24px/1.45 'Atkinson Hyperlegible'">
+    <div style="display:flex;gap:18px;align-items:baseline"><span style="font:64px/1 'Chelsea Market'">07</span><span style="font:40px/1.1 'Chelsea Market'">Party reveal and finale</span></div>
+    <div style="font-weight:700;color:#5A4A6B">0:37.5 – 0:45.0 · 7.5 s · bars 16–18 · f1125–1349</div>
+    <div><b>Text</b><br>“Reveal it together at the party.” Then the app's own “Maligayang Pasko!” banner, no caption.</div>
+    <div><b>Moves</b><br>TV rises onto the cabinet (f1125–1143) showing “Handa na?”. Recording R4: two reveal steps (f1160–1196), each slip flipping to its real name with bulbs running to the receiver. Finale pressed on the beat (f1238): bulbs sweep, parol frame turns gold, banner lands (f1258), paper stars fall.</div>
+    <div><b>Camera</b><br>Push into the TV until its screen is the frame (f1196–1236); the caption leaves left as it goes (f1208–1222).</div>
+    <div><b>Out</b><br>Fringe wipe: a lilac papel de japon sheet with a cut fringe drops from the top (f1336–1350), lands on the downbeat, fringe strips flutter (f1350–1360).</div>
+    <div><b>Sound</b><br>Room murmur, a soft “ooh” at “Handa na?”, a paper flip and a quick glockenspiel run per reveal with a small cheer, a cajón build, full ensemble and a barkada cheer on the finale, stars as soft paper flutters.</div>
+  </div>
+</div>
+
+<!-- 08 BUILT -->
+<div style="display:grid;grid-template-columns:1920px 720px;gap:72px;align-items:start">
+  <div id="f08" data-screen-label="08 How it's built" style="position:relative;width:1920px;height:1080px;overflow:hidden;background:#EEE9F6">
+    <div style="position:absolute;left:140px;top:150px;font:84px/1.06 'Chelsea Market'">How it's built</div>
+    <svg viewBox="0 0 1920 400" width="1920" height="400" style="position:absolute;left:0;top:60px"><path d="M-10 250Q960 400 1930 240" fill="none" stroke="#3F1F63" stroke-width="2.5"></path><ellipse cx="30" cy="275.1" rx="10" ry="15" transform="rotate(6 30 275.1)" fill="#F4C542" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="92" cy="283.9" rx="11" ry="17" transform="rotate(-7 92 283.9)" fill="#C4283A" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="154" cy="292.1" rx="12" ry="15" transform="rotate(6 154 292.1)" fill="#FFE9A3" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="216" cy="299.7" rx="10" ry="17" transform="rotate(-7 216 299.7)" fill="#1F6B45" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="402" cy="318.7" rx="12" ry="17" transform="rotate(-7 402 318.7)" fill="#C4283A" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="464" cy="323.8" rx="10" ry="15" transform="rotate(6 464 323.8)" fill="#FFE9A3" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="526" cy="328.2" rx="11" ry="17" transform="rotate(-7 526 328.2)" fill="#1F6B45" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="588" cy="332.0" rx="12" ry="15" transform="rotate(6 588 332.0)" fill="#F4C542" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="650" cy="335.2" rx="10" ry="17" transform="rotate(-7 650 335.2)" fill="#C4283A" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="836" cy="340.9" rx="11" ry="15" transform="rotate(6 836 340.9)" fill="#FFE9A3" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="898" cy="341.5" rx="12" ry="17" transform="rotate(-7 898 341.5)" fill="#1F6B45" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="960" cy="341.5" rx="10" ry="15" transform="rotate(6 960 341.5)" fill="#F4C542" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="1022" cy="340.9" rx="11" ry="17" transform="rotate(-7 1022 340.9)" fill="#C4283A" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="1084" cy="339.6" rx="12" ry="15" transform="rotate(6 1084 339.6)" fill="#FFE9A3" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="1270" cy="332.0" rx="10" ry="17" transform="rotate(-7 1270 332.0)" fill="#1F6B45" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="1332" cy="328.2" rx="11" ry="15" transform="rotate(6 1332 328.2)" fill="#F4C542" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="1394" cy="323.7" rx="12" ry="17" transform="rotate(-7 1394 323.7)" fill="#C4283A" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="1456" cy="318.7" rx="10" ry="15" transform="rotate(6 1456 318.7)" fill="#FFE9A3" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="1518" cy="313.0" rx="11" ry="17" transform="rotate(-7 1518 313.0)" fill="#1F6B45" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="1704" cy="292.1" rx="10" ry="17" transform="rotate(-7 1704 292.1)" fill="#C4283A" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="1766" cy="283.8" rx="11" ry="15" transform="rotate(6 1766 283.8)" fill="#FFE9A3" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="1828" cy="275.0" rx="12" ry="17" transform="rotate(-7 1828 275.0)" fill="#1F6B45" stroke="#3F1F63" stroke-width="2"></ellipse><ellipse cx="1890" cy="265.5" rx="10" ry="15" transform="rotate(6 1890 265.5)" fill="#F4C542" stroke="#3F1F63" stroke-width="2"></ellipse></svg>
+
+    <div style="position:absolute;left:100px;top:350px;width:400px;height:520px;transform:rotate(-3deg);transform-origin:200px 0">
+      <div style="position:absolute;left:0;top:70px;width:400px;height:390px;background:#FFE9A3;clip-path:polygon(0 76px,50% 0,100% 76px,100% 100%,0 100%);padding:118px 36px 36px;box-sizing:border-box">
+        <div style="font:46px/1.08 'Chelsea Market'">Fair draw</div>
+        <div style="margin-top:18px;font:400 34px/1.35 'Atkinson Hyperlegible'">Draw algorithm verified against brute force</div>
+      </div>
+      <div style="position:absolute;left:189px;top:101px;width:22px;height:22px;border-radius:50%;background:#EEE9F6"></div>
+      <div style="position:absolute;left:199px;top:0;width:2px;height:114px;background:#3F1F63"></div>
+    </div>
+    <div style="position:absolute;left:540px;top:380px;width:400px;height:520px;transform:rotate(2deg);transform-origin:200px 0">
+      <div style="position:absolute;left:0;top:70px;width:400px;height:390px;background:#F9D5D9;clip-path:polygon(0 76px,50% 0,100% 76px,100% 100%,0 100%);padding:118px 36px 36px;box-sizing:border-box">
+        <div style="font:46px/1.08 'Chelsea Market'">No leaks</div>
+        <div style="margin-top:18px;font:400 34px/1.35 'Atkinson Hyperlegible'">Pairs never leak, with automated leak tests</div>
+      </div>
+      <div style="position:absolute;left:189px;top:101px;width:22px;height:22px;border-radius:50%;background:#EEE9F6"></div>
+      <div style="position:absolute;left:199px;top:0;width:2px;height:114px;background:#3F1F63"></div>
+    </div>
+    <div style="position:absolute;left:980px;top:377px;width:400px;height:520px;transform:rotate(-2deg);transform-origin:200px 0">
+      <div style="position:absolute;left:0;top:70px;width:400px;height:390px;background:#D7ECDD;clip-path:polygon(0 76px,50% 0,100% 76px,100% 100%,0 100%);padding:118px 36px 36px;box-sizing:border-box">
+        <div style="font:46px/1.08 'Chelsea Market'">Lighthouse 95</div>
+        <div style="margin-top:18px;font:400 34px/1.35 'Atkinson Hyperlegible'">Fast on budget phones</div>
+      </div>
+      <div style="position:absolute;left:189px;top:101px;width:22px;height:22px;border-radius:50%;background:#EEE9F6"></div>
+      <div style="position:absolute;left:199px;top:0;width:2px;height:114px;background:#3F1F63"></div>
+    </div>
+    <div style="position:absolute;left:1420px;top:343px;width:400px;height:520px;transform:rotate(3deg);transform-origin:200px 0">
+      <div style="position:absolute;left:0;top:70px;width:400px;height:390px;background:#FFFFFF;clip-path:polygon(0 76px,50% 0,100% 76px,100% 100%,0 100%);padding:118px 36px 36px;box-sizing:border-box">
+        <div style="font:46px/1.08 'Chelsea Market'">Usability tested</div>
+        <div style="margin-top:18px;font:400 34px/1.35 'Atkinson Hyperlegible'">With AI personas</div>
+      </div>
+      <div style="position:absolute;left:189px;top:101px;width:22px;height:22px;border-radius:50%;background:#EEE9F6"></div>
+      <div style="position:absolute;left:199px;top:0;width:2px;height:114px;background:#3F1F63"></div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:22px;font:400 24px/1.45 'Atkinson Hyperlegible'">
+    <div style="display:flex;gap:18px;align-items:baseline"><span style="font:64px/1 'Chelsea Market'">08</span><span style="font:40px/1.1 'Chelsea Market'">How it's built</span></div>
+    <div style="font-weight:700;color:#5A4A6B">0:45.0 – 0:55.0 · 10.0 s · bars 19–22 · f1350–1649</div>
+    <div><b>Text</b><br>“How it's built” · four tags: “Fair draw / Draw algorithm verified against brute force” · “No leaks / Pairs never leak, with automated leak tests” · “Lighthouse 95 / Fast on budget phones” · “Usability tested / With AI personas”.</div>
+    <div><b>Moves</b><br>Heading letters in (f1356). Tags drop and catch on the wire on every second beat (f1388, 1425, 1463, 1500), then swing to rest on a spring. All four hang still for 3.5 s.</div>
+    <div><b>Camera</b><br>Locked. The wire layer drifts 20 px right to left for parallax.</div>
+    <div><b>Out</b><br>Tilt up into the evening sky, the mirror of the intro (18 f, f1641–1659).</div>
+    <div><b>Sound</b><br>Lighter arrangement, guitar and bass. A paper flick and a glockenspiel note as each tag catches.</div>
+  </div>
+</div>
+
+<!-- 09 OUTRO -->
+<div style="display:grid;grid-template-columns:1920px 720px;gap:72px;align-items:start">
+  <div id="f09" data-screen-label="09 Outro" style="position:relative;width:1920px;height:1080px;overflow:hidden;background:repeating-conic-gradient(from 0deg at 1500px 250px,#3F1F63 0deg 6deg,#4A2873 6deg 12deg)">
+    <svg viewBox="0 0 1440 40" width="1920" height="53.3" style="position:absolute;left:0;top:0;display:block"><defs><g id="skyswagB"><path d="M0 6Q180 30 360 6" fill="none" stroke="#B9A6D9" stroke-width="1.3"></path><ellipse cx="20" cy="17.5" rx="5" ry="8" transform="rotate(8 20 17.5)" fill="#F4C542" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="49" cy="19.6" rx="6" ry="7" transform="rotate(-6 49 19.6)" fill="#C4283A" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="78" cy="23.6" rx="5.5" ry="8.5" transform="rotate(5 78 23.6)" fill="#FFE9A3" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="107" cy="25" rx="6" ry="8" transform="rotate(-9 107 25)" fill="#1F6B45" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="136" cy="25.8" rx="5" ry="7.5" transform="rotate(4 136 25.8)" fill="#F4C542" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="165" cy="26.9" rx="6.5" ry="8" transform="rotate(-4 165 26.9)" fill="#C4283A" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="194" cy="25.9" rx="5.5" ry="7" transform="rotate(7 194 25.9)" fill="#FFE9A3" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="223" cy="26.8" rx="6" ry="8.5" transform="rotate(-7 223 26.8)" fill="#1F6B45" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="252" cy="25.1" rx="5" ry="8" transform="rotate(6 252 25.1)" fill="#F4C542" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="281" cy="22.7" rx="6" ry="7.5" transform="rotate(-5 281 22.7)" fill="#C4283A" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="310" cy="20.7" rx="5.5" ry="8" transform="rotate(9 310 20.7)" fill="#FFE9A3" stroke="#1E1238" stroke-width="1.2"></ellipse><ellipse cx="339" cy="16.6" rx="6" ry="7" transform="rotate(-8 339 16.6)" fill="#1F6B45" stroke="#1E1238" stroke-width="1.2"></ellipse></g></defs><use href="#skyswagB" x="0"></use><use href="#skyswagB" x="360"></use><use href="#skyswagB" x="720"></use><use href="#skyswagB" x="1080"></use></svg>
+    <div style="position:absolute;left:1499px;top:14px;width:2px;height:60px;background:#B9A6D9"></div>
+    <img src="final/svg/parol.svg" alt="" style="position:absolute;left:1320px;top:70px;width:360px;height:510px;transform:rotate(2deg);transform-origin:180px 0">
+    <div style="position:absolute;left:0;bottom:0;width:830px;height:66px;background:#2C1548"></div>
+    <img src="final/svg/simbahan.svg" alt="" style="position:absolute;right:0;bottom:0;width:1100px;height:330px">
+    <svg viewBox="0 0 1920 1080" width="1920" height="1080" style="position:absolute;left:0;top:0"><path d="M-10 410Q960 560 1930 400" fill="none" stroke="#fff" stroke-width="3"></path></svg>
+    <div style="position:absolute;left:140px;top:110px;font:52px/1 'Chelsea Market';color:#EBDFF8">Monito Monita</div>
+    <div style="position:absolute;left:140px;top:190px;font:128px/1.05 'Chelsea Market';color:#fff">Try the demo</div>
+    <div style="position:absolute;left:130px;top:492px;width:860px;padding:72px 44px 36px;box-sizing:border-box;background:#fff;transform:rotate(-2deg);transform-origin:430px 0;box-shadow:6px 8px 0 rgba(30,18,56,.45);font:700 54px/1.2 'Atkinson Hyperlegible';color:#3F1F63;white-space:nowrap">monitomonita-ph.vercel.app</div>
+    <img src="final/svg/clothespin.svg" alt="" style="position:absolute;left:540px;top:432px;width:40px;height:115px;transform:rotate(-2deg)">
+    <div style="position:absolute;left:140px;top:700px;display:flex;flex-direction:column;gap:8px">
+      <div style="font:700 30px/1.2 'Atkinson Hyperlegible';color:#EBDFF8">Code on GitHub</div>
+      <div style="font:400 40px/1.2 'Atkinson Hyperlegible';color:#fff">github.com/your-handle/monito-monita</div>
+    </div>
+  </div>
+  <div style="display:flex;flex-direction:column;gap:22px;font:400 24px/1.45 'Atkinson Hyperlegible'">
+    <div style="display:flex;gap:18px;align-items:baseline"><span style="font:64px/1 'Chelsea Market'">09</span><span style="font:40px/1.1 'Chelsea Market'">Outro</span></div>
+    <div style="font-weight:700;color:#5A4A6B">0:55.0 – 1:00.0 · 5.0 s · bars 23–24 · f1650–1799</div>
+    <div><b>Text</b><br>“Monito Monita” · “Try the demo” · “monitomonita-ph.vercel.app” · “Code on GitHub” · “github.com/your-handle/monito-monita” (replace with the real repo).</div>
+    <div><b>Moves</b><br>Arrive by tilt with the parol already swaying. “Try the demo” letters in (f1656). The link slip drops onto the white string and swings to rest (f1672–1708). GitHub lines rise in (f1696). Everything holds lit to the last frame.</div>
+    <div><b>Camera</b><br>Slow pull 1.04 → 1.00.</div>
+    <div><b>Out</b><br>End on the held frame. No fade, so the last frame works as a thumbnail.</div>
+    <div><b>Sound</b><br>The intro melody returns, a wooden clothespin click, final chord on bar 24 ringing out, crickets return.</div>
+  </div>
+</div>
+
+</div>
+</x-dc>
+</body>
+</html>
