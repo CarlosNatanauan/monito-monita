@@ -49,7 +49,11 @@ export function people(browser: Browser, testInfo: TestInfo) {
         browser.browserType().name() === "webkit" &&
         /^\/$|\/reveal$/.test(new URL(page.url()).pathname) &&
         (/^(TypeError: )?Load failed$/.test(error.message) ||
-          /__nextjs_original-stack-frames due to access control checks/.test(error.message))
+          /__nextjs_original-stack-frames due to access control checks/.test(error.message) ||
+          // A request to the page's own URL cancelled by leaving it: the
+          // "Your groups" Server Action (it posts to /) or Next's offline
+          // connectivity check (experimental.useOffline pings the current URL).
+          error.message.includes(`${new URL(page.url()).host}/ due to access control checks`))
       ) {
         return;
       }
