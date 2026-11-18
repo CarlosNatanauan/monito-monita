@@ -1,0 +1,45 @@
+{
+ "name": "r2b-me",
+ "fps": 60,
+ "frameMs": 16,
+ "frames": 469,
+ "viewport": {
+  "width": 390,
+  "height": 844
+ },
+ "scale": 3,
+ "marks": {
+  "start": 0,
+  "tapSlip": 250,
+  "end": 469
+ },
+ "pointer": [
+  {
+   "f": 0,
+   "t": "mark",
+   "label": "start"
+  },
+  {
+   "f": 250,
+   "t": "mark",
+   "label": "tapSlip"
+  },
+  {
+   "f": 250,
+   "t": "tap",
+   "x": 195,
+   "y": 318.125
+  },
+  {
+   "f": 469,
+   "t": "mark",
+   "label": "end"
+  }
+ ],
+ "panel": {
+  "x": 20,
+  "y": 182.125,
+  "width": 350,
+  "height": 340
+ }
+}

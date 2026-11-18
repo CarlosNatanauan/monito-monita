@@ -1,0 +1,45 @@
+{
+ "name": "r4-reveal",
+ "fps": 60,
+ "frameMs": 16,
+ "frames": 815,
+ "viewport": {
+  "width": 1920,
+  "height": 1080
+ },
+ "scale": 2,
+ "marks": {
+  "start": 0,
+  "step1": 70,
+  "step12": 330,
+  "finale": 440,
+  "end": 815
+ },
+ "pointer": [
+  {
+   "f": 0,
+   "t": "mark",
+   "label": "start"
+  },
+  {
+   "f": 70,
+   "t": "mark",
+   "label": "step1"
+  },
+  {
+   "f": 330,
+   "t": "mark",
+   "label": "step12"
+  },
+  {
+   "f": 440,
+   "t": "mark",
+   "label": "finale"
+  },
+  {
+   "f": 815,
+   "t": "mark",
+   "label": "end"
+  }
+ ]
+}

@@ -1,0 +1,105 @@
+{
+ "name": "r2-join",
+ "fps": 60,
+ "frameMs": 16,
+ "frames": 263,
+ "viewport": {
+  "width": 390,
+  "height": 844
+ },
+ "scale": 3,
+ "marks": {
+  "start": 0,
+  "tapName": 24,
+  "typeName": 34,
+  "pin": 69,
+  "joinTap": 119,
+  "drop": 125,
+  "dropEnd": 223,
+  "me": 223,
+  "end": 263
+ },
+ "pointer": [
+  {
+   "f": 0,
+   "t": "mark",
+   "label": "start"
+  },
+  {
+   "f": 24,
+   "t": "mark",
+   "label": "tapName"
+  },
+  {
+   "f": 24,
+   "t": "tap",
+   "x": 149.2,
+   "y": 383.125
+  },
+  {
+   "f": 34,
+   "t": "mark",
+   "label": "typeName"
+  },
+  {
+   "f": 69,
+   "t": "mark",
+   "label": "pin"
+  },
+  {
+   "f": 69,
+   "t": "tap",
+   "x": 91.75,
+   "y": 483.125
+  },
+  {
+   "f": 85,
+   "t": "tap",
+   "x": 153.25,
+   "y": 483.125
+  },
+  {
+   "f": 95,
+   "t": "tap",
+   "x": 214.75,
+   "y": 483.125
+  },
+  {
+   "f": 105,
+   "t": "tap",
+   "x": 276.25,
+   "y": 483.125
+  },
+  {
+   "f": 119,
+   "t": "mark",
+   "label": "joinTap"
+  },
+  {
+   "f": 119,
+   "t": "tap",
+   "x": 195,
+   "y": 611.125
+  },
+  {
+   "f": 125,
+   "t": "mark",
+   "label": "drop"
+  },
+  {
+   "f": 223,
+   "t": "mark",
+   "label": "dropEnd"
+  },
+  {
+   "f": 223,
+   "t": "mark",
+   "label": "me"
+  },
+  {
+   "f": 263,
+   "t": "mark",
+   "label": "end"
+  }
+ ]
+}

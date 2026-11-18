@@ -1,0 +1,31 @@
+{
+  "name": "monito-monita-video",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Monito Monita portfolio demo video, built in Remotion. A separate project: nothing here is part of the app's bundle.",
+  "scripts": {
+    "studio": "remotion studio",
+    "render": "remotion render MonitoDemo out/monito-monita-demo.mp4 --codec h264 --crf 16 --audio-bitrate 320k && node scripts/render/post.mjs loudness",
+    "render:preview": "remotion render MonitoDemo out/preview.mp4 --codec h264 --crf 26 --scale 0.5",
+    "render:loop": "remotion render MonitoLoop out/loop-full.webm --codec vp9 --crf 20 --muted && node scripts/render/post.mjs loop",
+    "audio": "node scripts/audio/build-audio.mjs",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@remotion/cli": "4.0.539",
+    "@remotion/fonts": "4.0.539",
+    "@remotion/media": "4.0.539",
+    "@remotion/media-utils": "4.0.539",
+    "gsap": "3.15.1",
+    "react": "19.2.0",
+    "react-dom": "19.2.0",
+    "remotion": "4.0.539"
+  },
+  "devDependencies": {
+    "@types/node": "^24.19.2",
+    "@types/react": "^19",
+    "playwright": "1.65.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5"
+  }
+}

@@ -64,5 +64,7 @@ Keep this list updated as scripts are added.
 - `/lab/lights`: progress lights at 3–150 members (no database)
 - `/lab/reveal?n=12&step=7`: the party reveal with made-up names (no database): `n` 3–150, `step` 0 (before the start) to `n`, `n+1` for after the finale, `speed=0.1` to slow the timelines
 - `node scripts/perf/slip-frames.mjs [baseUrl] [outDir]`: screenshots of the slip unfold at fixed timeline points (`TIMES=0.3,1.5` to pick), into `test-results/slip-frames/` by default
+- Demo video (`video/`, a separate Remotion project with its own `package.json`; see `video/README.md`): `cd video && npm run studio` (preview), `npm run render` (`out/monito-monita-demo.mp4`, loudness-normalized), `npm run render:loop` (README loop: `out/monito-monita-loop.webm` and a GIF under 5 MB), `npm run render:preview` (half-size check), `npm run audio` (music edit and synthesized sound effects)
+- `npx tsx video/scripts/record/record.ts all`: records the app for the video (frame by frame on a virtual clock) against a production build on :3100 built with `NEXT_PUBLIC_SITE_URL=https://monitomonita-ph.vercel.app`, seeding "Barkada Christmas 2026" in the dev DB; `... record.ts cleanup` deletes it
 
 Database notes: use `db()` from `server/db` for everything (node-postgres pool, attached with `attachDatabasePool` for Vercel); use `db().transaction(...)` when writes must succeed or fail together. Exclusion pairs must be stored sorted (`member_a_id < member_b_id`).
