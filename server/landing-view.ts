@@ -60,7 +60,7 @@ export function referrerDomain(referer: string | null | undefined, ownHost: stri
   return ALIASES[domain] ?? domain;
 }
 
-const BOTS = /bot|crawl|spider|slurp|preview|facebookexternalhit|meta-externalagent|whatsapp|telegram|discord|skype|embedly|lighthouse|headless|curl|wget|python|node-fetch/i;
+export const BOTS = /bot|crawl|spider|slurp|preview|facebookexternalhit|meta-externalagent|whatsapp|telegram|discord|skype|embedly|lighthouse|headless|curl|wget|python|node-fetch/i;
 
 /**
  * Whether a request to / is a person's page load worth counting: a GET for
@@ -75,7 +75,40 @@ export function isLandingView(method: string, headers: Headers): boolean {
   const dest = headers.get("sec-fetch-dest");
   if (dest && dest !== "document") return false;
   if (!(headers.get("accept") ?? "").includes("text/html")) return false;
-  return !BOTS.test(headers.get("user-agent") ?? "");
+  return !isBot(headers.get("user-agent") ?? "");
+}
+
+/** Link-preview fetchers, crawlers, headless browsers and scripts. */
+export function isBot(userAgent: string): boolean {
+  return BOTS.test(userAgent);
+}
+
+/**
+ * A PostHog capture request for one anonymous landing event: a random
+ * one-off distinct id, no person profile, no GeoIP. Pure given `id` and `now`.
+ */
+export function buildAnonymousCapture(
+  config: AnalyticsConfig,
+  event: string,
+  properties: Record<string, string | number | boolean>,
+  id: string = randomUUID(),
+  now: Date = new Date(),
+): { url: string; body: Record<string, unknown> } {
+  return {
+    url: `${config.host}/i/v0/e/`,
+    body: {
+      api_key: config.key,
+      event,
+      distinct_id: id,
+      timestamp: now.toISOString(),
+      properties: {
+        ...properties,
+        $process_person_profile: false,
+        $geoip_disable: true,
+        $lib: "monito-monita-server",
+      },
+    },
+  };
 }
 
 /** The PostHog capture request for one landing view. Pure given `id` and `now`. */
@@ -85,21 +118,7 @@ export function buildLandingCapture(
   id: string = randomUUID(),
   now: Date = new Date(),
 ): { url: string; body: Record<string, unknown> } {
-  return {
-    url: `${config.host}/i/v0/e/`,
-    body: {
-      api_key: config.key,
-      event: LANDING_EVENT,
-      distinct_id: id,
-      timestamp: now.toISOString(),
-      properties: {
-        referrer_domain: referrer,
-        $process_person_profile: false,
-        $geoip_disable: true,
-        $lib: "monito-monita-server",
-      },
-    },
-  };
+  return buildAnonymousCapture(config, LANDING_EVENT, { referrer_domain: referrer }, id, now);
 }
 
 /** Sends one landing view. Resolves either way; failures are only logged. */
@@ -108,7 +127,15 @@ export async function sendLandingView(
   referrer: string,
   fetchImpl: typeof fetch = fetch,
 ): Promise<void> {
-  const { url, body } = buildLandingCapture(config, referrer);
+  await sendAnonymous(buildLandingCapture(config, referrer), LANDING_EVENT, fetchImpl);
+}
+
+/** Sends one built capture. Resolves either way; failures are only logged. */
+export async function sendAnonymous(
+  { url, body }: { url: string; body: Record<string, unknown> },
+  event: string,
+  fetchImpl: typeof fetch = fetch,
+): Promise<void> {
   try {
     const response = await fetchImpl(url, {
       method: "POST",
@@ -116,8 +143,8 @@ export async function sendLandingView(
       body: JSON.stringify(body),
       signal: AbortSignal.timeout(3000),
     });
-    if (!response.ok) console.warn(`analytics: ${LANDING_EVENT} → HTTP ${response.status}`);
+    if (!response.ok) console.warn(`analytics: ${event} → HTTP ${response.status}`);
   } catch (error) {
-    console.warn(`analytics: ${LANDING_EVENT} not sent`, error instanceof Error ? error.message : error);
+    console.warn(`analytics: ${event} not sent`, error instanceof Error ? error.message : error);
   }
 }

@@ -77,6 +77,7 @@ Text pairs. AA needs 4.5 for body text, 3.0 for text 24px and larger.
 | Ilaw gold `#F4C542` | gabi `#1E1238` | 10.8 |
 | Gabi ink `#1E1238` | gold button `#F4C542` | 10.8 |
 | Ube text `#3F1F63` | current slip `#FFE9A3` | 11.0 |
+| Soft text `#5A4A6B` | video label on hover/focus `#FFE9A3` | 6.6 |
 | Gabi text `#EBDFF8` | gabi ray tone `#251746` (phone reveal) | 12.7 |
 | Ilaw gold `#F4C542` | gabi ray tone `#251746` (phone reveal header, name) | 10.0 |
 
@@ -151,7 +152,7 @@ What is built (`components/page.tsx`, checked by `e2e/layouts.spec.ts`):
 | Laptop, 1024px and up (iPad landscape included) | Two columns inside a 1120px container (32px gutters when the window is narrower): main column (flexible) and a 420px side column, 48px gap. Light string: one continuous wire across the full width, sagging between nails every 360px |
 
 What goes where on laptop. Asymmetric: text left, picture right, never centred.
-- **Landing:** brand, headline, line of copy, "Create your group" with "Subukan ang demo" (secondary) beside it and a small line under them ("Titingin-tingin lang? …"), "Your groups" and "Paano 'to?" left; the evening sky with bowl and parol right (500px tall).
+- **Landing:** brand, headline, line of copy, "Create your group" with "Subukan ang demo" (secondary) beside it and a small line under them ("Titingin-tingin lang? …"), "Your groups" and "Paano 'to?" left; the evening sky with bowl and parol right (500px tall). From 600px wide (tablets and laptops) this hero fills the window under the light string, its content centred top to bottom; phones keep their natural height. Below it, "See how it works" (Chelsea Market title, one line of copy) left and the demo video right (see Landing video), then the footer: "Made by Carlos Natanauan" with links to the GitHub repo and kuyacarlos.is-a.dev, small soft text over a 1.5px `--ube-line` rule, on the landing only. Phones stack them in that order.
 - **Create group:** form and "Create group" left; "Preview sa GC" (the bubble and the share card) right. Phones show the preview under the form, above the button.
 - **Group ready:** heading with the parol and the capiz "Link ng group" card left; the organizer link card and "Pumunta sa group ko" right.
 - **Join, come back, closed:** heading, parol and tags left (with "Kasali ka na? Bumalik dito"); the listahan form, its error and the button right.
@@ -258,6 +259,12 @@ Wire: 1.3px ube line that sags (quadratic curve). Bulbs are ovals of slightly di
 - **Opened:** large, in front of a disc of gold rays. Heading "Ang monito mo ay…" sits top-left on the ube sky, clear of the rays.
 - **After the reveal:** same panel, heading "Ang nagbigay sa'yo ay…".
 
+### Landing video
+- The demo video (YouTube `DBNKbfwfE50`) behind a click-to-load poster: a frame of our own video (the reveal ring, every pair named, the star free in the middle), served from `public/landing/` (AVIF and WebP, 640 and 1280 wide, 12 to 44 KB; `scripts/landing/make-poster.mjs`), lazy-loaded.
+- The whole poster is one `<button>` ("Panoorin ang demo video, 51 segundo"), like the slip's sky panel; the label is a white paper label in the middle: an ube play triangle, "Panoorin" (Atkinson 700) and "0:51" in soft text. Hover and keyboard focus turn the label `--ilaw-lit`; focus also draws the gold ring round the poster; pressed scales the label to 0.98. No pill, no circle, no filled button (the page's one filled button stays "Create your group").
+- 16:9 box with the sky panel's uneven corners and a `--gabi` fill, so nothing shifts while the poster loads or when the player replaces it.
+- Pressing it puts the `youtube-nocookie.com` player in the same box, autoplaying, and moves focus into it. Until then no YouTube script, image or request at all.
+
 ### Evening sky panel
 - Ube with rays in a second ube tone, fanning from the parol's position. Holds the parol top-right and one subject: the bowl (landing) or the slip (/me).
 - Landing only: the simbahan silhouette along the bottom.
@@ -310,7 +317,7 @@ Reduced motion (`prefers-reduced-motion`): no flips, drops or sweeps. States cro
 
 ## 9. Performance on budget phones
 
-- Textures are CSS gradients: sky rays and ray disc (`repeating-conic-gradient`), listahan rules, capiz band, fringe. No raster images.
+- Textures are CSS gradients: sky rays and ray disc (`repeating-conic-gradient`), listahan rules, capiz band, fringe. No raster images, except the landing video's poster (below the hero, lazy-loaded, AVIF/WebP from 12 KB).
 - No `filter`, no `backdrop-filter`, no blurred `box-shadow`, no `background-attachment: fixed`.
 - Inline the SVG symbols once in the document. Do not load them as separate requests on first paint.
 - Animate `transform` and `opacity` only, on at most a dozen elements at a time. On the reveal, light bulbs by toggling a class with a transition delay, not with a JS loop per frame.

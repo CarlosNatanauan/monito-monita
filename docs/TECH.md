@@ -207,7 +207,12 @@ PostHog, sent **from the server only** (a `fetch` to PostHog's capture API insid
 - **Identity:** the distinct id is a SHA-256 hash of the group's internal UUID (`group` property too), so a PostHog funnel over distinct ids is a funnel of groups. No person profiles (`$process_person_profile: false`), GeoIP off.
 - **Properties:** counts, booleans, or fixed words only, typed per event (e.g. `names_drawn: { members, redraw }`). Never names, PINs, tokens, slugs, wishlist text, or raw ids.
 - **Landing views (`server/landing-view.ts`):** `landing_viewed` is sent from `proxy.ts` (inside `event.waitUntil`) for real page loads of `/` only, so the landing page stays static. Its one property is `referrer_domain`: the referrer reduced to a bare domain (`l.facebook.com` → `facebook.com`, `old.reddit.com` → `reddit.com`; `direct`, `internal`, `app:<android package>`, or `other`), never the full referrer URL. Router prefetches, RSC requests, link-preview fetchers (`facebookexternalhit`) and bots aren't counted. Each event has a random one-off distinct id (not stored, no cookie), so visits can't be linked.
+- **Landing video (`server/landing-video.ts`):** `landing_video_played` when someone presses play on the landing's demo video: the button posts to `/api/landing-video` (`keepalive`), which answers 204 and sends the event in `after()`. Counted only for a same-origin POST (`Sec-Fetch-Site`, or the Origin host without it) that isn't a bot. No properties at all, a random one-off distinct id like `landing_viewed`.
 - **Env vars:** `POSTHOG_KEY` (project API key) and optional `POSTHOG_HOST` (default `https://us.i.posthog.com`; EU: `https://eu.i.posthog.com`). Without a key (local dev, tests), nothing is sent.
+
+## Landing video
+
+`components/landing/demo-video.tsx` (docs/DESIGN.md, "Landing video"): a poster from `public/landing/` and a real button; only pressing it renders the `youtube-nocookie.com` iframe (`autoplay=1&rel=0&playsinline=1`, `referrerPolicy="strict-origin-when-cross-origin"`, which YouTube needs to play embeds). Before that the landing makes no request to YouTube (`e2e/landing.spec.ts` checks, along with the keyboard, the focus ring, the box not moving and no layout shift). The site sends no Content-Security-Policy, so there's nothing to allow; if one is added, the landing needs `frame-src https://www.youtube-nocookie.com`.
 
 ## Security basics
 
