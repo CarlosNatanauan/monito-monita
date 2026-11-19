@@ -25,7 +25,7 @@ Each tool has one clear job. Animation code is **lazy-loaded** only on the scree
 
 | Tool | Job | Used for |
 |---|---|---|
-| **Motion** (motion.dev) | Everyday UI motion in React: state changes, layout animations, gestures | Not on member pages any more: /me must stay under 150 KB of JS, so its press feedback and fade-ins are CSS transitions and Web Animations |
+| ~~Motion~~ | Removed (Nov 19, 2026) | Everyday UI motion is CSS transitions and Web Animations: /me must stay under 150 KB of JS, and nothing else needed it |
 | **GSAP** + plugins (100% free, including formerly paid plugins) | Cinematic, choreographed timelines | Slip unfold sequence, the bowl draw and join drop, the party reveal (slip flips, bulbs lighting along the loop, the turning window, the parol finale) |
 | **Rive** (optional, decide after mockups) | Illustrated, interactive animations with state machines, tiny runtime | The bowl with slips tumbling, if SVG + GSAP isn't rich enough. Needs design time in the Rive editor |
 | **canvas-confetti** | Particle bursts | Gold star/parol sparkles at big moments only |

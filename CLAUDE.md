@@ -30,7 +30,7 @@ Monito Monita: a web app for running Filipino exchange gift groups (draw names, 
 - Follow `docs/DESIGN.md`: its colors, type, and the bunutan (paper slip) motif.
 - Heavy animation only in the 4 signature moments. Everywhere else, motion only responds to user actions. (One exception: the decorative light string: controller modes on the landing and /me, a calm twinkle on forms; opacity only on 4 layers, about 1 flash/s per bulb at most, nothing under reduced motion.)
 - Animate only `transform` and `opacity`. Lazy-load animation code (GSAP, Rive, confetti) only on the screens that use it.
-- Motion for everyday UI motion; GSAP for the signature timelines. Don't mix both on the same element.
+- CSS transitions and Web Animations for everyday UI motion; GSAP for the signature timelines. Don't mix both on the same element.
 - Always respect `prefers-reduced-motion`.
 - Gochi Hand is only for names on slips and codenames.
 - Restyle shadcn/ui components; don't ship the default look.
