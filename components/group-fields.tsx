@@ -48,6 +48,10 @@ export function useThemeDrafts(initial: readonly string[], clearErrors: (match: 
       setNextKey((k) => k + 1);
       clearErrors((k) => k === "themes");
     },
+    /** Takes in what the rows show (typed before hydration), by position. */
+    adopt: (titles: readonly string[]) => {
+      setThemes((list) => (list.some((t, i) => titles[i] !== undefined && titles[i] !== t.title) ? list.map((t, i) => ({ ...t, title: titles[i] ?? t.title })) : list));
+    },
   };
 }
 

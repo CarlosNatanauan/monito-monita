@@ -1,7 +1,7 @@
 "use client";
 
 import { usePendingLabel } from "@/lib/use-pending-label";
-import { useActionState, useEffect, useRef, useState, useSyncExternalStore } from "react";
+import { useActionState, useEffect, useLayoutEffect, useRef, useState, useSyncExternalStore } from "react";
 import { Field, ThemeWeeksEditor, useThemeDrafts } from "@/components/group-fields";
 import { useOrigin } from "@/components/copy-link";
 import { colClass, colsClass } from "@/components/page";
@@ -95,6 +95,23 @@ function CreateGroupForm({
     (Object.keys(allErrors).length === 0 || Object.keys(errors).length > 0);
   const themeDrafts = useThemeDrafts(SAMPLE_THEMES, clearErrors);
   const { themes } = themeDrafts;
+
+  // On a slow phone people start typing before the page hydrates. The fields
+  // show that text, but state starts empty, and the re-render right after
+  // hydrating (useToday, useHydrated) would write the empty state back into
+  // the fields. Take what they show into state first: a layout effect runs in
+  // the hydration commit, before that re-render.
+  useLayoutEffect(() => {
+    const form = formRef.current;
+    if (!form) return;
+    const shown = (field: string) => (form.elements.namedItem(field) as HTMLInputElement | null)?.value ?? "";
+    if (shown("name")) setName(shown("name"));
+    if (shown("partyDate")) setPartyDate(shown("partyDate"));
+    if (shown("budget")) setBudget(shown("budget").replace(/[^\d]/g, ""));
+    themeDrafts.adopt([...form.querySelectorAll<HTMLInputElement>('input[name="theme"]')].map((input) => input.value));
+    // Only the first render can differ from what was typed.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
   const startDates = isIsoDate(partyDate) ? themeStartDates(partyDate, themes.length) : [];
 
   const origin = useOrigin();
