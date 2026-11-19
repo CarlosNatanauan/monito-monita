@@ -15,8 +15,9 @@ import { and, eq, isNull } from "drizzle-orm";
 import { expect, test } from "./test";
 import { closeDb, db } from "../server/db";
 import { members } from "../server/db/schema";
-import { deleteGroups } from "./db-cleanup";
-import { people } from "./flow";
+import { deleteGroups, E2E_PREFIX } from "./db-cleanup";
+import { people, readLink } from "./flow";
+import { addDays, todayIn } from "../lib/theme-weeks";
 import { seedGroup } from "./seed";
 
 const createdSlugs: string[] = [];
@@ -168,4 +169,39 @@ test("slow phone: Join and come-back before hydration; tokens stay on the site",
   });
 
   expect(problems.filter((p) => !p.includes(OTHER_SITE))).toEqual([]);
+});
+
+test("slow phone: /new keeps everything typed before it hydrates", async ({ page }, testInfo) => {
+  test.skip(page.context().browser()?.browserType().name() !== "chromium", "CPU throttling and held scripts: Chromium only");
+  const cdp = await page.context().newCDPSession(page);
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 6 });
+  const phone = await slowPhone(page);
+  const name = `${E2E_PREFIX}Mabagal (${testInfo.project.name})`;
+  const partyDate = addDays(todayIn("Asia/Manila"), 35);
+
+  // Typed straight away, into the server's HTML: React hasn't run yet.
+  await page.goto("/new", { waitUntil: "commit" });
+  await page.getByLabel("Pangalan ng group").fill(name);
+  await page.getByLabel("Petsa ng party").fill(partyDate);
+  await page.getByLabel("Budget", { exact: true }).fill("750");
+  await page.getByRole("textbox", { name: "Theme 2" }).fill("Something blue");
+  await phone.release();
+
+  // Hydrated: "Create group" is enabled only once React runs. Nothing typed was lost,
+  // also after the next keystroke (a re-render of the controlled fields).
+  await expect(page.getByRole("button", { name: "Create group" })).toBeEnabled({ timeout: 60_000 });
+  await page.getByLabel("Pangalan ng group").press("End");
+  await page.getByLabel("Pangalan ng group").pressSequentially("!");
+  await expect(page.getByLabel("Pangalan ng group")).toHaveValue(`${name}!`);
+  await expect(page.getByLabel("Petsa ng party")).toHaveValue(partyDate);
+  await expect(page.getByLabel("Budget", { exact: true })).toHaveValue("750");
+  await expect(page.getByRole("textbox", { name: "Theme 2" })).toHaveValue("Something blue");
+  // The live GC preview follows the same state.
+  await expect(page.getByText(/₱750/).first()).toBeVisible();
+
+  await cdp.send("Emulation.setCPUThrottlingRate", { rate: 1 });
+  await page.getByRole("button", { name: "Create group" }).click();
+  await expect(page.getByRole("heading", { name: "Ready na ang group mo!" })).toBeVisible({ timeout: 30_000 });
+  const shareUrl = await readLink(page, /\/g\/[a-z0-9]+$/);
+  createdSlugs.push(new URL(shareUrl).pathname.split("/")[2]);
 });
