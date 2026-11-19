@@ -23,7 +23,8 @@ const bowlSlips = (page) =>
     [...document.querySelectorAll("[data-bowl-slip]")]
       .map((el) => {
         const r = el.getBoundingClientRect();
-        return `${Math.round(r.left)},${Math.round(r.top)},${getComputedStyle(el).transform}`;
+        // Page coordinates: the bowl sits below the fold, and a tap may scroll it.
+        return `${Math.round(r.left + scrollX)},${Math.round(r.top + scrollY)},${getComputedStyle(el).transform}`;
       })
       .join("|"),
   );
@@ -111,6 +112,7 @@ for (let run = 1; run <= RUNS; run++) {
   const page = await ctx.newPage();
   const js = watchJs(page);
   await page.goto(base, { waitUntil: "networkidle" });
+  await page.getByRole("button", { name: "Tap the bowl para bumunot" }).scrollIntoViewIfNeeded();
   const before = await bowlSlips(page);
   await page.getByRole("button", { name: "Tap the bowl para bumunot" }).click();
   await page.waitForTimeout(1000);

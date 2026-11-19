@@ -52,7 +52,15 @@ const BigSky: React.FC<{ origin: [number, number]; rotate: number }> = ({ origin
   </div>
 );
 
-export const SlipStage: React.FC<{ lf: number }> = ({ lf }) => {
+/**
+ * `parol` moves the parol (and the rays fanning from it) for a still
+ * framed differently (the landing poster); `sparkle` off drops the stars.
+ */
+export const SlipStage: React.FC<{ lf: number; parol?: { c: [number, number]; w: number }; sparkle?: boolean }> = ({
+  lf,
+  parol = { c: PAROL_C, w: PAROL_W },
+  sparkle = true,
+}) => {
   const t = unfoldT(lf);
   const raysP = tw(t, FLAT_AT - 0.1, FLAT_AT + 0.4, 0, 1, (x) => 1 - (1 - x) * (1 - x));
   const raysRot = t > FLAT_AT ? 6 * (t - FLAT_AT) : 0;
@@ -62,18 +70,18 @@ export const SlipStage: React.FC<{ lf: number }> = ({ lf }) => {
   const swing = t < 0 ? waiting : waiting * tw(t, 0, 0.5, 1, 0, ease.camera);
   const tapAge = lf - TAP;
   const sparkleAt = writeEnd(NAME) - 0.08;
-  const parolLeft = PAROL_C[0] - PAROL_W / 2;
-  const parolTop = PAROL_C[1] - PAROL_W / 2;
+  const parolLeft = parol.c[0] - parol.w / 2;
+  const parolTop = parol.c[1] - parol.w / 2;
   return (
     <>
-      <BigSky origin={PAROL_C} rotate={(0.4 * lf) / FPS} />
+      <BigSky origin={parol.c} rotate={(0.4 * lf) / FPS} />
       <svg width={1920} height={1080} style={{ position: "absolute", inset: 0, overflow: "visible" }}>
         <path d={STRING_D} fill="none" stroke="#fff" strokeWidth={STRING_W} />
       </svg>
-      <div style={{ position: "absolute", left: PAROL_C[0] - 1.5, top: parolTop - 2400, width: 3, height: 2400 + 12, background: C.ubeLine }} />
+      <div style={{ position: "absolute", left: parol.c[0] - 1.5, top: parolTop - 2400, width: 3, height: 2400 + 12, background: C.ubeLine }} />
       <Parol
-        width={PAROL_W}
-        style={{ position: "absolute", left: parolLeft, top: parolTop, transform: `rotate(${sway(lf, 2)}deg)`, transformOrigin: `${PAROL_W / 2}px 0px` }}
+        width={parol.w}
+        style={{ position: "absolute", left: parolLeft, top: parolTop, transform: `rotate(${sway(lf, 2)}deg)`, transformOrigin: `${parol.w / 2}px 0px` }}
       />
       <RayDisc
         size={1000}
@@ -115,7 +123,7 @@ export const SlipStage: React.FC<{ lf: number }> = ({ lf }) => {
       >
         Tap to open your bunutan
       </div>
-      <Sparkle t={t - sparkleAt} style={{ left: SLIP_CENTER[0], top: SLIP_CENTER[1] }} />
+      {sparkle && <Sparkle t={t - sparkleAt} style={{ left: SLIP_CENTER[0], top: SLIP_CENTER[1] }} />}
       {tapAge >= 0 && tapAge <= 12 && (
         <div
           style={{

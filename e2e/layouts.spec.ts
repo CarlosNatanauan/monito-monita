@@ -182,7 +182,14 @@ for (const size of SIZES) {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Isang link lang para sa buong bunutan." })).toBeVisible();
     await settle(page);
-    await expectColumns(size, page.getByRole("heading", { name: "Isang link lang para sa buong bunutan." }), page.getByRole("region", { name: "Try a bunutan" }), "landing hero | arch");
+    // 1a "Poster first": the video's poster beside the headline, the bowl's panel beside "Paano 'to?" (row 2).
+    const poster = page.getByRole("button", { name: "Panoorin ang demo video, 0:51" });
+    await expectColumns(size, page.getByRole("heading", { name: "Isang link lang para sa buong bunutan." }), poster, "landing headline | poster");
+    await expectColumns(size, page.getByRole("list", { name: "Paano 'to?" }), page.getByRole("region", { name: "Try a bunutan" }), "landing steps | bowl");
+    if (size.width >= 1024) {
+      const [headline, video] = [await box(page.getByRole("heading", { name: "Isang link lang para sa buong bunutan." })), await box(poster)];
+      expect(Math.abs(video.y - headline.y), "poster top aligned with the headline").toBeLessThan(16);
+    }
     // "Paano 'to?": three lines on the listahan, at every width.
     const steps = page.getByRole("list", { name: "Paano 'to?" }).getByRole("listitem");
     await expect(steps).toHaveCount(3);

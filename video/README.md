@@ -32,6 +32,8 @@ npm run studio                                          # preview
 npm run render                                          # out/monito-monita-demo.mp4, then loudness to -14 LUFS
 npm run render:loop                                     # out/monito-monita-loop.webm and .gif
 npm run render:preview                                  # quick half-size check: out/preview.mp4
+npm run render:web                                      # the landing's MP4s (1080p, 720p) into ../public/landing/
+npx remotion still LandingPoster out/landing-poster.png # the landing poster still (then scripts/landing/make-poster.mjs)
 ```
 
 The recordings themselves (`public/rec/*.mp4`, `r3/*.png`) and the audio (`public/audio/`) are not in git; their logs (`public/rec/*.json`: marks, pointer moves, the link box) are, since the scenes import them.

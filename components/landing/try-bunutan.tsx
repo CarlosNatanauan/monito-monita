@@ -18,15 +18,25 @@ const loadDrawer = () => import("./draw-timeline").then((m) => m.createDrawer())
 // bowl, with its timeline built. drawing / shown: after a tap.
 type Phase = "idle" | "ready" | "drawing" | "shown";
 
+/** The bowl: 190×142.5 at (80, 94) on the phone design, 200×150 at (216, 90) on the laptop one. */
+const BOWL =
+  "pointer-events-none absolute top-[33.57%] left-[22.86%] h-[50.89%] w-[54.29%] origin-bottom transition-transform duration-150 group-has-[button:active]:scale-[0.98] lg:top-[32.14%] lg:left-[34.18%] lg:h-[53.57%] lg:w-[31.65%]";
+
 /**
- * Signature moment #1 (docs/DESIGN.md): the bowl on the bilao on the
- * evening sky, the parol top right. Tap the bowl: it shakes and the slips
- * inside tumble and swap places (a new mix on every tap), then a sample
- * slip rises out and unfolds with a sample name (the same unfold as /me),
- * top left, clear of the parol. Tap again for another name. Each slip in
- * the bowl is its own element, between the glass and the rim, so the mix
- * moves them with composited transforms. Reduced motion: no shake or
- * tumble, the opened slip fades in, no GSAP.
+ * Signature moment #1 (docs/DESIGN.md): the bowl on the bilao in a small
+ * evening-sky panel under the video (docs/design/landing-video, 1a), rays
+ * from the top-right corner, the church along the bottom, no parol (the
+ * poster above has one). Tap the bowl: it shakes and the slips inside
+ * tumble and swap places (a new mix on every tap), then a sample slip rises
+ * out and unfolds with a sample name (the same unfold as /me), top right,
+ * clear of the label. Tap again for another name. Each slip in the bowl is
+ * its own element, between the glass and the rim, so the mix moves them
+ * with composited transforms. Reduced motion: no shake or tumble, the
+ * opened slip fades in, no GSAP.
+ *
+ * Laid out on the handoff's designs in percent (phone 350×280, laptop
+ * 632×280), so the panel keeps its aspect ratio at any width; the opened
+ * slip's scale follows the panel's width.
  */
 export function TryBunutan({ className }: { className?: string }) {
   const reduced = usePrefersReducedMotion();
@@ -38,6 +48,8 @@ export function TryBunutan({ className }: { className?: string }) {
   const drawerRef = useRef<Drawer | null>(null);
   const loading = useRef<Promise<Drawer> | null>(null);
   const busy = useRef(false);
+  // Panel width over its design width (phone 350, laptop 632): the opened slip's scale.
+  const [fit, setFit] = useState(1);
   const phaseRef = useRef<Phase>("idle");
   useEffect(() => {
     phaseRef.current = phase;
@@ -78,6 +90,17 @@ export function TryBunutan({ className }: { className?: string }) {
   }, [reduced]);
 
   useEffect(() => () => drawerRef.current?.dispose(), []);
+
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const ro = new ResizeObserver(() => {
+      const w = el.clientWidth;
+      setFit(w / (window.matchMedia("(min-width: 1024px)").matches ? 632 : 350));
+    });
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   // The sparkle's setup waits for the first interaction anywhere on the
   // page (scrolling, touching), so it stays out of the page load.
@@ -149,21 +172,18 @@ export function TryBunutan({ className }: { className?: string }) {
     <section
       ref={sectionRef}
       aria-label="Try a bunutan"
-      className={cn("group sky relative isolate h-[350px] overflow-hidden rounded-sky [--rx:76%] [--ry:22%] lg:h-[500px] lg:rounded-sky-lg", className)}
+      className={cn(
+        "group relative isolate aspect-[350/280] w-full overflow-hidden rounded-sky text-white lg:aspect-[632/280]",
+        "[background:repeating-conic-gradient(from_0deg_at_100%_0%,var(--color-ube)_0deg_6deg,var(--color-ube-sky)_6deg_12deg)]",
+        className,
+      )}
     >
-      {/* The church along the bottom, the parol top right (it sways slowly). */}
-      <Art name="simbahan" className="pointer-events-none absolute bottom-0 left-0 h-[104px] w-full lg:h-[126px]" />
-      <Art
-        name="parol"
-        className="pointer-events-none absolute top-0 right-3 h-[176px] w-[124px] origin-top animate-[parol-sway_6s_ease-in-out_infinite] motion-reduce:animate-none lg:right-[22px] lg:h-[241px] lg:w-[170px]"
-      />
+      {/* The church along the bottom: full width on phones, the right two thirds on laptops. */}
+      <Art name="simbahan" className="pointer-events-none absolute right-0 bottom-0 h-[37.5%] w-full lg:h-[45%] lg:w-[66.46%]" />
 
       {/* The bilao, the bowl's back glass, the drawn slip, the front glass. */}
-      <Bilao className="pointer-events-none absolute top-[286px] left-1.5 h-[49px] w-[236px] lg:top-[410px] lg:left-2.5 lg:h-[66px] lg:w-[320px]" />
-      <div
-        data-part="bowl"
-        className="pointer-events-none absolute top-[158px] left-[26px] h-[147px] w-[196px] origin-bottom transition-transform duration-150 group-has-[button:active]:scale-[0.98] lg:top-[232px] lg:left-9 lg:h-[202px] lg:w-[270px]"
-      >
+      <Bilao className="pointer-events-none absolute top-[77.86%] left-[17.43%] h-[16.96%] w-[65.14%] lg:top-[78.57%] lg:left-[31.01%] lg:h-[17.86%] lg:w-[37.97%]" />
+      <div data-part="bowl" className={BOWL}>
         {/* The shake moves this inner layer (GSAP); the press scale stays on the outer one (CSS). */}
         <div data-part="bowl-shake" className="absolute inset-0 origin-bottom">
           {BOWL_SLIPS.top.map((spot, i) => (
@@ -173,10 +193,12 @@ export function TryBunutan({ className }: { className?: string }) {
         </div>
       </div>
 
+      {/* The opened slip lands top right, clear of the label: 0.48 of its size on the phone design, 0.65 on the laptop one. */}
       <div
         ref={stageRef}
         data-sample-slip={tapped && name ? name : undefined}
-        className="pointer-events-none absolute top-5 left-4 h-[160px] w-[300px] origin-top-left scale-50 lg:top-[30px] lg:left-6 lg:scale-[0.65]"
+        className="pointer-events-none absolute top-[5%] left-[55.43%] h-[160px] w-[300px] origin-top-left scale-(--slip) [--slip-base:0.48] lg:top-[8.57%] lg:left-[66.46%] lg:[--slip-base:0.65]"
+        style={{ "--slip": `calc(var(--slip-base) * ${fit})` } as React.CSSProperties}
       >
         {name && (
           <div key={draw} data-part="riser" className="absolute inset-0" style={{ opacity: reduced ? 1 : 0 }}>
@@ -185,10 +207,7 @@ export function TryBunutan({ className }: { className?: string }) {
         )}
       </div>
 
-      <div
-        data-part="bowl"
-        className="pointer-events-none absolute top-[158px] left-[26px] h-[147px] w-[196px] origin-bottom transition-transform duration-150 group-has-[button:active]:scale-[0.98] lg:top-[232px] lg:left-9 lg:h-[202px] lg:w-[270px]"
-      >
+      <div data-part="bowl" className={BOWL}>
         {/* The shake moves this inner layer (GSAP); the press scale stays on the outer one (CSS). */}
         <div data-part="bowl-shake" className="absolute inset-0 origin-bottom">
           {BOWL_SLIPS.inside.map((spot, i) => (
@@ -206,11 +225,12 @@ export function TryBunutan({ className }: { className?: string }) {
         onFocus={() => void load()}
         className={cn(
           // Stretched: the whole sky is the tap target; the words sit under the slip.
-          "absolute inset-0 cursor-pointer rounded-sky text-left font-bold text-white outline-none select-none lg:rounded-sky-lg [-webkit-tap-highlight-color:transparent]",
+          "absolute inset-0 cursor-pointer rounded-sky text-left font-bold text-white outline-none select-none [-webkit-tap-highlight-color:transparent]",
           "focus-visible:outline-3 focus-visible:-outline-offset-3 focus-visible:outline-ilaw",
         )}
       >
-        <span className="absolute top-[112px] left-4 lg:top-[152px] lg:left-6">
+        {/* Top left, kept clear of where the opened slip lands. */}
+        <span className="absolute top-[7.86%] left-[5.71%] max-w-[47.4%] text-body leading-[1.2] lg:top-[9.29%] lg:left-[4.11%] lg:max-w-[60.8%] lg:text-[17px]">
           {shown ? (
             "Tap ulit para bumunot ng iba"
           ) : (

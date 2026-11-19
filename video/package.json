@@ -7,6 +7,7 @@
     "studio": "remotion studio",
     "render": "remotion render MonitoDemo out/monito-monita-demo.mp4 --codec h264 --crf 16 --audio-bitrate 320k && node scripts/render/post.mjs loudness",
     "render:preview": "remotion render MonitoDemo out/preview.mp4 --codec h264 --crf 26 --scale 0.5",
+    "render:web": "node scripts/render/post.mjs web",
     "render:loop": "remotion render MonitoLoop out/loop-full.webm --codec vp9 --crf 20 --muted && node scripts/render/post.mjs loop",
     "audio": "node scripts/audio/build-audio.mjs",
     "typecheck": "tsc --noEmit"

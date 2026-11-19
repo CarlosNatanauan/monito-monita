@@ -152,7 +152,7 @@ What is built (`components/page.tsx`, checked by `e2e/layouts.spec.ts`):
 | Laptop, 1024px and up (iPad landscape included) | Two columns inside a 1120px container (32px gutters when the window is narrower): main column (flexible) and a 420px side column, 48px gap. Light string: one continuous wire across the full width, sagging between nails every 360px |
 
 What goes where on laptop. Asymmetric: text left, picture right, never centred.
-- **Landing:** brand, headline, line of copy, "Create your group" with "Subukan ang demo" (secondary) beside it and a small line under them ("Titingin-tingin lang? …"), "Your groups" and "Paano 'to?" left; the evening sky with bowl and parol right (500px tall). From 600px wide (tablets and laptops) this hero fills the window under the light string, its content centred top to bottom; phones keep their natural height. Below it, "See how it works" (Chelsea Market title, one line of copy) left and the demo video right (see Landing video), then the footer: "Made by Carlos Natanauan" with links to the GitHub repo and kuyacarlos.is-a.dev, small soft text over a 1.5px `--ube-line` rule, on the landing only. Phones stack them in that order.
+- **Landing** (direction 1a "Poster first", `docs/design/landing-video/`): a 440 + 632px grid, 48px gap. Row 1: brand, headline, line of copy, "Create your group" with "Subukan ang demo" (secondary) beside it, the small line under them ("Titingin-tingin lang? …") and "Your groups" left; the demo video's poster right (632×355.5, its top level with the headline; see Landing video) with "Mula sa GC hanggang sa reveal sa party, sa loob ng isang minuto." under it. Row 2 (56px down): "Paano 'to?" left and the bowl right, in its own smaller evening-sky panel (632×280, rays from the top-right corner, the church bottom right, no parol: the poster has one). Then the footer: "Made by Carlos Natanauan" with links to the GitHub repo and kuyacarlos.is-a.dev, small soft text over a 1px `--ube-line` rule, on the landing only. Phones (and tablets, in the 560px column): brand, headline, poster, the two buttons, the small line (all above a 390×664 fold), "Your groups", "Paano 'to?", the bowl panel (350×280 design, keeping its aspect ratio; its label wraps so the drawn slip lands clear of it), the footer (the name, then the links). Laptops: the poster and "Create your group" above a 1366×657 fold.
 - **Create group:** form and "Create group" left; "Preview sa GC" (the bubble and the share card) right. Phones show the preview under the form, above the button.
 - **Group ready:** heading with the parol and the capiz "Link ng group" card left; the organizer link card and "Pumunta sa group ko" right.
 - **Join, come back, closed:** heading, parol and tags left (with "Kasali ka na? Bumalik dito"); the listahan form, its error and the button right.
@@ -260,10 +260,10 @@ Wire: 1.3px ube line that sags (quadratic curve). Bulbs are ovals of slightly di
 - **After the reveal:** same panel, heading "Ang nagbigay sa'yo ay…".
 
 ### Landing video
-- The demo video (YouTube `DBNKbfwfE50`) behind a click-to-load poster: a frame of our own video (the reveal ring, every pair named, the star free in the middle), served from `public/landing/` (AVIF and WebP, 640 and 1280 wide, 12 to 44 KB; `scripts/landing/make-poster.mjs`), lazy-loaded.
-- The whole poster is one `<button>` ("Panoorin ang demo video, 51 segundo"), like the slip's sky panel; the label is a white paper label in the middle: an ube play triangle, "Panoorin" (Atkinson 700) and "0:51" in soft text. Hover and keyboard focus turn the label `--ilaw-lit`; focus also draws the gold ring round the poster; pressed scales the label to 0.98. No pill, no circle, no filled button (the page's one filled button stays "Create your group").
-- 16:9 box with the sky panel's uneven corners and a `--gabi` fill, so nothing shifts while the poster loads or when the player replaces it.
-- Pressing it puts the `youtube-nocookie.com` player in the same box, autoplaying, and moves focus into it. Until then no YouTube script, image or request at all.
+- The 51-second demo video, self-hosted: MP4 (H.264, AAC), 1080p for laptops and 720p for phones and tablets, in `public/landing/` (13.2 and 6.9 MB; in `video/`, `npm run render:web`).
+- **Poster first:** the hero picture is a still of the opened slip "Carlo" on the gold ray disc (the Remotion `LandingPoster` still, WebP 1280×720 and 640×360, 39 and 16 KB, `scripts/landing/make-poster.mjs`), `loading="eager"`, `fetchpriority="high"`: the page's largest paint. First paint is the poster only: no `<video>` and no video bytes until it's pressed.
+- The whole poster is one `<button>` ("Panoorin ang demo video, 0:51") in a 16:9 box with the sky panel's corners and an ube fill. The play label is a white paper slip bottom left, tilted -2°, with the slip shadow: an ube play triangle, "Panoorin" in Chelsea Market and "0:51" in Atkinson 700 soft text (laptop 48px tall, 22px in from the corner; phone 44px, 12px in). Hover lifts the label 2px; keyboard focus draws the gold ring inside the poster's edge. Nothing else on the page has a new hover effect, and the page's one filled button stays "Create your group".
+- Pressing it loads the player code (a dynamic import, started as the press begins) and plays with sound, native controls: in place on laptops and tablets, exactly in the poster's box, so nothing moves; full screen on phones (`requestFullscreen`, or the iPhone's own player). Leaving full screen pauses and brings the poster back; so does the end of the video, and the focus returns to the poster.
 
 ### Evening sky panel
 - Ube with rays in a second ube tone, fanning from the parol's position. Holds the parol top-right and one subject: the bowl (landing) or the slip (/me).
@@ -317,7 +317,7 @@ Reduced motion (`prefers-reduced-motion`): no flips, drops or sweeps. States cro
 
 ## 9. Performance on budget phones
 
-- Textures are CSS gradients: sky rays and ray disc (`repeating-conic-gradient`), listahan rules, capiz band, fringe. No raster images, except the landing video's poster (below the hero, lazy-loaded, AVIF/WebP from 12 KB).
+- Textures are CSS gradients: sky rays and ray disc (`repeating-conic-gradient`), listahan rules, capiz band, fringe. No raster images, except the landing video's poster (the hero picture, WebP, 16 KB on phones, 39 KB on laptops).
 - No `filter`, no `backdrop-filter`, no blurred `box-shadow`, no `background-attachment: fixed`.
 - Inline the SVG symbols once in the document. Do not load them as separate requests on first paint.
 - Animate `transform` and `opacity` only, on at most a dozen elements at a time. On the reveal, light bulbs by toggling a class with a transition delay, not with a JS loop per frame.
@@ -359,7 +359,7 @@ Sample links use `monitomonita-ph.vercel.app`. Private links are always shown ma
 - Put the parol on landing, join, ready, /me and the reveal.
 - Set every person's name and codename in Gochi Hand.
 - Give each kind of content its own material.
-- Keep the landing and laptop layouts asymmetric: text left, picture right.
+- Keep the landing and laptop layouts asymmetric: text left, picture right. On the landing the picture is the video's poster, beside the headline; the bowl's sky panel sits below it, beside "Paano 'to?".
 - Pair lights with words.
 - Test on a real budget Android phone opened from Messenger.
 

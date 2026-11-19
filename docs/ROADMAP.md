@@ -59,6 +59,7 @@ Goal: the moments strangers see first, then launch.
 - [x] Personal link shown masked on /me (screenshots); progress lights scale to 150 members
 - [x] Landing analytics: `landing_viewed` with the referrer domain only
 - [x] Landing (Nov 18): hero fills the window on tablets and laptops; "See how it works" with the demo video behind a click-to-load poster (no YouTube until played, `landing_video_played`); footer with the repo and portfolio links
+- [x] Landing, poster first (Nov 19, `docs/design/landing-video` 1a): the video's poster in the first screen beside the headline, self-hosted MP4 (1080p/720p) loaded only on the press, full screen on phones; the bowl in its own smaller sky panel below
 - [ ] Performance pass: Lighthouse mobile 90+, test on a budget Android
 - [x] Basic rate limiting + input limits (Upstash per-IP on create, join, come-back)
 - [x] Name + PIN: come back on any device (join with PIN, come-back form, lockout, organizer unlock / reset PIN, "send this link to yourself")
