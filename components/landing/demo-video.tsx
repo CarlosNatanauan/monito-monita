@@ -76,7 +76,7 @@ export function DemoVideo({ className }: { className?: string }) {
         {/* eslint-disable-next-line @next/next/no-img-element -- already sized and encoded (scripts/landing/make-poster.mjs) */}
         <img
           src={`${POSTER}-1280.webp`}
-          srcSet={`${POSTER}-640.webp 640w, ${POSTER}-1280.webp 1280w`}
+          srcSet={`${POSTER}-640.webp 640w, ${POSTER}-800.webp 800w, ${POSTER}-1280.webp 1280w`}
           sizes={SIZES}
           width={1280}
           height={720}

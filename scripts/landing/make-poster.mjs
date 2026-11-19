@@ -1,7 +1,7 @@
 /**
  * The landing video's poster (docs/design/landing-video, direction 1a): the
  * opened slip "Carlo" on the gold ray disc, rendered from the Remotion still
- * (video/src/Poster.tsx), as WebP at 1280×720 and 640×360 into
+ * (video/src/Poster.tsx), as WebP at 1280×720, 800×450 and 640×360 into
  * public/landing/ (the <img> srcset). Served from this site.
  *
  *   cd video && npx remotion still LandingPoster out/landing-poster.png && cd ..
@@ -21,6 +21,7 @@ mkdirSync(out, { recursive: true });
 
 for (const [width, quality] of [
   [1280, 86],
+  [800, 84],
   [640, 82],
 ]) {
   const file = join(out, `poster-${width}.webp`);

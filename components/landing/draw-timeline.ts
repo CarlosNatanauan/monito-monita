@@ -117,9 +117,12 @@ export function createDrawer(): Drawer {
   let sparkle: Sparkle | null = null;
   let disposed = false;
   let warming = false;
-  // Fetch the (small) sparkle module now; set it up only when warmed.
+  // The sparkle module (canvas-confetti) is fetched only when warmed: someone
+  // pointing at or focusing the bowl. Evaluating it can be a long task on a
+  // slow phone, so it never comes with the bowl's code by itself.
   let sparkleModule: typeof import("@/components/slip/sparkle") | null = null;
-  const sparkleLoaded = import("@/components/slip/sparkle").then((m) => (sparkleModule = m));
+  let sparkleLoaded: Promise<typeof import("@/components/slip/sparkle")> | null = null;
+  const loadSparkle = () => (sparkleLoaded ??= import("@/components/slip/sparkle").then((m) => (sparkleModule = m)));
   let ctx: gsap.Context | null = null;
   let timeline: gsap.core.Timeline | null = null;
   let rise = { x: 0, y: 215 };
@@ -167,7 +170,7 @@ export function createDrawer(): Drawer {
       // the setup then runs before the click that starts the draw.
       if (sparkleModule) sparkle = sparkleModule.prepareSparkle();
       else
-        void sparkleLoaded.then((m) => {
+        void loadSparkle().then((m) => {
           if (!disposed) sparkle = m.prepareSparkle();
         });
     },

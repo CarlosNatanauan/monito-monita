@@ -3,16 +3,19 @@
 import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Art } from "@/components/art/symbols";
 import { Bilao, BOWL_SLIPS, BowlGlass, BowlRim, BowlSlip } from "@/components/bowl/bowl-art";
-import { SlipArt } from "@/components/slip/slip-art";
 import { FIRST_SAMPLE, nextSample } from "@/lib/sample-names";
 import { usePrefersReducedMotion } from "@/lib/use-reduced-motion";
 import { cn } from "@/lib/utils";
 import type { Drawer } from "./draw-timeline";
 
-// GSAP and the timelines, fetched only when someone is about to tap (or
-// the page is idle with the bowl on screen). A plain import() on purpose:
-// next/dynamic would preload the chunk with the page.
+// The bowl sits below the fold, so its animation code doesn't come with the
+// page: GSAP and the timelines, and the slip's markup, load when the panel
+// is about to scroll into view (300px ahead) or when the bowl gets a pointer
+// down, focus or key down, whichever comes first. Plain import()s on
+// purpose: next/dynamic would preload the chunks with the page.
 const loadDrawer = () => import("./draw-timeline").then((m) => m.createDrawer());
+type SlipArtComponent = typeof import("@/components/slip/slip-art").SlipArt;
+const loadSlipArt = () => import("@/components/slip/slip-art").then((m) => m.SlipArt);
 
 // idle: nothing loaded yet. ready: the first slip waits, hidden in the
 // bowl, with its timeline built. drawing / shown: after a tap.
@@ -48,6 +51,9 @@ export function TryBunutan({ className }: { className?: string }) {
   const drawerRef = useRef<Drawer | null>(null);
   const loading = useRef<Promise<Drawer> | null>(null);
   const busy = useRef(false);
+  // The slip's markup, once loaded (the riser renders only after that).
+  const [Slip, setSlip] = useState<SlipArtComponent | null>(null);
+  const slipLoading = useRef<Promise<SlipArtComponent> | null>(null);
   // Panel width over its design width (phone 350, laptop 632): the opened slip's scale.
   const [fit, setFit] = useState(1);
   const phaseRef = useRef<Phase>("idle");
@@ -55,9 +61,16 @@ export function TryBunutan({ className }: { className?: string }) {
     phaseRef.current = phase;
   });
 
+  const loadSlip = () =>
+    (slipLoading.current ??= loadSlipArt().then((C) => {
+      setSlip(() => C);
+      return C;
+    }));
+
   const load = () => {
+    void loadSlip();
     if (reduced) return null;
-    loading.current ??= loadDrawer().then((d) => {
+    loading.current ??= Promise.all([loadDrawer(), loadSlip()]).then(([d]) => {
       drawerRef.current = d;
       // Put the first slip in the bowl now, so the first tap only plays.
       if (phaseRef.current === "idle" && !busy.current) {
@@ -70,21 +83,42 @@ export function TryBunutan({ className }: { className?: string }) {
     return loading.current;
   };
 
-  // Idle prefetch once the bowl is on screen, so the first tap is instant.
+  // Load as the panel comes within 300px of the window, so the first tap is
+  // instant. Armed only once the page has loaded and gone idle: the panel
+  // often starts within 300px of the fold, and its code must not come with
+  // the page.
   useEffect(() => {
     const el = sectionRef.current;
-    if (!el || reduced) return;
-    let idle = 0;
-    const io = new IntersectionObserver((entries) => {
-      if (!entries.some((e) => e.isIntersecting)) return;
-      io.disconnect();
-      const ric = window.requestIdleCallback ?? ((cb: () => void) => window.setTimeout(cb, 1500));
-      idle = ric(() => void load(), { timeout: 4000 });
-    });
-    io.observe(el);
+    if (!el) return;
+    let io: IntersectionObserver | null = null;
+    let cancel = () => {};
+    const arm = () => {
+      io = new IntersectionObserver(
+        (entries) => {
+          if (!entries.some((e) => e.isIntersecting)) return;
+          io?.disconnect();
+          void load();
+        },
+        { rootMargin: "300px 0px" },
+      );
+      io.observe(el);
+    };
+    // WebKit has no requestIdleCallback: a timer there, cancelled the same way.
+    const start = () => {
+      if (window.requestIdleCallback) {
+        const id = window.requestIdleCallback(arm, { timeout: 3000 });
+        cancel = () => window.cancelIdleCallback(id);
+      } else {
+        const id = window.setTimeout(arm, 300);
+        cancel = () => window.clearTimeout(id);
+      }
+    };
+    if (document.readyState === "complete") start();
+    else window.addEventListener("load", start, { once: true });
     return () => {
-      io.disconnect();
-      window.cancelIdleCallback?.(idle);
+      window.removeEventListener("load", start);
+      cancel();
+      io?.disconnect();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- load() only reads refs and `reduced`
   }, [reduced]);
@@ -102,27 +136,14 @@ export function TryBunutan({ className }: { className?: string }) {
     return () => ro.disconnect();
   }, []);
 
-  // The sparkle's setup waits for the first interaction anywhere on the
-  // page (scrolling, touching), so it stays out of the page load.
-  useEffect(() => {
-    if (reduced) return;
-    const events = ["pointerdown", "touchstart", "scroll", "keydown"] as const;
-    const warm = () => {
-      events.forEach((e) => window.removeEventListener(e, warm));
-      // Already loaded (the usual case after idle): set up right now, so a
-      // first touch on the bowl does it before its click starts the draw.
-      if (drawerRef.current) drawerRef.current.warmSparkle();
-      else void load()?.then((d) => d.warmSparkle());
-    };
-    events.forEach((e) => window.addEventListener(e, warm, { passive: true }));
-    return () => events.forEach((e) => window.removeEventListener(e, warm));
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- load() only reads refs and `reduced`
-  }, [reduced]);
+  const intent = () => void load()?.then((d) => d.warmSparkle());
 
   async function tap() {
     if (busy.current) return;
     const next = nextSample(name);
     if (reduced) {
+      // A tap before the slip's markup has arrived waits for it.
+      await loadSlip();
       setName(next);
       setDraw((d) => d + 1);
       setPhase("shown");
@@ -200,9 +221,9 @@ export function TryBunutan({ className }: { className?: string }) {
         className="pointer-events-none absolute top-[5%] left-[55.43%] h-[160px] w-[300px] origin-top-left scale-(--slip) [--slip-base:0.48] lg:top-[8.57%] lg:left-[66.46%] lg:[--slip-base:0.65]"
         style={{ "--slip": `calc(var(--slip-base) * ${fit})` } as React.CSSProperties}
       >
-        {name && (
+        {name && Slip && (
           <div key={draw} data-part="riser" className="absolute inset-0" style={{ opacity: reduced ? 1 : 0 }}>
-            <SlipArt name={name} state={reduced ? "open" : "folded"} />
+            <Slip name={name} state={reduced ? "open" : "folded"} />
           </div>
         )}
       </div>
@@ -220,9 +241,12 @@ export function TryBunutan({ className }: { className?: string }) {
       <button
         type="button"
         onClick={tap}
-        onPointerEnter={() => void load()?.then((d) => d.warmSparkle())}
-        onPointerDown={() => void load()}
-        onFocus={() => void load()}
+        // Intent loads the code too (a tap before it arrives waits for it: tap() awaits load()),
+        // and prepares the sparkle (a heavy setup, so only for someone about to tap).
+        onPointerEnter={intent}
+        onPointerDown={intent}
+        onFocus={intent}
+        onKeyDown={intent}
         className={cn(
           // Stretched: the whole sky is the tap target; the words sit under the slip.
           "absolute inset-0 cursor-pointer rounded-sky text-left font-bold text-white outline-none select-none [-webkit-tap-highlight-color:transparent]",

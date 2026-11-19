@@ -145,6 +145,9 @@
   font-family: var(--font-head);
   font-size: 1.25rem;
   line-height: 42px;
+  /* Keeps the 42px line (centred on the 40px rule) when a text size is added
+     (lg:text-section-lg sets its own line-height otherwise). */
+  --tw-leading: 42px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

@@ -146,3 +146,30 @@ test("landing: poster first, the video loads only when played", async ({ page },
   await page.goto("/new");
   await expect(page.locator("footer")).toHaveCount(0);
 });
+
+test("landing: the bowl's code doesn't come with the page, and a tap before it arrives still plays", async ({ page }) => {
+  // The scripts the page itself names; anything else asked for later (the bowl's lazy chunks) is held back 1.5 s.
+  const html = await (await page.request.get("/")).text();
+  const own = new Set([...html.matchAll(/\/_next\/static\/chunks\/[^"' ]+?\.js/g)].map((m) => m[0]));
+  const lazy: { url: string; at: number }[] = [];
+  await page.route(/\/_next\/static\/chunks\/.*\.js/, async (route) => {
+    const path = new URL(route.request().url()).pathname;
+    // (next dev also loads its hot-reload client late; that isn't the page's code.)
+    if (!own.has(path) && !/hmr-client/.test(path)) {
+      lazy.push({ url: path, at: Date.now() });
+      await new Promise((r) => setTimeout(r, 1500));
+    }
+    await route.continue();
+  });
+  await page.goto("/");
+  const loadedAt = Date.now();
+  expect(lazy, "nothing of the bowl's loads with the page").toEqual([]);
+
+  // A real button from first paint; the tap lands while its code is still on the way.
+  const bowl = page.getByRole("button", { name: /^(Tap|Click) the bowl para bumunot$/ });
+  await bowl.click();
+  await expect.poll(() => lazy.length, { message: "the code is asked for near the bowl, or on the tap" }).toBeGreaterThan(0);
+  expect(lazy.every((l) => l.at >= loadedAt), "after the page's load").toBe(true);
+  await expect(page.locator("[data-sample-slip]")).toHaveAttribute("data-sample-slip", "Ate Joy", { timeout: 20_000 });
+  await expect(page.getByRole("button", { name: "Tap ulit para bumunot ng iba" })).toBeVisible({ timeout: 20_000 });
+});
