@@ -1,4 +1,4 @@
-/** Sample names for "Try a bunutan" on the landing page. Not real members. */
+/** Sample names for the small bowl on the landing page. Not real members. */
 export const SAMPLE_NAMES = [
   "Ate Joy",
   "Kuya Ben",

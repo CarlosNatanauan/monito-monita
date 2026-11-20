@@ -2,6 +2,9 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* The landing's two-column layout (docs/DESIGN.md §5): 1180px and up. */
+@custom-variant wide (@media (width >= 1180px));
+
 /*
  * Monito Monita design tokens ("Handmade Pasko"). Source of truth:
  * docs/DESIGN.md and docs/design/reference.html. Light theme only; the

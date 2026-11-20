@@ -4,7 +4,7 @@ import { buildUnfoldTimeline } from "@/components/slip/unfold-timeline";
 import type { Sparkle } from "@/components/slip/sparkle";
 
 /**
- * "Try a bunutan" on the landing page (signature moment #1): the bowl
+ * The small bowl on the landing's "Paano 'to?" list (signature moment #1): the bowl
  * shakes and its slips tumble and swap places (a new mix every tap), then
  * a folded sample slip rises out of the bowl and unfolds exactly like the
  * real slip on /me (same timeline). Lazy-loaded by TryBunutan, so GSAP is never
@@ -74,13 +74,11 @@ function addMix(tl: gsap.core.Timeline, shakers: HTMLElement[], layers: { spots:
 }
 
 /**
- * Where the slip starts (inside the bowl), relative to where it ends (top
- * left of the sky), in the slip stage's own px. Measured once, while the
- * slip waits, never on the tap.
+ * Where the slip starts (inside the bowl), relative to where it lands, in
+ * the slip stage's own px. Measured when the draw starts, before anything moves.
  */
 function measureRise(stage: HTMLElement): { x: number; y: number } {
-  const sky = stage.closest("section");
-  const bowl = sky?.querySelector<HTMLElement>('[data-part="bowl"]');
+  const bowl = stage.closest("[data-bunutan]")?.querySelector<HTMLElement>('[data-part="bowl"]');
   if (!bowl) return { x: 0, y: 215 };
   const s = stage.getBoundingClientRect();
   const b = bowl.getBoundingClientRect();
@@ -108,8 +106,14 @@ export type Drawer = {
    * never lands in the page load.
    */
   warmSparkle: () => void;
-  /** Drops the shown slip back into the bowl. */
+  /** Drops the shown slip back into the bowl (before the next draw). */
   putBack: (stage: HTMLElement) => Promise<void>;
+  /**
+   * Folds the shown slip back into the bowl: the draw played backwards from
+   * the open slip to the start of the rise (the name un-writes, the slip
+   * folds, sinks into the bowl and fades), at twice the speed. No sparkle.
+   */
+  fold: () => Promise<void>;
   dispose: () => void;
 };
 
@@ -127,6 +131,14 @@ export function createDrawer(): Drawer {
   let timeline: gsap.core.Timeline | null = null;
   let rise = { x: 0, y: 215 };
   let mixed = { top: homeState(BOWL_SLIPS.top), inside: homeState(BOWL_SLIPS.inside) };
+  // While folding back, the timeline's calls (the sparkle, onDone) are crossed again: mute them.
+  let folding = false;
+  // Phones: a smaller burst from the slip, so it stays clear of the poster and the headline.
+  const burstOf = (s: Sparkle | null): Sparkle | null => {
+    if (!s || folding) return null;
+    if (window.matchMedia("(min-width: 600px)").matches) return s;
+    return Object.assign((x: number, y: number) => s(x, y, { compact: true }), { dispose: s.dispose });
+  };
 
   const drawer: Drawer = {
     prepare(stage, onDone) {
@@ -136,11 +148,16 @@ export function createDrawer(): Drawer {
         const riser = stage.querySelector<HTMLElement>('[data-part="riser"]');
         if (!riser) return;
         rise = measureRise(stage);
-        const shakers = [...(stage.closest("section")?.querySelectorAll<HTMLElement>('[data-part="bowl-shake"]') ?? [])];
-        const unfold = buildUnfoldTimeline(stage, { sparkle: () => sparkle, onDone });
+        const shakers = [...(stage.closest("[data-bunutan]")?.querySelectorAll<HTMLElement>('[data-part="bowl-shake"]') ?? [])];
+        const unfold = buildUnfoldTimeline(stage, {
+          sparkle: () => burstOf(sparkle),
+          onDone: () => {
+            if (!folding) onDone();
+          },
+        });
         const tl = gsap.timeline({ paused: true });
         // The mix (700ms), with a short buzz on Android (iPhone ignores it);
-        // then one slip rises out (350ms, ease-out).
+        // then one slip rises out of the small bowl (350ms, ease-out), from a quarter of its size.
         if (shakers.length === 2) {
           const slips = (i: number) => [...shakers[i].querySelectorAll<HTMLElement>("[data-bowl-slip]")];
           const [top, inside] = addMix(tl, shakers, [
@@ -154,7 +171,7 @@ export function createDrawer(): Drawer {
         }
         tl.fromTo(
           riser,
-          { x: rise.x, y: rise.y, scale: 0.5, rotation: 8 },
+          { x: rise.x, y: rise.y, scale: 0.25, rotation: 8 },
           { x: 0, y: 0, scale: 1, rotation: 0, duration: 0.35, ease: "power2.out" },
           RISE_AT,
         ).fromTo(riser, { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, RISE_AT);
@@ -191,11 +208,29 @@ export function createDrawer(): Drawer {
         gsap.to(riser, {
           x: rise.x * 0.7,
           y: rise.y * 0.7,
-          scale: 0.55,
+          scale: 0.3,
           opacity: 0,
           duration: 0.3,
           ease: "power2.in",
           onComplete: () => resolve(),
+        });
+      });
+    },
+
+    fold() {
+      return new Promise((resolve) => {
+        const tl = timeline;
+        if (!tl) return resolve();
+        folding = true;
+        tl.pause();
+        gsap.to(tl, {
+          time: RISE_AT,
+          duration: Math.max(0.3, (tl.time() - RISE_AT) / 2),
+          ease: "power1.inOut",
+          onComplete: () => {
+            folding = false;
+            resolve();
+          },
         });
       });
     },

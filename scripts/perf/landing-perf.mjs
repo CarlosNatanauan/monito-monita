@@ -1,6 +1,7 @@
-// Landing page "Try a bunutan" checks (signature moment 1):
+// The landing's small bowl on "Paano 'to?" (signature moment 1):
 //   1. frame rate of the bowl draw (mix + rise + unfold) with 4x CPU throttling
-//   2. GSAP is lazy: not part of the first page load, fetched on intent/idle
+//   2. GSAP is lazy: not in the first load, not after idle or scrolling to the
+//      bowl, only on the bowl's pointer down / focus / key down
 //   3. reduced motion: no GSAP, the open slip is shown
 //   4. the landing page is static (served from the prerender, no DB)
 //   5. the mix: every tap leaves the bowl's slips in a new arrangement
@@ -20,13 +21,29 @@ const browser = await chromium.launch();
 /** The bowl's slips' positions and turns (rounded), as one string. */
 const bowlSlips = (page) =>
   page.evaluate(() =>
-    [...document.querySelectorAll("[data-bowl-slip]")]
+    [...document.querySelectorAll("[data-bunutan] [data-bowl-slip]")]
       .map((el) => {
         const r = el.getBoundingClientRect();
-        // Page coordinates: the bowl sits below the fold, and a tap may scroll it.
+        // Page coordinates: a tap may scroll the page.
         return `${Math.round(r.left + scrollX)},${Math.round(r.top + scrollY)},${getComputedStyle(el).transform}`;
       })
       .join("|"),
+  );
+
+/** Clicks the bowl and waits until a new name is shown (the draw is over). */
+async function drawOnce(page) {
+  const prev = await page.locator("[data-bunutan] [data-sample-slip]").getAttribute("data-sample-slip").catch(() => null);
+  await page.getByRole("button", { name: /sample na bunutan$/ }).click();
+  await waitShown(page, prev);
+}
+const waitShown = (page, prev) =>
+  page.waitForFunction(
+    (p) => {
+      const el = document.querySelector("[data-bunutan]");
+      return el?.dataset.phase === "shown" && el.querySelector("[data-sample-slip]")?.dataset.sampleSlip !== p;
+    },
+    prev,
+    { timeout: 20_000 },
   );
 
 /** Records the JS files the page downloads, and whether one is GSAP. */
@@ -46,8 +63,9 @@ for (let run = 1; run <= RUNS; run++) {
   const ctx = await browser.newContext({ ...devices["Pixel 7"] });
   const page = await ctx.newPage();
   await page.goto(base, { waitUntil: "load" });
-  const bowl = page.getByRole("button", { name: "Tap the bowl para bumunot" });
-  await bowl.hover(); // intent: fetch the draw chunk, as a finger would
+  const bowl = page.getByRole("button", { name: "Bumunot ka: sample na bunutan" });
+  await bowl.scrollIntoViewIfNeeded();
+  await bowl.focus(); // intent: fetch the draw chunk (as a finger's pointer down would)
   await page.waitForTimeout(2000);
   const cdp = await ctx.newCDPSession(page);
   await cdp.send("Emulation.setCPUThrottlingRate", { rate: 4 });
@@ -67,7 +85,7 @@ for (let run = 1; run <= RUNS; run++) {
     window.__tap = performance.now();
     button.click();
   });
-  await page.getByRole("button", { name: "Tap ulit para bumunot ng iba" }).waitFor({ timeout: 20_000 });
+  await waitShown(page, null);
   const { frames, longTasks } = await page.evaluate((ms) => {
     const end = window.__tap + ms;
     return {
@@ -89,19 +107,19 @@ for (let run = 1; run <= RUNS; run++) {
 {
   const ctx = await browser.newContext({ ...devices["Pixel 7"] });
   const page = await ctx.newPage();
-  // No idle prefetch during this check: report what the page itself loads.
-  await page.addInitScript(() => {
-    window.requestIdleCallback = () => 0;
-  });
   const js = watchJs(page);
   await page.goto(base, { waitUntil: "networkidle" });
   const firstLoad = js.length;
   const before = js.some((f) => f.gsap);
-  await page.getByRole("button", { name: "Tap the bowl para bumunot" }).click();
-  await page.getByRole("button", { name: "Tap ulit para bumunot ng iba" }).waitFor({ timeout: 20_000 });
+  // Idle time and scrolling the bowl into view load nothing either.
+  await page.getByRole("button", { name: "Bumunot ka: sample na bunutan" }).scrollIntoViewIfNeeded();
+  await page.waitForTimeout(3000);
+  const idle = js.some((f) => f.gsap);
+  await drawOnce(page);
   const after = js.some((f) => f.gsap);
   console.log(
-    `Lazy GSAP: first load (${firstLoad} JS files) ${before ? "HAS GSAP (bad)" : "no GSAP"}, after tapping ${after ? "loaded" : "NOT LOADED (bad)"}`,
+    `Lazy GSAP: first load (${firstLoad} JS files) ${before ? "HAS GSAP (bad)" : "no GSAP"}, ` +
+      `after idle + scrolling to the bowl ${idle ? "HAS GSAP (bad)" : "no GSAP"}, after tapping ${after ? "loaded" : "NOT LOADED (bad)"}`,
   );
   await ctx.close();
 }
@@ -112,12 +130,12 @@ for (let run = 1; run <= RUNS; run++) {
   const page = await ctx.newPage();
   const js = watchJs(page);
   await page.goto(base, { waitUntil: "networkidle" });
-  await page.getByRole("button", { name: "Tap the bowl para bumunot" }).scrollIntoViewIfNeeded();
+  await page.getByRole("button", { name: "Bumunot ka: sample na bunutan" }).scrollIntoViewIfNeeded();
   const before = await bowlSlips(page);
-  await page.getByRole("button", { name: "Tap the bowl para bumunot" }).click();
+  await page.getByRole("button", { name: "Bumunot ka: sample na bunutan" }).click();
   await page.waitForTimeout(1000);
   const name = await page.locator("[data-sample-slip]").getAttribute("data-sample-slip");
-  const open = await page.locator('[data-sample-slip] [data-part="flat"]').evaluate((el) => getComputedStyle(el).opacity);
+  const open = await page.locator('[data-sample-slip] [data-part="riser"] [data-part="flat"]').evaluate((el) => getComputedStyle(el).opacity);
   const still = (await bowlSlips(page)) === before;
   console.log(
     `Reduced motion: GSAP ${js.some((f) => f.gsap) ? "LOADED (bad)" : "not loaded"}, slip "${name}" open: ${open === "1"}, ` +
@@ -132,13 +150,10 @@ for (let run = 1; run <= RUNS; run++) {
   const page = await ctx.newPage();
   await page.goto(base, { waitUntil: "networkidle" });
   const seen = [await bowlSlips(page)];
-  await page.getByRole("button", { name: "Tap the bowl para bumunot" }).click();
-  await page.getByRole("button", { name: "Tap ulit para bumunot ng iba" }).waitFor({ timeout: 20_000 });
+  await drawOnce(page);
   seen.push(await bowlSlips(page));
   for (let k = 0; k < 2; k++) {
-    await page.getByRole("button", { name: "Tap ulit para bumunot ng iba" }).click();
-    await page.waitForTimeout(400);
-    await page.getByRole("button", { name: "Tap ulit para bumunot ng iba" }).waitFor({ timeout: 20_000 });
+    await drawOnce(page);
     seen.push(await bowlSlips(page));
   }
   const fresh = seen.every((s, i) => i === 0 || s !== seen[i - 1]);

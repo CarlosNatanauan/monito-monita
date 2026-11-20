@@ -58,7 +58,7 @@ Today this runs on a Messenger group chat, a spreadsheet and someone's memory. M
 **Click-to-load self-hosted video and lazy animation code.**
 - The landing's first load is a 16–39 KB WebP poster: no video bytes, no player and no animation code.
 - The MP4 (H.264, 720p on phones, 1080p on laptops) starts only when the poster is pressed. It plays in place on laptops and full screen on phones.
-- The "try the bowl" draw is a real button from the first paint. Its GSAP code loads only when the bowl comes near the screen, or on the first touch. A tap that lands before the code arrives is queued and still plays.
+- The small bowl on the "Paano 'to?" list is a real button from the first paint. Its GSAP code, the slip and the sparkle load only when someone touches, focuses or types on the bowl, never on scroll or idle. A tap that lands before the code arrives is queued and still plays.
 - PageSpeed Insights on the live landing: 98 mobile and 100 desktop for performance, and 100 for accessibility, best practices and SEO. Zero layout shift; the poster is the largest paint.
 
 **Hydration-safe forms.** People open these links on budget phones over mobile data, and they start typing before React loads. The create-group form adopts whatever is already in the inputs when React hydrates, so nothing typed is lost.
@@ -73,7 +73,7 @@ Today this runs on a Messenger group chat, a spreadsheet and someone's memory. M
 - 232 unit tests (Vitest).
 - 77 database constraint tests, run against a Neon branch and rolled back.
 - 57 Playwright runs on a Pixel 7 (Chromium), an iPhone 14 (WebKit), a 1366×768 laptop and a 1920×1080 projector.
-- An 8-size layout sweep of every page, from 360×740 to 1920×1080.
+- A 10-size layout sweep of every page, from 360×740 to 1920×1080.
 - A usability test with AI personas (a kuya tapping Join on a slow phone, a tita coming back without "Tita" in her name, an organizer running a 20-person group, and others). Each fix is tested the way the persona ran into it, in [`e2e/persona-fixes.spec.ts`](e2e/persona-fixes.spec.ts) and [`e2e/slow-phone.spec.ts`](e2e/slow-phone.spec.ts).
 
 ## Design process
