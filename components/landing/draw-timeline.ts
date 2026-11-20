@@ -106,8 +106,14 @@ export type Drawer = {
    * never lands in the page load.
    */
   warmSparkle: () => void;
-  /** Drops the shown slip back into the bowl. */
+  /** Drops the shown slip back into the bowl (before the next draw). */
   putBack: (stage: HTMLElement) => Promise<void>;
+  /**
+   * Folds the shown slip back into the bowl: the draw played backwards from
+   * the open slip to the start of the rise (the name un-writes, the slip
+   * folds, sinks into the bowl and fades), at twice the speed. No sparkle.
+   */
+  fold: () => Promise<void>;
   dispose: () => void;
 };
 
@@ -125,6 +131,14 @@ export function createDrawer(): Drawer {
   let timeline: gsap.core.Timeline | null = null;
   let rise = { x: 0, y: 215 };
   let mixed = { top: homeState(BOWL_SLIPS.top), inside: homeState(BOWL_SLIPS.inside) };
+  // While folding back, the timeline's calls (the sparkle, onDone) are crossed again: mute them.
+  let folding = false;
+  // Phones: a smaller burst from the slip, so it stays clear of the poster and the headline.
+  const burstOf = (s: Sparkle | null): Sparkle | null => {
+    if (!s || folding) return null;
+    if (window.matchMedia("(min-width: 600px)").matches) return s;
+    return Object.assign((x: number, y: number) => s(x, y, { compact: true }), { dispose: s.dispose });
+  };
 
   const drawer: Drawer = {
     prepare(stage, onDone) {
@@ -135,7 +149,12 @@ export function createDrawer(): Drawer {
         if (!riser) return;
         rise = measureRise(stage);
         const shakers = [...(stage.closest("[data-bunutan]")?.querySelectorAll<HTMLElement>('[data-part="bowl-shake"]') ?? [])];
-        const unfold = buildUnfoldTimeline(stage, { sparkle: () => sparkle, onDone });
+        const unfold = buildUnfoldTimeline(stage, {
+          sparkle: () => burstOf(sparkle),
+          onDone: () => {
+            if (!folding) onDone();
+          },
+        });
         const tl = gsap.timeline({ paused: true });
         // The mix (700ms), with a short buzz on Android (iPhone ignores it);
         // then one slip rises out of the small bowl (350ms, ease-out), from a quarter of its size.
@@ -194,6 +213,24 @@ export function createDrawer(): Drawer {
           duration: 0.3,
           ease: "power2.in",
           onComplete: () => resolve(),
+        });
+      });
+    },
+
+    fold() {
+      return new Promise((resolve) => {
+        const tl = timeline;
+        if (!tl) return resolve();
+        folding = true;
+        tl.pause();
+        gsap.to(tl, {
+          time: RISE_AT,
+          duration: Math.max(0.3, (tl.time() - RISE_AT) / 2),
+          ease: "power1.inOut",
+          onComplete: () => {
+            folding = false;
+            resolve();
+          },
         });
       });
     },

@@ -201,6 +201,7 @@ for (const size of SIZES) {
     const [h, p, c, d, l] = [await box(headline), await box(poster), await box(create), await box(demo), await box(how)];
     expect(bowl.x + bowl.width, "bowl over the list's right edge").toBeGreaterThan(l.x + l.width);
     expect(bowl.y, "bowl over the list's top edge").toBeLessThan(l.y);
+    expect(bowl.x + bowl.width, "the bowl stays 4px+ clear of the screen edge").toBeLessThanOrEqual(size.width - 4);
     if (size.width >= WIDE) {
       expect(Math.abs(p.y - h.y), "poster top aligned with the headline").toBeLessThan(16);
       expect(Math.abs(l.x - p.x), "'Paano 'to?' in the poster's column").toBeLessThan(1);

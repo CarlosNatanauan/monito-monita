@@ -86,8 +86,8 @@ export default function Home() {
             </div>
 
             {/* "Paano 'to?" with the small bowl on its top-right corner (signature moment #1).
-                Phones keep room above the list for the drawn slip; wider, it lands on the list's right half. */}
-            <TryBunutan className="mt-28 min-[600px]:mt-12 wide:col-start-2 wide:row-start-3 wide:mt-8">
+                The space above the list is the bowl's overhang (36px) and a little air. */}
+            <TryBunutan className="mt-10 min-[600px]:mt-12 wide:col-start-2 wide:row-start-3 wide:mt-8">
               <Listahan title="Paano 'to?" titleId="how-it-works" className="w-full">
                 <ol aria-labelledby="how-it-works">
                   {STEPS.phone.map((step, i) => (

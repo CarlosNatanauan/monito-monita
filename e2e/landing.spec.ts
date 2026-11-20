@@ -183,15 +183,19 @@ test("landing: the small bowl's code loads only on the bowl, and a tap before it
   await expect(slip).toHaveAttribute("data-sample-slip", "Ate Joy", { timeout: 20_000 });
   await expect(page.locator('[data-bunutan][data-phase="shown"]')).toHaveCount(1, { timeout: 20_000 });
 
-  // The opened slip covers no text: not the list's lines, nor anything above it.
+  // The opened slip covers no text from 600px. On phones it lands on the list (over its
+  // title row's edge and the first steps: the person tapped for it), and covers nothing else.
+  const phone = page.viewportSize()!.width < 600;
   const s = (await slip.locator('[data-part="riser"]').boundingBox())!;
+  if (phone) expect(s.y, "phones: the slip lands on the list").toBeGreaterThan((await list.boundingBox())!.y);
   const covered = await page.evaluate(
-    ({ x, y, width, height }) => {
+    ({ x, y, width, height, phone }) => {
       const hit: string[] = [];
       const walker = document.createTreeWalker(document.querySelector("main")!, NodeFilter.SHOW_TEXT);
       for (let n = walker.nextNode(); n; n = walker.nextNode()) {
         const el = n.parentElement!;
         if (!n.textContent?.trim() || el.closest("[data-bunutan] button, [data-sample-slip], .sr-only")) continue;
+        if (phone && el.closest('[aria-labelledby="how-it-works"]')) continue;
         const range = document.createRange();
         range.selectNodeContents(n);
         for (const r of range.getClientRects()) {
@@ -200,7 +204,18 @@ test("landing: the small bowl's code loads only on the bowl, and a tap before it
       }
       return hit;
     },
-    { x: s.x, y: s.y, width: s.width, height: s.height },
+    { x: s.x, y: s.y, width: s.width, height: s.height, phone },
   );
   expect(covered, "text under the opened slip").toEqual([]);
+
+  // The opened slip is a button: it folds back into the bowl, and focus moves to the bowl.
+  await page.getByRole("button", { name: "Ibalik ang slip" }).click();
+  await expect(page.locator('[data-bunutan][data-phase="folded"]')).toHaveCount(1, { timeout: 10_000 });
+  await expect(page.getByRole("button", { name: "Ibalik ang slip" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Bumunot ulit: sample na bunutan" })).toBeFocused();
+  await expect(page.locator('[data-bunutan] [data-part="riser"]')).toHaveCSS("opacity", "0");
+  // The bowl draws a new name.
+  await page.getByRole("button", { name: "Bumunot ulit: sample na bunutan" }).click();
+  await expect(page.locator('[data-bunutan][data-phase="shown"]')).toHaveCount(1, { timeout: 20_000 });
+  await expect(slip).not.toHaveAttribute("data-sample-slip", "Ate Joy");
 });

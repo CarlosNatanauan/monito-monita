@@ -48,6 +48,9 @@ test("reduced motion: landing slip and join drop without GSAP", async ({ page },
     await expect(sample).not.toHaveAttribute("data-sample-slip", "Ate Joy");
     // The cross-fade ends with one slip.
     await expect(sample.locator('[data-part="riser-old"]')).toHaveCount(0);
+    // Tapping the open slip puts it back (a fade).
+    await page.getByRole("button", { name: "Ibalik ang slip" }).click();
+    await expect(page.locator('[data-bunutan][data-phase="folded"]')).toHaveCount(1);
     await page.screenshot({ path: `e2e/screenshots/${testInfo.project.name}-reduced-landing.png` });
   });
 

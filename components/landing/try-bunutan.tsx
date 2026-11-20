@@ -15,8 +15,9 @@ const loadDrawer = () => import("./draw-timeline").then((m) => m.createDrawer())
 type SlipArtComponent = typeof import("@/components/slip/slip-art").SlipArt;
 const loadSlipArt = () => import("@/components/slip/slip-art").then((m) => m.SlipArt);
 
-// idle: nothing drawn yet. drawing / shown: after a tap.
-type Phase = "idle" | "drawing" | "shown";
+// idle: nothing drawn yet. drawing / shown: after a tap. folding: the
+// opened slip going back into the bowl; folded: back in (the next tap draws again).
+type Phase = "idle" | "drawing" | "shown" | "folding" | "folded";
 
 /** The bowl's two layers share one 80×60 box (the 200×150 drawing at 0.4). */
 const BOWL_BOX = "absolute bottom-[13px] left-2 h-[60px] w-20";
@@ -31,11 +32,13 @@ const BOWL_BOX = "absolute bottom-[13px] left-2 h-[60px] w-20";
  * another name. Reduced motion: no shake or tumble; the slip appears open
  * with a 150ms cross-fade, no GSAP.
  *
- * Where the opened slip lands (clear of the poster, the buttons and the
- * list's text): from 600px, on the list's right half under the bowl (the
- * lines end ~370px in, the list is 560px+ wide), 200px wide; on phones,
- * above the list on its left, 170px wide, in the space this wrapper keeps
- * above the list (set by the page).
+ * Where the opened slip lands (clear of the poster, the caption and the
+ * buttons): from 600px, on the list's right half under the bowl (the lines
+ * end ~370px in, the list is 560px+ wide), 200px wide, covering no text;
+ * on phones, on the list itself, left, over the title row's lower edge and
+ * the first steps, 170px wide (the person tapped for it). The opened slip
+ * is a button too ("Ibalik ang slip"): it folds back into the bowl (the
+ * draw played backwards; reduced motion, a 150ms fade).
  *
  * `children` is the listahan; the bowl and the slip are drawn over it and
  * never change its rows.
@@ -48,6 +51,7 @@ export function TryBunutan({ className, children }: { className?: string; childr
   // Reduced motion: the slip shown before this one, fading out.
   const [previous, setPrevious] = useState<string | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
+  const bowlRef = useRef<HTMLButtonElement>(null);
   const drawerRef = useRef<Drawer | null>(null);
   const loading = useRef<Promise<Drawer> | null>(null);
   const busy = useRef(false);
@@ -91,9 +95,27 @@ export function TryBunutan({ className, children }: { className?: string; childr
     // A tap before the code has arrived waits for it, then plays.
     const drawer = await load()!;
     if (phase === "shown" && stageRef.current) await drawer.putBack(stageRef.current);
+    setPrevious(null);
     setName(next);
     setDraw((d) => d + 1);
     setPhase("drawing");
+  }
+
+  // The opened slip, tapped: back into the bowl. Focus goes to the bowl (the slip's button leaves).
+  async function foldBack() {
+    if (busy.current || phase !== "shown") return;
+    busy.current = true;
+    setPhase("folding");
+    bowlRef.current?.focus({ preventScroll: true });
+    const riser = stageRef.current?.querySelector('[data-part="riser"]');
+    if (reduced || !drawerRef.current) {
+      await riser?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: "linear", fill: "forwards" }).finished;
+    } else {
+      await drawerRef.current.fold();
+    }
+    setPrevious(null);
+    setPhase("folded");
+    busy.current = false;
   }
 
   // A new slip is on the page (folded, invisible): build its mix, rise and unfold, and play it.
@@ -121,7 +143,7 @@ export function TryBunutan({ className, children }: { className?: string; childr
 
   const shown = phase === "shown";
   const tapped = phase === "drawing" || phase === "shown";
-  const label = tapped ? "Bumunot ulit" : "Bumunot ka";
+  const label = name ? "Bumunot ulit" : "Bumunot ka";
 
   return (
     <div data-bunutan data-phase={phase} className={cn("relative", className)}>
@@ -129,6 +151,7 @@ export function TryBunutan({ className, children }: { className?: string; childr
 
       {/* The bilao, the bowl's back glass, the slips inside, the rim: tilted on the list's corner. */}
       <button
+        ref={bowlRef}
         type="button"
         onClick={tap}
         onPointerDown={intent}
@@ -137,7 +160,7 @@ export function TryBunutan({ className, children }: { className?: string; childr
         aria-label={`${label}: sample na bunutan`}
         className="group absolute -top-9 -right-3 z-10 flex cursor-pointer items-end gap-1 rounded-paper pl-1 select-none focus-ring [-webkit-tap-highlight-color:transparent] min-[600px]:-right-4"
       >
-        <span className="mb-[9px] font-sans text-[14px] leading-none font-bold whitespace-nowrap text-ube">{label}</span>
+        <span className="mb-[9px] font-sans text-[14px] max-[379px]:mb-[43px] leading-none font-bold whitespace-nowrap text-ube">{label}</span>
         <span
           aria-hidden
           className="relative block h-[73px] w-24 shrink-0 rotate-[2.5deg] transition-transform duration-150 group-hover:-translate-y-0.5 motion-reduce:transition-none"
@@ -163,13 +186,13 @@ export function TryBunutan({ className, children }: { className?: string; childr
         </span>
       </button>
 
-      {/* The opened slip (300×160 drawn, scaled): phones above the list on its left (170 wide), 600px+ on the list's right half (200 wide). */}
+      {/* The opened slip (300×160 drawn, scaled): phones on the list, left (170 wide); 600px+ on the list's right half (200 wide). */}
       <div
         ref={stageRef}
         data-sample-slip={tapped && name ? name : undefined}
         className={cn(
           "pointer-events-none absolute z-20 h-[160px] w-[300px] origin-top-left",
-          "-top-[104px] left-1 scale-[0.5667]",
+          "top-[34px] left-2 scale-[0.5667]",
           "min-[600px]:top-[50px] min-[600px]:left-[calc(100%-224px)] min-[600px]:scale-[0.6667]",
         )}
       >
@@ -182,6 +205,15 @@ export function TryBunutan({ className, children }: { className?: string; childr
           <div key={draw} data-part="riser" className="absolute inset-0" style={{ opacity: reduced ? 1 : 0 }}>
             <Slip name={name} state={reduced ? "open" : "folded"} />
           </div>
+        )}
+        {shown && (
+          // The open slip is a button: tap it to put it back in the bowl. Scaled with the slip.
+          <button
+            type="button"
+            onClick={foldBack}
+            aria-label="Ibalik ang slip"
+            className="pointer-events-auto absolute inset-0 cursor-pointer rounded-paper outline-offset-4 select-none focus-ring [-webkit-tap-highlight-color:transparent]"
+          />
         )}
       </div>
       <p className="sr-only" aria-live="polite">
