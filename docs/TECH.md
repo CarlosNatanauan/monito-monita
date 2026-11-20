@@ -217,6 +217,10 @@ Self-hosted, no third party. `components/landing/demo-video.tsx` (docs/DESIGN.md
 - **Checks** (`e2e/landing.spec.ts`): the poster and "Create your group" fully visible at 1366×657 and 390×664; the poster eager, high priority and the largest paint; no `<video>` and no video request before the press; the keyboard and the focus ring; in place in the same box (laptop) or full screen (phones); the poster and focus back after the end or leaving full screen; one play counted; no layout shift.
 - The site sends no Content-Security-Policy; if one is added, the landing needs `media-src 'self'` (and `img-src 'self'` for the poster).
 
+## Landing bowl
+
+The small bowl on the "Paano 'to?" list (docs/DESIGN.md §8, moment 1): `components/landing/try-bunutan.tsx` wraps the list (`[data-bunutan]`, `data-phase` idle / drawing / shown for tests) and draws the bowl button and the slip stage over it. Its first `pointerdown`, `focus` or `keydown` starts three plain `import()`s: `draw-timeline.ts` (GSAP, the mix, rise and unfold), `slip/slip-art.tsx` (the slip's markup) and, inside the drawer, `slip/sparkle.ts` (canvas-confetti). No IntersectionObserver or idle preload: scrolling to the bowl loads nothing. A click before the chunks arrive is awaited in `tap()` and then plays. Reduced motion loads only the slip's markup and cross-fades the open slip in 150ms (Web Animations). Sample names: `lib/sample-names.ts` ("Ate Joy" first, then never the same name twice in a row). Checks: `e2e/landing.spec.ts` (nothing loads on scroll or idle, the queued tap, the bowl on the list's corner, no text under the opened slip), `e2e/flow-1-setup-join.spec.ts`, `e2e/reduced-motion.spec.ts`, `e2e/layouts.spec.ts` and `scripts/perf/landing-perf.mjs`.
+
 ## Security basics
 
 - Random, long slugs and tokens (`crypto.randomBytes`)

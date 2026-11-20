@@ -1,7 +1,7 @@
 /**
- * Signature moments 1 and 2 with reduced motion: the landing's sample slip
- * fades in already open (no GSAP), and the join drop shows the slip in the
- * bowl, then /me (no GSAP). Runs on both phones, against the dev database;
+ * Signature moments 1 and 2 with reduced motion: the landing's small bowl
+ * shows the sample slip already open (a 150ms cross-fade, no GSAP), and the
+ * join drop shows the slip in the bowl, then /me (no GSAP). Runs on both phones, against the dev database;
  * the test group is deleted afterwards.
  */
 import type { Page } from "@playwright/test";
@@ -38,14 +38,16 @@ test("reduced motion: landing slip and join drop without GSAP", async ({ page },
 
   await test.step("landing: tapping the bowl shows the open sample slip", async () => {
     await page.goto("/");
-    await page.getByRole("button", { name: /^(Tap|Click) the bowl para bumunot$/ }).click();
+    await page.getByRole("button", { name: "Bumunot ka: sample na bunutan" }).click();
     const sample = page.locator("[data-sample-slip]");
     await expect(sample).toHaveAttribute("data-sample-slip", "Ate Joy");
     // Straight to the open slip: the name is on it, no unfold to wait for.
-    await expect(page.getByRole("button", { name: "Tap ulit para bumunot ng iba" })).toBeVisible();
-    await expect(sample.locator('[data-part="flat"]')).toHaveCSS("opacity", "1");
-    await page.getByRole("button", { name: "Tap ulit para bumunot ng iba" }).click();
+    await expect(page.getByRole("button", { name: "Bumunot ulit: sample na bunutan" })).toBeVisible();
+    await expect(sample.locator('[data-part="riser"] [data-part="flat"]')).toHaveCSS("opacity", "1");
+    await page.getByRole("button", { name: "Bumunot ulit: sample na bunutan" }).click();
     await expect(sample).not.toHaveAttribute("data-sample-slip", "Ate Joy");
+    // The cross-fade ends with one slip.
+    await expect(sample.locator('[data-part="riser-old"]')).toHaveCount(0);
     await page.screenshot({ path: `e2e/screenshots/${testInfo.project.name}-reduced-landing.png` });
   });
 

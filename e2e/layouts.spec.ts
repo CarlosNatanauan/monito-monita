@@ -1,5 +1,5 @@
 /**
- * Responsive layouts: every page at 8 sizes, from a small Android phone to
+ * Responsive layouts: every page at 10 sizes, from a small Android phone to
  * a 1080p laptop. Each page must fit the width (no sideways scroll), and
  * on tablets and laptops the two-column layouts must actually sit side by
  * side. Full-page screenshots go to e2e/screenshots/layouts/{size}/.
@@ -37,6 +37,8 @@ export const SIZES: Size[] = [
   { name: "844x390-phone-landscape", width: 844, height: 390, phone: true },
   { name: "768x1024-ipad", width: 768, height: 1024, touch: true },
   { name: "1024x768-ipad-landscape", width: 1024, height: 768, touch: true },
+  { name: "1032x1376-ipad-pro", width: 1032, height: 1376, touch: true },
+  { name: "1180x800-laptop", width: 1180, height: 800 },
   { name: "1366x768-laptop", width: 1366, height: 768 },
   { name: "1920x1080-laptop", width: 1920, height: 1080 },
 ];
@@ -59,6 +61,7 @@ let stickyGroup: SeededGroup;
 // The sticky-slip check unfolds a slip, so each size gets its own member.
 const STICKY_PEOPLE: Record<string, string> = {
   "1024x768-ipad-landscape": "Bebeng",
+  "1180x800-laptop": "Ernie",
   "1366x768-laptop": "Celso",
   "1920x1080-laptop": "Dindo",
 };
@@ -156,6 +159,9 @@ async function box(locator: Locator) {
  * column to the right of `left`; below that it sits underneath it
  * (docs/DESIGN.md, "Layout").
  */
+/** The landing's two columns start here (docs/DESIGN.md §5). */
+const WIDE = 1180;
+
 async function expectColumns(size: Size, left: Locator, right: Locator, label: string, from = 1024) {
   const [a, b] = [await box(left), await box(right)];
   if (size.width >= from) {
@@ -182,13 +188,34 @@ for (const size of SIZES) {
     await page.goto("/");
     await expect(page.getByRole("heading", { name: "Isang link lang para sa buong bunutan." })).toBeVisible();
     await settle(page);
-    // 1a "Poster first": the video's poster beside the headline, the bowl's panel beside "Paano 'to?" (row 2).
+    // One row of two columns from 1180px: text left; the poster, its caption and "Paano 'to?" right.
+    // Below that, one centred column (640px from 600px): headline, poster, buttons, "Paano 'to?".
+    const headline = page.getByRole("heading", { name: "Isang link lang para sa buong bunutan." });
     const poster = page.getByRole("button", { name: "Panoorin ang demo video, 0:51" });
-    await expectColumns(size, page.getByRole("heading", { name: "Isang link lang para sa buong bunutan." }), poster, "landing headline | poster");
-    await expectColumns(size, page.getByRole("list", { name: "Paano 'to?" }), page.getByRole("region", { name: "Try a bunutan" }), "landing steps | bowl");
-    if (size.width >= 1024) {
-      const [headline, video] = [await box(page.getByRole("heading", { name: "Isang link lang para sa buong bunutan." })), await box(poster)];
-      expect(Math.abs(video.y - headline.y), "poster top aligned with the headline").toBeLessThan(16);
+    const create = page.getByRole("link", { name: "Create your group" });
+    const demo = page.getByRole("link", { name: "Subukan ang demo" });
+    const how = page.getByRole("region", { name: "Paano 'to?" });
+    // The small bowl sits on the list's top-right corner (overhanging it), not in a panel of its own.
+    const bowl = await box(page.getByRole("button", { name: "Bumunot ka: sample na bunutan" }));
+    await expectColumns(size, headline, poster, "landing headline | poster", WIDE);
+    const [h, p, c, d, l] = [await box(headline), await box(poster), await box(create), await box(demo), await box(how)];
+    expect(bowl.x + bowl.width, "bowl over the list's right edge").toBeGreaterThan(l.x + l.width);
+    expect(bowl.y, "bowl over the list's top edge").toBeLessThan(l.y);
+    if (size.width >= WIDE) {
+      expect(Math.abs(p.y - h.y), "poster top aligned with the headline").toBeLessThan(16);
+      expect(Math.abs(l.x - p.x), "'Paano 'to?' in the poster's column").toBeLessThan(1);
+      expect(l.y, "'Paano 'to?' under the poster").toBeGreaterThan(p.y + p.height);
+      expect(c.x + c.width, "buttons in the left column").toBeLessThan(p.x);
+    } else {
+      expect(c.y, "buttons under the poster").toBeGreaterThan(p.y + p.height);
+      expect(l.y, "'Paano 'to?' under the buttons").toBeGreaterThan(c.y + c.height);
+      expect(Math.abs(l.x - p.x), "one column").toBeLessThan(1);
+      expect(Math.abs(l.width - p.width), "the poster fills the column").toBeLessThan(1);
+      if (size.width >= 600) {
+        expect(p.width, "a 640px column").toBeLessThanOrEqual(640);
+        expect(Math.abs(p.x + p.width / 2 - size.width / 2), "centred").toBeLessThan(2);
+        expect(Math.abs(d.y - c.y), "the two buttons in one row").toBeLessThan(1);
+      }
     }
     // "Paano 'to?": three lines on the listahan, at every width.
     const steps = page.getByRole("list", { name: "Paano 'to?" }).getByRole("listitem");

@@ -4,7 +4,7 @@ import { buildUnfoldTimeline } from "@/components/slip/unfold-timeline";
 import type { Sparkle } from "@/components/slip/sparkle";
 
 /**
- * "Try a bunutan" on the landing page (signature moment #1): the bowl
+ * The small bowl on the landing's "Paano 'to?" list (signature moment #1): the bowl
  * shakes and its slips tumble and swap places (a new mix every tap), then
  * a folded sample slip rises out of the bowl and unfolds exactly like the
  * real slip on /me (same timeline). Lazy-loaded by TryBunutan, so GSAP is never
@@ -74,13 +74,11 @@ function addMix(tl: gsap.core.Timeline, shakers: HTMLElement[], layers: { spots:
 }
 
 /**
- * Where the slip starts (inside the bowl), relative to where it ends (top
- * left of the sky), in the slip stage's own px. Measured once, while the
- * slip waits, never on the tap.
+ * Where the slip starts (inside the bowl), relative to where it lands, in
+ * the slip stage's own px. Measured when the draw starts, before anything moves.
  */
 function measureRise(stage: HTMLElement): { x: number; y: number } {
-  const sky = stage.closest("section");
-  const bowl = sky?.querySelector<HTMLElement>('[data-part="bowl"]');
+  const bowl = stage.closest("[data-bunutan]")?.querySelector<HTMLElement>('[data-part="bowl"]');
   if (!bowl) return { x: 0, y: 215 };
   const s = stage.getBoundingClientRect();
   const b = bowl.getBoundingClientRect();
@@ -136,11 +134,11 @@ export function createDrawer(): Drawer {
         const riser = stage.querySelector<HTMLElement>('[data-part="riser"]');
         if (!riser) return;
         rise = measureRise(stage);
-        const shakers = [...(stage.closest("section")?.querySelectorAll<HTMLElement>('[data-part="bowl-shake"]') ?? [])];
+        const shakers = [...(stage.closest("[data-bunutan]")?.querySelectorAll<HTMLElement>('[data-part="bowl-shake"]') ?? [])];
         const unfold = buildUnfoldTimeline(stage, { sparkle: () => sparkle, onDone });
         const tl = gsap.timeline({ paused: true });
         // The mix (700ms), with a short buzz on Android (iPhone ignores it);
-        // then one slip rises out (350ms, ease-out).
+        // then one slip rises out of the small bowl (350ms, ease-out), from a quarter of its size.
         if (shakers.length === 2) {
           const slips = (i: number) => [...shakers[i].querySelectorAll<HTMLElement>("[data-bowl-slip]")];
           const [top, inside] = addMix(tl, shakers, [
@@ -154,7 +152,7 @@ export function createDrawer(): Drawer {
         }
         tl.fromTo(
           riser,
-          { x: rise.x, y: rise.y, scale: 0.5, rotation: 8 },
+          { x: rise.x, y: rise.y, scale: 0.25, rotation: 8 },
           { x: 0, y: 0, scale: 1, rotation: 0, duration: 0.35, ease: "power2.out" },
           RISE_AT,
         ).fromTo(riser, { opacity: 0 }, { opacity: 1, duration: 0.1, ease: "none" }, RISE_AT);
@@ -191,7 +189,7 @@ export function createDrawer(): Drawer {
         gsap.to(riser, {
           x: rise.x * 0.7,
           y: rise.y * 0.7,
-          scale: 0.55,
+          scale: 0.3,
           opacity: 0,
           duration: 0.3,
           ease: "power2.in",

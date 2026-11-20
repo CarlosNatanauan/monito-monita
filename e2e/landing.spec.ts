@@ -147,7 +147,7 @@ test("landing: poster first, the video loads only when played", async ({ page },
   await expect(page.locator("footer")).toHaveCount(0);
 });
 
-test("landing: the bowl's code doesn't come with the page, and a tap before it arrives still plays", async ({ page }) => {
+test("landing: the small bowl's code loads only on the bowl, and a tap before it arrives still plays", async ({ page }) => {
   // The scripts the page itself names; anything else asked for later (the bowl's lazy chunks) is held back 1.5 s.
   const html = await (await page.request.get("/")).text();
   const own = new Set([...html.matchAll(/\/_next\/static\/chunks\/[^"' ]+?\.js/g)].map((m) => m[0]));
@@ -162,14 +162,45 @@ test("landing: the bowl's code doesn't come with the page, and a tap before it a
     await route.continue();
   });
   await page.goto("/");
-  const loadedAt = Date.now();
-  expect(lazy, "nothing of the bowl's loads with the page").toEqual([]);
+  await page.waitForLoadState("networkidle");
 
-  // A real button from first paint; the tap lands while its code is still on the way.
-  const bowl = page.getByRole("button", { name: /^(Tap|Click) the bowl para bumunot$/ });
+  // A real button on the "Paano 'to?" list from first paint, its bowl on the list's top-right corner.
+  const bowl = page.getByRole("button", { name: "Bumunot ka: sample na bunutan" });
+  const list = page.getByRole("region", { name: "Paano 'to?" });
+  await bowl.scrollIntoViewIfNeeded();
+  const [b, l] = [(await bowl.boundingBox())!, (await list.boundingBox())!];
+  expect(b.x + b.width, "the bowl overhangs the list's right edge").toBeGreaterThan(l.x + l.width);
+  expect(b.y, "the bowl overhangs the list's top").toBeLessThan(l.y);
+  expect(b.y + b.height, "and sits on the title row").toBeLessThanOrEqual(l.y + 42);
+  // Neither idle time nor scrolling to the bowl loads its code.
+  await page.waitForTimeout(2500);
+  expect(lazy, "nothing of the bowl's loads without touching it").toEqual([]);
+
+  // The tap lands while its code is still on the way: it waits, then plays.
   await bowl.click();
-  await expect.poll(() => lazy.length, { message: "the code is asked for near the bowl, or on the tap" }).toBeGreaterThan(0);
-  expect(lazy.every((l) => l.at >= loadedAt), "after the page's load").toBe(true);
-  await expect(page.locator("[data-sample-slip]")).toHaveAttribute("data-sample-slip", "Ate Joy", { timeout: 20_000 });
-  await expect(page.getByRole("button", { name: "Tap ulit para bumunot ng iba" })).toBeVisible({ timeout: 20_000 });
+  await expect.poll(() => lazy.length, { message: "the code is asked for on the tap" }).toBeGreaterThan(0);
+  const slip = page.locator("[data-sample-slip]");
+  await expect(slip).toHaveAttribute("data-sample-slip", "Ate Joy", { timeout: 20_000 });
+  await expect(page.locator('[data-bunutan][data-phase="shown"]')).toHaveCount(1, { timeout: 20_000 });
+
+  // The opened slip covers no text: not the list's lines, nor anything above it.
+  const s = (await slip.locator('[data-part="riser"]').boundingBox())!;
+  const covered = await page.evaluate(
+    ({ x, y, width, height }) => {
+      const hit: string[] = [];
+      const walker = document.createTreeWalker(document.querySelector("main")!, NodeFilter.SHOW_TEXT);
+      for (let n = walker.nextNode(); n; n = walker.nextNode()) {
+        const el = n.parentElement!;
+        if (!n.textContent?.trim() || el.closest("[data-bunutan] button, [data-sample-slip], .sr-only")) continue;
+        const range = document.createRange();
+        range.selectNodeContents(n);
+        for (const r of range.getClientRects()) {
+          if (r.right > x && r.left < x + width && r.bottom > y && r.top < y + height) hit.push(n.textContent.trim());
+        }
+      }
+      return hit;
+    },
+    { x: s.x, y: s.y, width: s.width, height: s.height },
+  );
+  expect(covered, "text under the opened slip").toEqual([]);
 });

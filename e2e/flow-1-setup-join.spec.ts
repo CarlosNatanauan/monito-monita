@@ -43,16 +43,18 @@ test("setup and join: create, join, organizer, wishlists, reminder", async ({ br
     await expect(page.getByRole("heading", { name: "Isang link lang para sa buong bunutan." })).toBeVisible();
     await shot(page, "home");
 
-    // "Try a bunutan": the first draw is the mockup's sample, then a random other.
+    // The small bowl on "Paano 'to?": the first draw is the mockup's sample, then a random other.
     const sample = page.locator("[data-sample-slip]");
-    await page.getByRole("button", { name: /^(Tap|Click) the bowl para bumunot$/ }).click();
+    await page.getByRole("button", { name: "Bumunot ka: sample na bunutan" }).click();
     await expect(sample).toHaveAttribute("data-sample-slip", "Ate Joy");
-    await expect(page.getByRole("button", { name: "Tap ulit para bumunot ng iba" })).toBeVisible({ timeout: 15_000 });
+    const again = page.getByRole("button", { name: "Bumunot ulit: sample na bunutan" });
+    await expect(again).toBeVisible({ timeout: 15_000 });
     await expect(sample.locator('[data-part="name-inner"]')).toHaveText(/Ate\s+Joy/);
+    await expect(page.getByText("Nabunot mo si Ate Joy. Sample lang ito.")).toBeAttached({ timeout: 15_000 });
     await shot(page, "home-sample-slip");
-    await page.getByRole("button", { name: "Tap ulit para bumunot ng iba" }).click();
+    await again.click();
     await expect(sample).not.toHaveAttribute("data-sample-slip", "Ate Joy");
-    await expect(page.getByRole("button", { name: "Tap ulit para bumunot ng iba" })).toBeVisible({ timeout: 15_000 });
+    await expect(page.getByText(/^Nabunot mo si (?!Ate Joy)/)).toBeAttached({ timeout: 15_000 });
     await page.getByRole("link", { name: "Create your group" }).click();
     await expect(page).toHaveURL(/\/new$/);
     await expect(page.getByRole("heading", { name: "Gumawa ng group" })).toBeVisible();

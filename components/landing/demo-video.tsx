@@ -4,7 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 const POSTER = "/landing/poster";
-const SIZES = "(min-width: 1024px) 632px, (min-width: 600px) 560px, calc(100vw - 40px)";
+const SIZES = "(min-width: 1180px) 632px, (min-width: 600px) 640px, calc(100vw - 40px)";
 type Player = typeof import("./video-player");
 const loadPlayer = () => import("./video-player");
 
