@@ -280,10 +280,15 @@ test("organizer in a 20-person group: themes, edit details, search, pairs, after
   });
 
   await test.step("M9: after removing someone, a line says it worked and their giver has a new monito", async () => {
-    await page.getByRole("button", { name: "Manage Yoyo", exact: true }).click();
-    await page.getByRole("button", { name: "Remove Yoyo", exact: true }).click();
+    // Grace, not just anyone: removing a member makes their giver draw their
+    // receiver, and the server refuses when those two are an excluded pair.
+    // Bong–Grace is the only exclusion, so with Grace gone it can never apply,
+    // whatever the random draw (and a 20-person loop never pairs someone with
+    // themselves). Anyone else fails whenever they sit between Bong and Grace.
+    await page.getByRole("button", { name: "Manage Grace", exact: true }).click();
+    await page.getByRole("button", { name: "Remove Grace", exact: true }).click();
     await page.getByRole("button", { name: "Oo, tanggalin" }).click();
-    await expect(page.getByRole("status").filter({ hasText: "Natanggal si Yoyo. May bagong monito na ang nakabunot sa kanya." })).toBeVisible();
+    await expect(page.getByRole("status").filter({ hasText: "Natanggal si Grace. May bagong monito na ang nakabunot sa kanya." })).toBeVisible();
     await expect(page.getByText("Members (19)")).toBeVisible();
   });
 
