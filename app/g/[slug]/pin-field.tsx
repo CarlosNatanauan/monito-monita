@@ -91,8 +91,11 @@ export function PinField({
           type="password"
           inputMode="numeric"
           pattern="[0-9]*"
-          maxLength={PIN_LENGTH}
+          // Room for a pasted "12-34" or "1 2 3 4" (maxLength 4 would cut it before the clean-up below).
+          maxLength={PIN_LENGTH * 3}
           autoComplete={autoComplete}
+          // iOS Safari: what a PIN may be, so it doesn't offer a "Strong Password" here.
+          {...{ passwordrules: `required: digit; minlength: ${PIN_LENGTH}; maxlength: ${PIN_LENGTH};` }}
           autoFocus={autoFocus}
           aria-invalid={invalid ? true : undefined}
           aria-describedby={describedBy}

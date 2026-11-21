@@ -208,14 +208,23 @@ test("landing: the small bowl's code loads only on the bowl, and a tap before it
   );
   expect(covered, "text under the opened slip").toEqual([]);
 
-  // The opened slip is a button: it folds back into the bowl, and focus moves to the bowl.
-  await page.getByRole("button", { name: "Ibalik ang slip" }).click();
+  // The opened slip is a button: it folds back into the bowl. Focus was on the slip, so it moves to the bowl.
+  await page.getByRole("button", { name: "Ibalik ang slip" }).focus();
+  await page.keyboard.press("Enter");
   await expect(page.locator('[data-bunutan][data-phase="folded"]')).toHaveCount(1, { timeout: 10_000 });
   await expect(page.getByRole("button", { name: "Ibalik ang slip" })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Bumunot ulit: sample na bunutan" })).toBeFocused();
   await expect(page.locator('[data-bunutan] [data-part="riser"]')).toHaveCSS("opacity", "0");
-  // The bowl draws a new name.
+
+  // The bowl draws a new name; left alone, the slip folds back by itself after 4s
+  // and never takes the focus from where it is.
   await page.getByRole("button", { name: "Bumunot ulit: sample na bunutan" }).click();
   await expect(page.locator('[data-bunutan][data-phase="shown"]')).toHaveCount(1, { timeout: 20_000 });
   await expect(slip).not.toHaveAttribute("data-sample-slip", "Ate Joy");
+  const shownAt = Date.now();
+  const demo = page.getByRole("link", { name: "Subukan ang demo" });
+  await demo.focus();
+  await expect(page.locator('[data-bunutan][data-phase="folded"]')).toHaveCount(1, { timeout: 10_000 });
+  expect(Date.now() - shownAt, "folds back after about 4s").toBeGreaterThan(3000);
+  await expect(demo, "the automatic fold-back doesn't move the focus").toBeFocused();
 });

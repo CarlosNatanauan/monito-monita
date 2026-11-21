@@ -150,7 +150,7 @@ export function StartReveal({ slug }: { slug: string }) {
         </Button>
       ) : (
         <div className="flex flex-col gap-3 rounded-paper border-[1.5px] border-gabi-line bg-gabi p-5" role="group" aria-label="Confirm reveal">
-          <p className="font-bold text-gabi-text landscape:text-[clamp(16px,2.4vh,28px)]">
+          <p className="font-bold text-gabi-text landscape:text-[clamp(16px,2.4dvh,28px)]">
             Pag sinimulan na, hindi na puwedeng mag-redraw o magtanggal ng member. Go?
           </p>
           <div className="flex flex-wrap gap-2">
@@ -160,7 +160,7 @@ export function StartReveal({ slug }: { slug: string }) {
             <Button
               type="button"
               variant="link"
-              className="h-[58px] px-3 text-body text-gabi-text landscape:text-[clamp(16px,2.4vh,28px)]"
+              className="h-[58px] px-3 text-body text-gabi-text landscape:text-[clamp(16px,2.4dvh,28px)]"
               disabled={pending}
               onClick={() => setConfirming(false)}
             >

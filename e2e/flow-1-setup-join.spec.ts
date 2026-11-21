@@ -76,6 +76,8 @@ test("setup and join: create, join, organizer, wishlists, reminder", async ({ br
 
     // What you typed survives a failed submit (regression: WebKit cleared it).
     await page.getByRole("button", { name: "Create group" }).click();
+    // Wait for that submit to come back before typing again (the button is "Ginagawa…" while it runs).
+    await expect(page.getByRole("button", { name: "Create group" })).toBeEnabled();
     await expect(page.getByText("Pakilagay ang pangalan ng group.")).toHaveCount(0);
     await expect(page.getByText("Pakilagay ang budget (₱1 pataas).")).toBeVisible();
     await expect(page.getByLabel("Pangalan ng group")).toHaveValue(groupName);

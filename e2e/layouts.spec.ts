@@ -1,8 +1,9 @@
 /**
- * Responsive layouts: every page at 10 sizes, from a small Android phone to
- * a 1080p laptop. Each page must fit the width (no sideways scroll), and
- * on tablets and laptops the two-column layouts must actually sit side by
- * side. Full-page screenshots go to e2e/screenshots/layouts/{size}/.
+ * Responsive layouts: every page at 11 sizes, from a small Android phone
+ * and an iPhone SE to a 1080p laptop. Each page must fit the width (no
+ * sideways scroll), nothing may overlap or spill out of its column
+ * (e2e/layout-checks.ts), and on tablets and laptops the two-column layouts
+ * must actually sit side by side. Full-page screenshots go to e2e/screenshots/layouts/{size}/.
  *
  * Groups are seeded straight into the DEV database (no clicking through
  * the flow) and deleted afterwards. Runs in the laptop project (Chromium);
@@ -14,6 +15,7 @@ import { expect, test } from "./test";
 import { closeDb } from "../server/db";
 import { deleteGroups } from "./db-cleanup";
 import { seedGroup, type SeededGroup } from "./seed";
+import { collectAudit, expectNoOverlaps } from "./layout-checks";
 
 const createdSlugs: string[] = [];
 test.afterAll(async () => {
@@ -32,6 +34,7 @@ interface Size {
 
 export const SIZES: Size[] = [
   { name: "360x740-small-android", width: 360, height: 740, phone: true },
+  { name: "375x667-iphone-se", width: 375, height: 667, phone: true },
   { name: "390x844-iphone", width: 390, height: 844, phone: true },
   { name: "430x932-large-phone", width: 430, height: 932, phone: true },
   { name: "844x390-phone-landscape", width: 844, height: 390, phone: true },
@@ -144,6 +147,8 @@ function shooter(size: Size) {
   return async (page: Page, name: string) => {
     n += 1;
     await expectFitsWidth(page, `${name} at ${size.name}`);
+    await expectNoOverlaps(page, `${name} at ${size.name}`);
+    await collectAudit(page, name, size.name);
     await page.screenshot({ path: `${dir}/${String(n).padStart(2, "0")}-${name}.png`, fullPage: true, caret: "initial" });
   };
 }
@@ -278,6 +283,10 @@ for (const size of SIZES) {
     await expect(preview).toContainText("Sali na sa exchange gift natin!");
     await expect(page.getByRole("button", { name: "Palitan ang ilaw" }), "forms: calm twinkle, no controller").toHaveCount(0);
     await shot(page, "new");
+    // Submitted empty: every field's error under it.
+    await page.getByRole("button", { name: "Create group" }).click();
+    await expect(page.getByText("Pakipili ang party date.")).toBeVisible();
+    await shot(page, "new-errors");
     await page.getByLabel("Pangalan ng group").fill("Barkada Christmas Party");
     await page.getByLabel("Budget", { exact: true }).fill("500");
     await page.getByLabel("Petsa ng party").fill(open.partyDate);
@@ -293,6 +302,12 @@ for (const size of SIZES) {
     await settle(page);
     await expectColumns(size, page.getByRole("heading", { name: open.name }), page.getByRole("form", { name: "Sumali" }), "join info | form");
     await shot(page, "join");
+    // A name that's taken: two choices ("Ako 'yan" or another name) in place of the form.
+    await page.getByLabel("Pangalan mo").fill("Joy");
+    await page.getByLabel("4-digit PIN").fill("1111");
+    await page.getByRole("button", { name: "Join the group" }).click();
+    await expect(page.getByRole("button", { name: "Ako 'yan, ilalagay ko ang PIN" })).toBeVisible();
+    await shot(page, "join-taken");
     await page.goto(`${open.sharePath}?bumalik=1`);
     await expect(page.getByRole("heading", { name: "Welcome back!" })).toBeVisible();
     await settle(page);
@@ -310,6 +325,10 @@ for (const size of SIZES) {
     await expect(me.getByRole("heading", { name: "Hi, Joy!" })).toBeVisible();
     await settle(me);
     await shot(me, "me-before-draw");
+    // Editing a wishlist item: the row turns into its fields.
+    await me.getByRole("button", { name: /^Edit / }).first().click();
+    await expect(me.getByRole("button", { name: "Save" })).toBeVisible();
+    await shot(me, "me-wishlist-editing");
 
     await me.goto(drawn.members.Marco.link);
     await expect(me.getByRole("button", { name: "Tap to open your bunutan" })).toBeVisible();
@@ -386,6 +405,15 @@ for (const size of SIZES) {
     await expect(admin.getByText("6 of 8 have opened their slip")).toBeVisible();
     await settle(admin);
     await shot(admin, "admin-after-draw");
+    // The party reveal before the start (on a phone, the organizer's remote).
+    await admin.goto(`/g/${drawn.slug}/reveal`);
+    await expect(admin.getByRole("button", { name: "Simulan ang reveal" })).toBeVisible();
+    await settle(admin);
+    await shot(admin, "reveal-ready");
+    await admin.goto("/g/zzzzzzzzzzzz");
+    await expect(admin.locator("main")).toBeVisible();
+    await settle(admin);
+    await shot(admin, "not-found");
     await organizer.close();
   });
 }

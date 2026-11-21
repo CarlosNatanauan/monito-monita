@@ -12,10 +12,12 @@ export interface WishItemData {
 export function WishLink({ url }: { url: string }) {
   return (
     <a
+      // A notebook text link: a 44px tap target over its 40px row (lst-row's rule for text buttons).
+      data-variant="link"
       href={url}
       target="_blank"
       rel="noopener noreferrer nofollow"
-      className="inline-flex min-h-10 shrink-0 items-center rounded-paper text-small font-bold underline decoration-[1.5px] underline-offset-[3px] focus-ring"
+      className="inline-flex min-h-11 shrink-0 items-center rounded-paper text-small font-bold underline decoration-[1.5px] underline-offset-[3px] focus-ring"
     >
       {displayDomain(url)}
       <span className="sr-only"> (opens in a new tab)</span>

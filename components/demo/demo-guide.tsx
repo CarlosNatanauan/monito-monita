@@ -90,7 +90,7 @@ export function DemoRevealTag() {
   return (
     <p
       data-demo-guide
-      className="gift-tag -rotate-1 self-start bg-ilaw-lit font-bold text-ube landscape:max-w-[17vw] landscape:text-[clamp(14px,1.8vh,20px)]"
+      className="gift-tag -rotate-1 self-start bg-ilaw-lit font-bold text-ube landscape:max-w-[17vw] landscape:text-[clamp(14px,1.8dvh,20px)]"
     >
       {DEMO_BANNER}
     </p>

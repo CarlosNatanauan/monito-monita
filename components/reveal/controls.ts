@@ -10,11 +10,11 @@ import { useEffect, useRef, useSyncExternalStore } from "react";
  * they are normal tap targets. Hand-cut corners, never pills.
  */
 export const GOLD_BUTTON =
-  "h-[58px] landscape:h-[clamp(48px,6vh,68px)] landscape:px-[clamp(20px,2.4vh,34px)] landscape:text-[clamp(18px,2.6vh,30px)]";
+  "h-[58px] landscape:h-[clamp(48px,6dvh,68px)] landscape:px-[clamp(20px,2.4dvh,34px)] landscape:text-[clamp(18px,2.6dvh,30px)]";
 export const NIGHT_BUTTON =
-  "h-[58px] rounded-btn border-[1.5px] border-gabi-text bg-transparent text-gabi-text disabled:border-gabi-2 disabled:bg-transparent disabled:text-gabi-line landscape:h-[clamp(48px,6vh,68px)] landscape:px-[clamp(20px,2.4vh,34px)] landscape:text-[clamp(17px,2.5vh,28px)]";
+  "h-[58px] rounded-btn border-[1.5px] border-gabi-text bg-transparent text-gabi-text disabled:border-gabi-2 disabled:bg-transparent disabled:text-gabi-line landscape:h-[clamp(48px,6dvh,68px)] landscape:px-[clamp(20px,2.4dvh,34px)] landscape:text-[clamp(17px,2.5dvh,28px)]";
 export const ICON_BUTTON =
-  "inline-flex h-12 cursor-pointer items-center gap-2 rounded-btn-sm px-3 font-bold text-gabi-text focus-ring landscape:h-[clamp(44px,5.4vh,64px)] landscape:text-[clamp(16px,2.4vh,28px)]";
+  "inline-flex h-12 cursor-pointer items-center gap-2 rounded-btn-sm px-3 font-bold text-gabi-text focus-ring landscape:h-[clamp(44px,5.4dvh,64px)] landscape:text-[clamp(16px,2.4dvh,28px)]";
 
 const isTyping = (target: EventTarget | null) =>
   target instanceof HTMLElement &&

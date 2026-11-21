@@ -6,7 +6,7 @@ import { Field, ThemeWeeksEditor, useThemeDrafts } from "@/components/group-fiel
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { CheckIcon } from "@/components/ui/icons";
-import { Input } from "@/components/ui/input";
+import { DateInput, Input } from "@/components/ui/input";
 import { SectionTitle } from "@/components/ui/paper";
 import { submitWithoutReset } from "@/lib/forms";
 import { isIsoDate, themeStartDates, todayIn } from "@/lib/theme-weeks";
@@ -135,9 +135,8 @@ function DetailsForm({
       <div className={all ? "grid grid-cols-[1.4fr_1fr] items-start gap-3" : "flex flex-col"}>
         <Field label="Petsa ng party" error={errors.partyDate}>
           {(props) => (
-            <Input
+            <DateInput
               {...props}
-              type="date"
               name="partyDate"
               value={partyDate}
               min={today}

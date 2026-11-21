@@ -45,7 +45,7 @@ async function holdActions(page: Page) {
 
 test("in-between states: loading, pending, optimistic, offline, link states", async ({ browser }, testInfo) => {
   test.setTimeout(300_000);
-  const shot = screenshotter(testInfo, "states");
+  const shot = screenshotter(testInfo, "states", { overlaps: true });
   const device = testInfo.project.use;
   const tag = testInfo.project.name;
   const group = await seedGroup(

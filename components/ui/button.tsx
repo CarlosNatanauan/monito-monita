@@ -18,7 +18,7 @@ const VARIANTS = {
     "h-[58px] rounded-btn bg-ube px-[26px] font-head text-button text-white disabled:bg-ube-mist disabled:text-ube-soft lg:h-[60px] lg:px-[30px]",
   secondary:
     "h-12 rounded-btn-sm border-[1.5px] border-ube bg-papel px-[18px] font-sans text-body font-bold text-ube disabled:border-ube-mist disabled:bg-ube-mist disabled:text-ube-soft",
-  link: "min-h-11 px-1.5 font-sans text-small font-bold text-ube underline decoration-[1.5px] underline-offset-[3px] disabled:text-ube-soft",
+  link: "min-h-11 min-w-11 px-1.5 font-sans text-small font-bold text-ube underline decoration-[1.5px] underline-offset-[3px] disabled:text-ube-soft",
   gold: "h-[54px] rounded-btn bg-ilaw px-[26px] font-head text-button text-gabi disabled:bg-gabi-2 disabled:text-gabi-text",
 } as const
 

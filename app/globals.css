@@ -5,6 +5,9 @@
 /* The landing's two-column layout (docs/DESIGN.md §5): 1180px and up. */
 @custom-variant wide (@media (width >= 1180px));
 
+/* A phone turned sideways (the reveal): landscape and at most 500px tall. */
+@custom-variant phone-landscape (@media (orientation: landscape) and (max-height: 500px));
+
 /*
  * Monito Monita design tokens ("Handmade Pasko"). Source of truth:
  * docs/DESIGN.md and docs/design/reference.html. Light theme only; the
@@ -412,6 +415,10 @@
 /* The offline banner (lib/offline-banner.ts): a paper strip pinned to the
    bottom, with an unlit bulb while offline and a lit one when the signal
    is back. State is in words too. No motion: it's put down and taken away. */
+/* While the strip shows, the page's end can scroll clear of it. */
+body:has(> .mm-offline:not(:empty)) {
+  padding-bottom: 76px;
+}
 .mm-offline {
   position: fixed;
   inset: auto 0 0;
@@ -537,5 +544,40 @@
   ::view-transition-old(*),
   ::view-transition-new(*) {
     animation: none !important;
+  }
+}
+
+/*
+ * Date fields (components/ui/input.tsx, DateInput). iOS Safari gives
+ * input[type="date"] a built-in minimum width and height and centres its
+ * value; drop the native look so it fills its column at the inputs' 54px.
+ * The hint shows while the field is empty and not focused, in engines that
+ * draw an empty date as blank or mm/dd/yyyy (hidden there).
+ */
+.date-field {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.date-field::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+}
+.date-field::-webkit-datetime-edit {
+  padding: 0;
+}
+.date-hint {
+  display: none;
+}
+@supports selector(::-webkit-datetime-edit) or selector(::-webkit-date-and-time-value) {
+  .date-field[data-empty]:not(:focus)::-webkit-datetime-edit,
+  .date-field[data-empty]:not(:focus)::-webkit-date-and-time-value {
+    color: transparent;
+  }
+  .date-field[data-empty]:not(:focus) + .date-hint {
+    display: flex;
   }
 }

@@ -170,7 +170,8 @@ export function RevealStage({
   useEffect(() => () => playing.current?.finish(), []);
 
   return (
-    <div ref={boxRef} className={className}>
+    // A drawn scene: slips carry both faces for the flip (e2e/layout-checks.ts skips it).
+    <div ref={boxRef} data-overlap-ok className={className}>
       <div
         ref={stageRef}
         className="rv-stage"

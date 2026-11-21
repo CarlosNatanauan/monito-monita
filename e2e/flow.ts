@@ -2,6 +2,7 @@
  * Shared helpers for the main-flow specs (flow-1 … flow-4). Each person
  * gets their own browser context (own cookies), like separate phones.
  */
+import { expectNoOverlaps } from "./layout-checks";
 import { mkdirSync, rmSync } from "node:fs";
 import { expect, type Browser, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
 
@@ -97,7 +98,8 @@ export function people(browser: Browser, testInfo: TestInfo) {
 }
 
 /** Full-page screenshots in e2e/screenshots/{project}/{spec}/, numbered in order. */
-export function screenshotter(testInfo: TestInfo, spec: string) {
+/** `overlaps`: also run the layout sweep's overlap check (e2e/layout-checks.ts) on each screenshotted state. */
+export function screenshotter(testInfo: TestInfo, spec: string, { overlaps = false }: { overlaps?: boolean } = {}) {
   const dir = `e2e/screenshots/${testInfo.project.name}/${spec}`;
   // Start fresh so old runs with different step numbers do not linger.
   rmSync(dir, { recursive: true, force: true });
@@ -105,6 +107,7 @@ export function screenshotter(testInfo: TestInfo, spec: string) {
   let n = 0;
   return async (page: Page, name: string) => {
     n += 1;
+    if (overlaps) await expectNoOverlaps(page, `${spec} ${name} (${testInfo.project.name})`);
     // caret: "initial" so a screenshot taken before hydration never edits the DOM
     // (the default hides the caret with an inline style React then flags).
     await page.screenshot({ path: `${dir}/${String(n).padStart(2, "0")}-${name}.png`, fullPage: true, caret: "initial" });
