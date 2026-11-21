@@ -178,6 +178,7 @@ The DOM keeps the phone order; the grid places each block on wider screens. On p
 - **Disabled:** `--ube-mist` fill, `--ube-soft` text, always followed by one line saying why.
 - **Focus:** 3px `--ilaw` outline, 2px offset, on top of the ube fill or border.
 - **Pressed:** scale 0.98.
+- Heights are minimums: at a large text size (a 200% default font) the label wraps and the button grows; nothing spills out sideways.
 - **Gold button:** reveal screen only. `--ilaw` fill, `--gabi` text.
 
 ### Inputs
@@ -188,7 +189,7 @@ The DOM keeps the phone order; the grid places each block on wider screens. On p
 - Date fields (`DateInput`): the native look is dropped so iOS Safari can't give them its own width and height (it spilled into the Budget column); the value sits left, and an empty field shows "Pumili ng petsa" in `--ube-soft`, since iOS shows no placeholder for dates.
 
 ### PIN boxes
-- Four boxes, 54 by 60, white, 1.5px ube border, 4px corners, 10px gap.
+- Four boxes, 54 by 60, white, 1.5px ube border, 4px corners, 10px gap. Sized in rem, so they grow with the reader's text size, and never wider than the row (at a very large text size they shrink to fit four across).
 - **Empty:** blank. **Filled:** 12px ube dot. **Focused:** `--ilaw-lit` fill, 2.5px border. **Error:** 2.5px `--sili` border on all four.
 - `inputmode="numeric"`, auto-advance, paste fills all four.
 
@@ -206,6 +207,8 @@ The DOM keeps the phone order; the grid places each block on wider screens. On p
 - Title row in Chelsea Market 20. Rows: text left, status or text buttons right.
 - Field labels on it are `--dahon` 14 bold. Names written on it are Gochi Hand 30.
 - Empty state: one or two lines of `--ube-soft` text written on the lines, then the add row. No separate empty box.
+- Nothing is cut off with an ellipsis: long text wraps onto the next rule (`lst-wrap`, one 40px row per line), titles included. "Your groups" names and the organizer's theme titles stop at two rows; wish titles and notes take as many rows as they need. Things beside wrapped text stay in its first row. (The reveal stage's slips are fixed-size cards and still clamp; the full pair is always written out in the centre.)
+- A theme week is a label row (wraps if it must) and then the field with "Alisin", 40px, on the next row.
 - "Paano 'to?" uses a small star in the margin, not numbers.
 
 ### Capiz card

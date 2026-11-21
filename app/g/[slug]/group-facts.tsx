@@ -108,7 +108,7 @@ export function GoneGroupNotice() {
         <Button asChild className="w-full lg:w-fit">
           <a href="/demo">Simulan ulit ang demo</a>
         </Button>
-        <Button asChild variant="secondary" className="w-full lg:h-[60px] lg:w-fit">
+        <Button asChild variant="secondary" className="w-full lg:min-h-[60px] lg:w-fit">
           <a href="/new">Gumawa ng totoong group</a>
         </Button>
       </div>

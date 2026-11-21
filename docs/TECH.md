@@ -217,9 +217,13 @@ Self-hosted, no third party. `components/landing/demo-video.tsx` (docs/DESIGN.md
 - **Checks** (`e2e/landing.spec.ts`): the poster and "Create your group" fully visible at 1366×657 and 390×664; the poster eager, high priority and the largest paint; no `<video>` and no video request before the press; the keyboard and the focus ring; in place in the same box (laptop) or full screen (phones); the poster and focus back after the end or leaving full screen; one play counted; no layout shift.
 - The site sends no Content-Security-Policy; if one is added, the landing needs `media-src 'self'` (and `img-src 'self'` for the poster).
 
+## Pending submits
+
+While a form's submit is pending (`useActionState` / `useTransition`: /new, join, come-back, Edit details, Mag-set ng PIN), its fields are `readOnly` (still posted, unlike `disabled`) and its add/remove buttons are off, so nothing typed then can be lost. Forms submit with `submitWithoutReset` (lib/forms.ts) once hydrated (join included; before hydration it's a plain form post), so a returned error never puts older values back over what's in the fields. `e2e/slow-phone.spec.ts` ("pending submit") holds the response and checks both on the phones.
+
 ## Layout checks
 
-`e2e/layout-checks.ts`, run by the layout sweep on every page it screenshots (and by `e2e/states.spec.ts` on the in-between states): `expectNoOverlaps` fails when two controls, a control and a line of text, or two lines of text overlap by more than 2px, or a field is wider than its column. Opt out with `data-overlap-ok` (the landing slip, the reveal stage); gift tags, the light string and `aria-hidden` art are skipped; a listahan's text buttons may share their 4px tap-target overlap. With `AUDIT=1`, `collectAudit` also writes fields under 16px (iOS zoom on focus), tap targets under 44px and cut-off text to `test-results/audit/<size>.json`.
+`e2e/layout-checks.ts`, run by the layout sweep on every page it screenshots (and by `e2e/states.spec.ts` on the in-between states): `expectNoOverlaps` fails when two controls, a control and a line of text, or two lines of text overlap by more than 2px, or a field is wider than its column. Opt out with `data-overlap-ok` (the landing slip, the reveal stage); gift tags, the light string and `aria-hidden` art are skipped; a listahan's text buttons may share their 4px tap-target overlap. The sweep also loads join, /new and the organizer page at a 200% default font size (`html { font-size: 200% }`): no sideways scroll, no overlaps. With `AUDIT=1`, `collectAudit` also writes fields under 16px (iOS zoom on focus), tap targets under 44px and cut-off text to `test-results/audit/<size>.json`.
 
 ## Landing bowl
 

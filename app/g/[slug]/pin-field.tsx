@@ -28,6 +28,7 @@ export function PinField({
   describedBy,
   autoFocus,
   onChange,
+  readOnly,
 }: {
   id: string;
   label: ReactNode;
@@ -40,6 +41,8 @@ export function PinField({
   describedBy?: string;
   autoFocus?: boolean;
   onChange?: () => void;
+  /** While the form's submit is pending: read-only (the PIN still posts). */
+  readOnly?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [length, setLength] = useState(0);
@@ -68,14 +71,16 @@ export function PinField({
         {label}
       </label>
       <div className={rowClassName}>
-      <div className="relative w-fit">
-        <div aria-hidden className="flex gap-2.5">
+      {/* Sized in rem, so the boxes grow with the reader's text size (54×60 at 16px), and never
+          wider than the row: at a very large text size they shrink to fit four across. */}
+      <div className="relative w-full max-w-[15.375rem]">
+        <div aria-hidden className="grid grid-cols-4 gap-2.5">
           {Array.from({ length: PIN_LENGTH }, (_, i) => (
             <span
               key={i}
               data-pin-box
               className={cn(
-                "flex h-[60px] w-[54px] items-center justify-center rounded-[4px] border-[1.5px] border-ube bg-papel",
+                "flex aspect-[54/60] items-center justify-center rounded-[4px] border-[1.5px] border-ube bg-papel",
                 i === active && "border-[2.5px] bg-ilaw-lit",
                 invalid && "border-[2.5px] border-sili",
               )}
@@ -97,6 +102,7 @@ export function PinField({
           // iOS Safari: what a PIN may be, so it doesn't offer a "Strong Password" here.
           {...{ passwordrules: `required: digit; minlength: ${PIN_LENGTH}; maxlength: ${PIN_LENGTH};` }}
           autoFocus={autoFocus}
+          readOnly={readOnly}
           aria-invalid={invalid ? true : undefined}
           aria-describedby={describedBy}
           onFocus={() => setFocused(true)}
@@ -115,7 +121,7 @@ export function PinField({
             "caret-transparent selection:bg-transparent [-webkit-tap-highlight-color:transparent]",
             hydrated
               ? "text-transparent"
-              : "pl-[21px] font-mono text-[18px] tracking-[53px] text-ube",
+              : "pl-[1.3125rem] font-mono text-[1.125rem] tracking-[3.3125rem] text-ube",
           )}
         />
       </div>

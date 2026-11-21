@@ -118,6 +118,7 @@ function DetailsForm({
           {(props) => (
             <Input
               {...props}
+              readOnly={pending}
               name="name"
               value={name}
               onChange={(e) => {
@@ -137,6 +138,7 @@ function DetailsForm({
           {(props) => (
             <DateInput
               {...props}
+              readOnly={pending}
               name="partyDate"
               value={partyDate}
               min={today}
@@ -157,6 +159,7 @@ function DetailsForm({
                 </span>
                 <Input
                   {...props}
+                  readOnly={pending}
                   name="budget"
                   value={budget}
                   onChange={(e) => {
@@ -174,6 +177,7 @@ function DetailsForm({
       </div>
 
       <ThemeWeeksEditor
+        readOnly={pending}
         themes={themeDrafts.themes}
         startDates={startDates}
         today={today}

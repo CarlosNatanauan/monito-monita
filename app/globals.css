@@ -147,16 +147,15 @@
     repeating-linear-gradient(#fff 0 39px, var(--color-rule-blue) 39px 40px);
 }
 @utility lst-title {
-  height: 40px;
+  min-height: 40px;
   font-family: var(--font-head);
   font-size: 1.25rem;
-  line-height: 42px;
-  /* Keeps the 42px line (centred on the 40px rule) when a text size is added
-     (lg:text-section-lg sets its own line-height otherwise). */
-  --tw-leading: 42px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* A long title wraps onto the next rule instead of being cut off; each
+     line is one 40px row (more only at a very large text size). The custom
+     property keeps it when a text size is added (lg:text-section-lg). */
+  line-height: max(40px, 1.25em);
+  --tw-leading: max(40px, 1.25em);
+  overflow-wrap: anywhere;
 }
 @utility lst-row {
   min-height: 40px;
@@ -170,15 +169,32 @@
     margin-block: -2px;
   }
 }
+/*
+ * Text that wraps on the rules instead of being cut off: each line takes one
+ * 40px row (a very large text size may need more). Things beside it in the
+ * row stay in its first row (`self-start`, 40px tall).
+ */
+@utility lst-wrap {
+  min-width: 0;
+  /* 40px up to a 150% text size; past that the line grows so a handwritten
+     name (1.18em, a tall font) still fits inside it. */
+  --tw-leading: max(40px, 1.6em);
+  line-height: max(40px, 1.6em);
+  overflow-wrap: anywhere;
+}
 @utility lst-row2 {
-  height: 80px;
+  /* 80px; taller only at a very large text size. */
+  min-height: 80px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 @utility lst-label {
-  height: 40px;
-  line-height: 54px;
+  /* Sits low on its 40px rule (a 54px line, 14px of it hanging into the row
+     below). At a larger text size the line grows and so does the band, so the
+     words never run into the field under them; at 14px it's exactly 40px. */
+  line-height: max(54px, calc(1em + 40px));
+  margin-bottom: -14px;
   font-size: 0.875rem;
   font-weight: 700;
   color: var(--color-dahon);

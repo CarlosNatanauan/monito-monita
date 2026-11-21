@@ -48,9 +48,10 @@ export function YourGroups({ className }: { className?: string }) {
               href={g.roles.includes("organizer") ? `/g/${g.slug}/admin` : `/g/${g.slug}/me`}
               className="flex min-h-10 min-w-0 items-center rounded-paper font-bold underline decoration-[1.5px] underline-offset-[3px] focus-ring"
             >
-              <span className="truncate">Continue: {g.name}</span>
+              {/* Long names wrap to two rows at most (the notebook's rule). */}
+              <span className="lst-wrap line-clamp-2">Continue: {g.name}</span>
             </Link>
-            <span className="shrink-0 text-small text-ube-soft">{g.roles.join(", ")}</span>
+            <span className="lst-wrap shrink-0 self-start text-small text-ube-soft">{g.roles.join(", ")}</span>
           </li>
         ))}
       </ul>

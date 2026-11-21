@@ -255,8 +255,8 @@ function FollowAlong({ view, count, progress }: { view: StageView; count: React.
           <ol aria-label={view.status === "REVEALED" ? "All pairs" : "Nabunyag na"} className="grid grid-cols-2 gap-3">
             {shown.map((p) => (
               <li key={`${p.giverName}-${p.receiverName}`} className="flex min-w-0 flex-col items-center bg-papel px-2 py-1.5 text-center text-ube">
-                <span className="max-w-full truncate font-hand text-[24px] leading-tight">{p.giverName}</span>
-                <span className="max-w-full truncate text-[14px] font-bold">
+                <span className="max-w-full font-hand text-[24px] leading-tight [overflow-wrap:anywhere]">{p.giverName}</span>
+                <span className="max-w-full text-[14px] font-bold [overflow-wrap:anywhere]">
                   → kay <span className="nm">{p.receiverName}</span>
                 </span>
               </li>

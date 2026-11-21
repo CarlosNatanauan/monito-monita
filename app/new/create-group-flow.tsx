@@ -158,6 +158,7 @@ function CreateGroupForm({
           {(props) => (
             <Input
               {...props}
+              readOnly={pending}
               name="name"
               value={name}
               onChange={(e) => {
@@ -177,6 +178,7 @@ function CreateGroupForm({
             {(props) => (
               <DateInput
                 {...props}
+                readOnly={pending}
                 name="partyDate"
                 value={partyDate}
                 min={today}
@@ -197,6 +199,7 @@ function CreateGroupForm({
                 </span>
                 <Input
                   {...props}
+                  readOnly={pending}
                   name="budget"
                   value={budget}
                   onChange={(e) => {
@@ -214,6 +217,7 @@ function CreateGroupForm({
         </div>
 
         <ThemeWeeksEditor
+          readOnly={pending}
           themes={themes}
           startDates={startDates}
           today={today}

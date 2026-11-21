@@ -53,7 +53,7 @@ export function DemoGuide({ slug, current, className }: { slug: string; current:
           {STEPS.map((step) => (
             <li key={step.page} className="lst-row relative justify-start">
               <Art name="star" className="absolute top-[11px] -left-9 size-[18px]" />
-              <span className="min-w-0 truncate">
+              <span className="lst-wrap">
                 {step.page === current ? (
                   <strong aria-current="page">{step.label}</strong>
                 ) : (

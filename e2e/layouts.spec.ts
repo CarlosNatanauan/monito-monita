@@ -414,6 +414,22 @@ for (const size of SIZES) {
     await expect(admin.locator("main")).toBeVisible();
     await settle(admin);
     await shot(admin, "not-found");
+
+    // A 200% default font size (a browser setting; rem sizes double): join, /new and the
+    // organizer page still fit the width, and nothing overlaps.
+    const big = await contextFor(browser, size);
+    const reader = await big.newPage();
+    for (const [name, at, path] of [
+      ["join", reader, open.sharePath],
+      ["new", reader, "/new"],
+      ["admin", admin, open.organizerPath],
+    ] as const) {
+      await at.goto(path);
+      await at.addStyleTag({ content: "html { font-size: 200% !important; }" });
+      await settle(at);
+      await shot(at, `${name}-text-200`);
+    }
+    await big.close();
     await organizer.close();
   });
 }

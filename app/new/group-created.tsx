@@ -71,7 +71,7 @@ export function GroupCreated({
           <div className="flex flex-wrap gap-2.5">
             <CopyButton text={shareUrl} label="Copy link" className="w-full lg:w-fit" />
             {canShare && (
-              <Button type="button" variant="secondary" onClick={share} className="lg:h-[60px]">
+              <Button type="button" variant="secondary" onClick={share} className="lg:min-h-[60px]">
                 Share
               </Button>
             )}
@@ -93,7 +93,7 @@ export function GroupCreated({
           />
           <p className="text-small text-ube-soft">I-save o i-bookmark. Ito ang daan pabalik sa Manage group.</p>
         </SecretCard>
-        <Button asChild variant="secondary" className="h-[58px] w-full font-head text-button font-normal lg:h-[60px]">
+        <Button asChild variant="secondary" className="min-h-[58px] w-full font-head text-button font-normal lg:min-h-[60px]">
           <Link href={`/g/${slug}/admin`}>Pumunta sa group ko</Link>
         </Button>
       </div>

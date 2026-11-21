@@ -4,7 +4,7 @@
  */
 import { expectNoOverlaps } from "./layout-checks";
 import { mkdirSync, rmSync } from "node:fs";
-import { expect, type Browser, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
+import { expect, type Browser, type BrowserContext, type Page, type Route, type TestInfo } from "@playwright/test";
 
 export interface Person {
   label: string;
@@ -54,7 +54,9 @@ export function people(browser: Browser, testInfo: TestInfo) {
           // A request to the page's own URL cancelled by leaving it: the
           // "Your groups" Server Action (it posts to /) or Next's offline
           // connectivity check (experimental.useOffline pings the current URL).
-          error.message.includes(`${new URL(page.url()).host}/ due to access control checks`))
+          error.message.includes(`${new URL(page.url()).host}/ due to access control checks`) ||
+          // The same on the reveal screen: its Next/Previous action or refresh posts to its own URL.
+          error.message.includes(`${new URL(page.url()).host}${new URL(page.url()).pathname} due to access control checks`))
       ) {
         return;
       }
@@ -222,3 +224,24 @@ export const WISHES: Record<string, string[]> = {
   Ben: ["Socks"],
   "Tita Org": [],
 };
+
+/**
+ * Holds every server action response (POST with a next-action header) until
+ * `release()`: the page stays in its pending state meanwhile.
+ */
+export async function holdActions(page: Page) {
+  const held: Route[] = [];
+  const handler = async (route: Route) => {
+    const r = route.request();
+    if (r.method() === "POST" && r.headers()["next-action"]) held.push(route);
+    else await route.fallback();
+  };
+  await page.route("**/*", handler);
+  return {
+    held: () => held.length,
+    async release() {
+      await page.unroute("**/*", handler);
+      for (const route of held.splice(0)) await route.continue().catch(() => {});
+    },
+  };
+}

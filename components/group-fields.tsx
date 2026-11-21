@@ -97,6 +97,7 @@ export function ThemeWeeksEditor({
   onChange,
   onRemove,
   onAdd,
+  readOnly = false,
 }: {
   themes: ThemeDraft[];
   /** One per theme once there's a party date, else empty. */
@@ -107,6 +108,8 @@ export function ThemeWeeksEditor({
   onChange: (key: number, index: number, title: string) => void;
   onRemove: (key: number) => void;
   onAdd: () => void;
+  /** While the form's submit is pending: fields read-only (they still post), add/remove off. */
+  readOnly?: boolean;
 }) {
   const titleId = useId();
   const states = today && startDates.length > 0 ? themeWeekStates(startDates, today) : [];
@@ -128,41 +131,42 @@ export function ThemeWeeksEditor({
             const tag = state ? THEME_WEEK_TAG[state] : null;
             return (
               <li key={theme.key}>
-                <div className="lst-row2">
-                  <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                    <label htmlFor={inputId} className="truncate text-tag font-bold text-dahon">
-                      Week {index + 1}
-                      {startDates[index] && (
-                        <>
-                          {" · "}
-                          <span className="font-normal">Starts {formatShortDate(startDates[index])}</span>
-                        </>
-                      )}
-                      {tag && (
-                        <>
-                          {" · "}
-                          <span className={cn(state === "past" && "text-sili")}>{tag}</span>
-                        </>
-                      )}
-                    </label>
-                    <Input
-                      id={inputId}
-                      size="row"
-                      name="theme"
-                      value={theme.title}
-                      onChange={(e) => onChange(theme.key, index, e.target.value)}
-                      aria-label={`Theme ${index + 1}`}
-                      aria-invalid={error ? true : undefined}
-                      aria-describedby={error ? errorId : undefined}
-                      placeholder="Something…"
-                      maxLength={60}
-                      className={cn("h-11", state === "past" && "text-ube-soft")}
-                    />
-                  </div>
+                {/* The label wraps on the rules (a long "Week 2 · Starts Dec 3 · Ngayong linggo"
+                    on a phone), then the field and Alisin share the next 40px row. */}
+                <label htmlFor={inputId} className="lst-wrap block text-tag font-bold text-dahon">
+                  Week {index + 1}
+                  {startDates[index] && (
+                    <>
+                      {" · "}
+                      <span className="font-normal">Starts {formatShortDate(startDates[index])}</span>
+                    </>
+                  )}
+                  {tag && (
+                    <>
+                      {" · "}
+                      <span className={cn(state === "past" && "text-sili")}>{tag}</span>
+                    </>
+                  )}
+                </label>
+                <div className="lst-row">
+                  <Input
+                    id={inputId}
+                    size="row"
+                    name="theme"
+                    value={theme.title}
+                    onChange={(e) => onChange(theme.key, index, e.target.value)}
+                    readOnly={readOnly}
+                    aria-label={`Theme ${index + 1}`}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={error ? errorId : undefined}
+                    placeholder="Something…"
+                    maxLength={60}
+                    className={cn("h-10 flex-1", state === "past" && "text-ube-soft")}
+                  />
                   <Button
                     type="button"
                     variant="link"
-                    className="self-end"
+                    disabled={readOnly}
                     onClick={() => onRemove(theme.key)}
                     aria-label={`Remove theme ${index + 1}`}
                   >
@@ -186,7 +190,7 @@ export function ThemeWeeksEditor({
         )}
         {themes.length < MAX_THEMES && (
           <div className="lst-row">
-            <Button type="button" variant="link" onClick={onAdd}>
+            <Button type="button" variant="link" onClick={onAdd} disabled={readOnly}>
               + Magdagdag ng week
             </Button>
           </div>
