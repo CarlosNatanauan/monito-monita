@@ -209,8 +209,10 @@ export function expectRevealPageClean(
   const allowed = [...shownNames];
   for (const m of truth.members) {
     expect(text, `${label} contains the member id of ${m.name}`).not.toContain(m.id);
+    // As whole words, past the codenames on the ring that contain it: "Pastillas
+    // Prince" is hidden even while "Pastillas Princess" shows (server/codenames.ts).
     if (!shownCodenames.has(m.codename)) {
-      expect(text, `${label} shows the codename of ${m.name}`).not.toContain(m.codename);
+      expect(containsName(text, m.codename, [...shownCodenames]), `${label} shows the codename of ${m.name}`).toBe(false);
     }
     if (shownNames.has(m.name)) continue;
     expect(containsName(text, m.name, allowed), `${label} shows "${m.name}"`).toBe(false);
