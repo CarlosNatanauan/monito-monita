@@ -88,10 +88,11 @@ export function ComeBackForm({
             <>
               <input type="hidden" name="displayName" value={presetName} />
               <p className="lst-label">Pangalan mo</p>
-              <p className="h-10 truncate font-hand text-[30px] leading-[38px]">{presetName}</p>
+              <p className="lst-wrap font-hand text-[30px]">{presetName}</p>
             </>
           ) : (
             <NameLine
+              readOnly={pending}
               id="comeback-name"
               name="displayName"
               placeholder="Hal. Joy"
@@ -104,6 +105,7 @@ export function ComeBackForm({
             />
           )}
           <PinField
+            readOnly={pending}
             id="comeback-pin"
             label="4-digit PIN"
             labelClassName="lst-label block"

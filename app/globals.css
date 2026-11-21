@@ -5,6 +5,9 @@
 /* The landing's two-column layout (docs/DESIGN.md §5): 1180px and up. */
 @custom-variant wide (@media (width >= 1180px));
 
+/* A phone turned sideways (the reveal): landscape and at most 500px tall. */
+@custom-variant phone-landscape (@media (orientation: landscape) and (max-height: 500px));
+
 /*
  * Monito Monita design tokens ("Handmade Pasko"). Source of truth:
  * docs/DESIGN.md and docs/design/reference.html. Light theme only; the
@@ -144,16 +147,15 @@
     repeating-linear-gradient(#fff 0 39px, var(--color-rule-blue) 39px 40px);
 }
 @utility lst-title {
-  height: 40px;
+  min-height: 40px;
   font-family: var(--font-head);
   font-size: 1.25rem;
-  line-height: 42px;
-  /* Keeps the 42px line (centred on the 40px rule) when a text size is added
-     (lg:text-section-lg sets its own line-height otherwise). */
-  --tw-leading: 42px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  /* A long title wraps onto the next rule instead of being cut off; each
+     line is one 40px row (more only at a very large text size). The custom
+     property keeps it when a text size is added (lg:text-section-lg). */
+  line-height: max(40px, 1.25em);
+  --tw-leading: max(40px, 1.25em);
+  overflow-wrap: anywhere;
 }
 @utility lst-row {
   min-height: 40px;
@@ -167,15 +169,32 @@
     margin-block: -2px;
   }
 }
+/*
+ * Text that wraps on the rules instead of being cut off: each line takes one
+ * 40px row (a very large text size may need more). Things beside it in the
+ * row stay in its first row (`self-start`, 40px tall).
+ */
+@utility lst-wrap {
+  min-width: 0;
+  /* 40px up to a 150% text size; past that the line grows so a handwritten
+     name (1.18em, a tall font) still fits inside it. */
+  --tw-leading: max(40px, 1.6em);
+  line-height: max(40px, 1.6em);
+  overflow-wrap: anywhere;
+}
 @utility lst-row2 {
-  height: 80px;
+  /* 80px; taller only at a very large text size. */
+  min-height: 80px;
   display: flex;
   align-items: center;
   gap: 8px;
 }
 @utility lst-label {
-  height: 40px;
-  line-height: 54px;
+  /* Sits low on its 40px rule (a 54px line, 14px of it hanging into the row
+     below). At a larger text size the line grows and so does the band, so the
+     words never run into the field under them; at 14px it's exactly 40px. */
+  line-height: max(54px, calc(1em + 40px));
+  margin-bottom: -14px;
   font-size: 0.875rem;
   font-weight: 700;
   color: var(--color-dahon);
@@ -412,6 +431,10 @@
 /* The offline banner (lib/offline-banner.ts): a paper strip pinned to the
    bottom, with an unlit bulb while offline and a lit one when the signal
    is back. State is in words too. No motion: it's put down and taken away. */
+/* While the strip shows, the page's end can scroll clear of it. */
+body:has(> .mm-offline:not(:empty)) {
+  padding-bottom: 76px;
+}
 .mm-offline {
   position: fixed;
   inset: auto 0 0;
@@ -537,5 +560,40 @@
   ::view-transition-old(*),
   ::view-transition-new(*) {
     animation: none !important;
+  }
+}
+
+/*
+ * Date fields (components/ui/input.tsx, DateInput). iOS Safari gives
+ * input[type="date"] a built-in minimum width and height and centres its
+ * value; drop the native look so it fills its column at the inputs' 54px.
+ * The hint shows while the field is empty and not focused, in engines that
+ * draw an empty date as blank or mm/dd/yyyy (hidden there).
+ */
+.date-field {
+  -webkit-appearance: none;
+  appearance: none;
+  display: block;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+}
+.date-field::-webkit-date-and-time-value {
+  text-align: left;
+  margin: 0;
+}
+.date-field::-webkit-datetime-edit {
+  padding: 0;
+}
+.date-hint {
+  display: none;
+}
+@supports selector(::-webkit-datetime-edit) or selector(::-webkit-date-and-time-value) {
+  .date-field[data-empty]:not(:focus)::-webkit-datetime-edit,
+  .date-field[data-empty]:not(:focus)::-webkit-date-and-time-value {
+    color: transparent;
+  }
+  .date-field[data-empty]:not(:focus) + .date-hint {
+    display: flex;
   }
 }

@@ -7,7 +7,7 @@ import { useOrigin } from "@/components/copy-link";
 import { colClass, colsClass } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
-import { Input } from "@/components/ui/input";
+import { DateInput, Input } from "@/components/ui/input";
 import { Bubble, Capiz, SectionTitle } from "@/components/ui/paper";
 import { formatPartyDay, formatPeso } from "@/lib/format";
 import { submitWithoutReset } from "@/lib/forms";
@@ -158,6 +158,7 @@ function CreateGroupForm({
           {(props) => (
             <Input
               {...props}
+              readOnly={pending}
               name="name"
               value={name}
               onChange={(e) => {
@@ -175,9 +176,9 @@ function CreateGroupForm({
         <div className="grid grid-cols-[1.4fr_1fr] items-start gap-3">
           <Field label="Petsa ng party" error={errors.partyDate}>
             {(props) => (
-              <Input
+              <DateInput
                 {...props}
-                type="date"
+                readOnly={pending}
                 name="partyDate"
                 value={partyDate}
                 min={today}
@@ -198,6 +199,7 @@ function CreateGroupForm({
                 </span>
                 <Input
                   {...props}
+                  readOnly={pending}
                   name="budget"
                   value={budget}
                   onChange={(e) => {
@@ -215,6 +217,7 @@ function CreateGroupForm({
         </div>
 
         <ThemeWeeksEditor
+          readOnly={pending}
           themes={themes}
           startDates={startDates}
           today={today}

@@ -9,13 +9,12 @@
  * dev database; seeded groups are deleted afterwards. Screenshots in
  * e2e/screenshots/{project}/states/.
  */
-import type { Page, Route } from "@playwright/test";
 import { expect, test } from "./test";
 import { closeDb } from "../server/db";
 import { deleteWish, listWishlist } from "../server/wishlists";
 import { removeMember, reissueMemberLink } from "../server/members";
 import { deleteGroups } from "./db-cleanup";
-import { screenshotter } from "./flow";
+import { screenshotter, holdActions } from "./flow";
 import { seedGroup } from "./seed";
 
 const createdSlugs: string[] = [];
@@ -26,26 +25,9 @@ test.afterAll(async () => {
 });
 
 /** Holds every Server Action POST until released (a slow server). */
-async function holdActions(page: Page) {
-  const held: Route[] = [];
-  const handler = async (route: Route) => {
-    const r = route.request();
-    if (r.method() === "POST" && r.headers()["next-action"]) held.push(route);
-    else await route.fallback();
-  };
-  await page.route("**/*", handler);
-  return {
-    held: () => held.length,
-    async release() {
-      await page.unroute("**/*", handler);
-      for (const route of held.splice(0)) await route.continue().catch(() => {});
-    },
-  };
-}
-
 test("in-between states: loading, pending, optimistic, offline, link states", async ({ browser }, testInfo) => {
   test.setTimeout(300_000);
-  const shot = screenshotter(testInfo, "states");
+  const shot = screenshotter(testInfo, "states", { overlaps: true });
   const device = testInfo.project.use;
   const tag = testInfo.project.name;
   const group = await seedGroup(

@@ -103,7 +103,7 @@ export function RevealScreen({
         plan={openedStates(view.step, view.total)}
         variant="dark"
         label={<span>Ipinapakita: {windowRange(view.step, view.total)}</span>}
-        rowClassName="h-[clamp(28px,4.4vh,48px)] w-[clamp(220px,28vh,420px)] portrait:h-9 portrait:w-full"
+        rowClassName="h-[clamp(28px,4.4dvh,48px)] w-[clamp(220px,28dvh,420px)] portrait:h-9 portrait:w-full"
         className="gap-1"
       />
     ) : null;
@@ -111,7 +111,7 @@ export function RevealScreen({
   const back = (
     <Link
       href={backHref}
-      className="flex min-h-11 items-center rounded-paper font-bold text-gabi-text underline decoration-[1.5px] underline-offset-[3px] focus-ring landscape:text-[clamp(16px,2.4vh,28px)]"
+      className="flex min-h-11 items-center rounded-paper font-bold text-gabi-text underline decoration-[1.5px] underline-offset-[3px] focus-ring landscape:text-[clamp(16px,2.4dvh,28px)]"
     >
       Back to organizer page
     </Link>
@@ -126,7 +126,7 @@ export function RevealScreen({
       ) : (
         back
       )}
-      <div className="flex flex-wrap items-center gap-1 landscape:text-[clamp(16px,2.4vh,28px)]">
+      <div className="flex flex-wrap items-center gap-1 landscape:text-[clamp(16px,2.4dvh,28px)]">
         {demoTools}
         <button type="button" className={ICON_BUTTON} aria-pressed={sound.on} onClick={sound.toggle}>
           {sound.on ? <Volume2 aria-hidden className="size-5" /> : <VolumeX aria-hidden className="size-5" />}
@@ -159,7 +159,9 @@ export function RevealScreen({
       <RevealStage
         view={view}
         showList={showList}
-        className="relative overflow-hidden portrait:hidden landscape:absolute landscape:inset-0"
+        // A phone sideways: the corner controls keep their tap size while the stage shrinks a lot,
+        // so the stage leaves a band for the tools (top) and Previous / Next (bottom).
+        className="relative overflow-hidden portrait:hidden landscape:absolute landscape:inset-0 phone-landscape:top-16 phone-landscape:bottom-[76px]"
         speed={speed}
         onCue={sound.play}
         startExtra={startExtra}
@@ -172,7 +174,7 @@ export function RevealScreen({
           starts about 24vw in, so this stays within 18vw. The name has its
           own line (it wraps if it must, never cut short) and the count sits
           under it. Always shown, also while the controls are hidden. */}
-      <footer className="z-10 hidden max-w-[18vw] flex-col gap-1 text-[clamp(16px,2.4vh,28px)] font-bold text-gabi-text landscape:absolute landscape:bottom-[5vh] landscape:left-[5vw] landscape:flex">
+      <footer className="z-10 hidden max-w-[18vw] flex-col gap-1 text-[clamp(16px,2.4dvh,28px)] font-bold text-gabi-text landscape:absolute landscape:bottom-[5dvh] landscape:left-[5vw] landscape:flex">
         <p className="flex min-w-0 flex-col">
           <span className="line-clamp-2 [overflow-wrap:anywhere]">{view.groupName}</span>
           <span className="sr-only"> · </span>
@@ -184,13 +186,14 @@ export function RevealScreen({
       <FollowAlong view={view} count={count} progress={progress} />
 
       {(controls || listToggle) && (
-        <footer className="rv-autohide z-10 flex flex-col gap-3 px-5 pt-4 landscape:absolute landscape:right-[5vw] landscape:bottom-[5vh] landscape:max-w-[60vw] landscape:flex-row landscape:items-end landscape:p-0">
+        // Portrait (the organizer's phone as the remote): the buttons stay on screen at the bottom.
+        <footer className="rv-autohide z-10 flex flex-col gap-3 px-5 pt-4 portrait:sticky portrait:bottom-0 portrait:bg-gabi portrait:pb-[max(16px,env(safe-area-inset-bottom))] landscape:absolute landscape:right-[5vw] landscape:bottom-[5dvh] landscape:max-w-[60vw] landscape:flex-row landscape:items-end landscape:p-0">
           {listToggle}
           {controls}
         </footer>
       )}
 
-      <header className="rv-autohide z-10 flex flex-wrap items-center justify-between gap-2 px-5 pt-6 pb-8 portrait:mt-auto landscape:absolute landscape:inset-x-[5vw] landscape:top-[5vh] landscape:p-0">
+      <header className="rv-autohide z-10 flex flex-wrap items-center justify-between gap-2 px-5 pt-6 pb-8 portrait:mt-auto landscape:absolute landscape:inset-x-[5vw] landscape:top-[5dvh] landscape:p-0">
         {tools}
       </header>
     </div>
@@ -252,8 +255,8 @@ function FollowAlong({ view, count, progress }: { view: StageView; count: React.
           <ol aria-label={view.status === "REVEALED" ? "All pairs" : "Nabunyag na"} className="grid grid-cols-2 gap-3">
             {shown.map((p) => (
               <li key={`${p.giverName}-${p.receiverName}`} className="flex min-w-0 flex-col items-center bg-papel px-2 py-1.5 text-center text-ube">
-                <span className="max-w-full truncate font-hand text-[24px] leading-tight">{p.giverName}</span>
-                <span className="max-w-full truncate text-[14px] font-bold">
+                <span className="max-w-full font-hand text-[24px] leading-tight [overflow-wrap:anywhere]">{p.giverName}</span>
+                <span className="max-w-full text-[14px] font-bold [overflow-wrap:anywhere]">
                   → kay <span className="nm">{p.receiverName}</span>
                 </span>
               </li>

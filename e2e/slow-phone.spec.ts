@@ -16,7 +16,7 @@ import { expect, test } from "./test";
 import { closeDb, db } from "../server/db";
 import { members } from "../server/db/schema";
 import { deleteGroups, E2E_PREFIX } from "./db-cleanup";
-import { people, readLink } from "./flow";
+import { holdActions, people, readLink } from "./flow";
 import { addDays, todayIn } from "../lib/theme-weeks";
 import { seedGroup } from "./seed";
 
@@ -204,4 +204,69 @@ test("slow phone: /new keeps everything typed before it hydrates", async ({ page
   await expect(page.getByRole("heading", { name: "Ready na ang group mo!" })).toBeVisible({ timeout: 30_000 });
   const shareUrl = await readLink(page, /\/g\/[a-z0-9]+$/);
   createdSlugs.push(new URL(shareUrl).pathname.split("/")[2]);
+});
+
+/**
+ * A slow response to a submit (the flow-1 flake, taken as a real risk): while
+ * it's pending the form's fields are read-only (they still post), so nothing
+ * typed then can be lost; and what's typed the moment the response lands
+ * stays after the error renders (no form reset, no older values put back).
+ */
+test("pending submit: fields read-only, and the error never overwrites what's typed after", async ({ page }, testInfo) => {
+  const group = await seedGroup({ name: `Pending (${testInfo.project.name})`, people: ["Carla"] }, createdSlugs);
+  const settled = () => page.waitForTimeout(1500); // any late re-render or reset would have happened by now
+
+  await test.step("/new: submit without a budget, type while it's pending, then right after", async () => {
+    await page.goto("/new");
+    const create = page.getByRole("button", { name: "Create group" });
+    await expect(create).toBeEnabled({ timeout: 30_000 });
+    const name = page.getByLabel("Pangalan ng group");
+    const date = page.getByLabel("Petsa ng party");
+    const budget = page.getByLabel("Budget", { exact: true });
+    await name.fill(`${E2E_PREFIX}Pending`);
+    await date.fill(addDays(todayIn("Asia/Manila"), 30));
+
+    const hold = await holdActions(page);
+    await create.click();
+    await expect.poll(() => hold.held()).toBe(1);
+    for (const field of [name, date, budget, page.getByRole("textbox", { name: "Theme 1" })]) {
+      await expect(field).toHaveAttribute("readonly", "");
+    }
+    await expect(page.getByRole("button", { name: "Remove theme 1" })).toBeDisabled();
+    // Typing while it's pending changes nothing.
+    await budget.focus();
+    await page.keyboard.type("999");
+    await expect(budget).toHaveValue("");
+
+    await hold.release();
+    // Typed as soon as the field takes input again (the response has landed): it stays.
+    await budget.fill("750");
+    await name.fill(`${E2E_PREFIX}Pending 2`);
+    await settled();
+    await expect(budget).toHaveValue("750");
+    await expect(name).toHaveValue(`${E2E_PREFIX}Pending 2`);
+    await expect(page.getByText(/₱750/).first()).toBeVisible();
+    await expect(budget).not.toHaveAttribute("readonly", "");
+  });
+
+  await test.step("join: submit without a PIN, then change the name the moment it comes back", async () => {
+    await page.goto(group.sharePath);
+    const join = page.getByRole("button", { name: "Join the group" });
+    await expect(join).toBeEnabled();
+    const name = page.getByLabel("Pangalan mo");
+    await name.fill("Kuya Ben");
+
+    const hold = await holdActions(page);
+    await join.click();
+    await expect.poll(() => hold.held()).toBe(1);
+    await expect(name).toHaveAttribute("readonly", "");
+    await expect(page.getByLabel("4-digit PIN")).toHaveAttribute("readonly", "");
+
+    await hold.release();
+    // Before: React's form reset after the action put the submitted name back over this.
+    await name.fill("Kuya Ben R.");
+    await settled();
+    await expect(name).toHaveValue("Kuya Ben R.");
+    await expect(page.getByLabel("4-digit PIN")).not.toHaveAttribute("readonly", "");
+  });
 });

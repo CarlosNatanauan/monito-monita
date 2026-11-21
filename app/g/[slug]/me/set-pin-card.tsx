@@ -41,6 +41,7 @@ export function SetPinCard({ slug }: { slug: string }) {
       {!saved ? (
         <form onSubmit={submit} className="flex flex-col gap-2.5 self-stretch" noValidate>
           <PinField
+            readOnly={pending}
             id="set-pin"
             label="4-digit PIN"
             autoComplete="new-password"

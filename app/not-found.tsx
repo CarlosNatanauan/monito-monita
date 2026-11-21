@@ -35,7 +35,7 @@ export default function NotFound() {
                 {/* eslint-disable-next-line @next/next/no-html-link-for-pages -- plain links: this boundary loads with every page, and /me ships no next/link */}
               <a href="/">Bumalik sa home</a>
               </Button>
-              <Button asChild variant="secondary" className="w-full lg:h-[60px] lg:w-fit">
+              <Button asChild variant="secondary" className="w-full lg:min-h-[60px] lg:w-fit">
                 <a href="/new">Gumawa ng group</a>
               </Button>
             </div>

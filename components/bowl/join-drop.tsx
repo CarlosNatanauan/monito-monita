@@ -93,6 +93,7 @@ export function JoinDrop({ name, href }: { name: string; href: string }) {
         left.current = true;
       }}
       aria-label="Kasali ka na! Tuloy sa page mo."
+      data-overlap-ok
       className="fixed inset-0 z-50 flex items-center justify-center overflow-hidden bg-takipsilim px-5 pb-10 outline-none [-webkit-tap-highlight-color:transparent]"
     >
       <div className="sky relative h-[400px] w-full max-w-[440px] overflow-hidden rounded-sky [--rx:82%] [--ry:14%]">

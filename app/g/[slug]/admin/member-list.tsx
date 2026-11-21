@@ -213,8 +213,8 @@ export function MemberList({
                 onClick={() => toggle(member.id)}
                 className="lst-row w-full cursor-pointer rounded-paper text-left focus-ring [-webkit-tap-highlight-color:transparent]"
               >
-                <Name className="min-w-0 truncate text-list">{member.displayName}</Name>
-                <span className="flex shrink-0 items-center gap-1.5">
+                <Name className="lst-wrap text-list">{member.displayName}</Name>
+                <span className="flex h-10 shrink-0 items-center gap-1.5 self-start">
                   {drawn ? (
                     <span id={statusId} className={member.slipOpened ? "font-bold text-dahon" : "text-ube-soft"}>
                       {member.slipOpened ? "✓ Opened" : "Hindi pa bukas"}
@@ -233,8 +233,8 @@ export function MemberList({
 
               {member.pinLocked && (
                 <div className="lst-row" role="group" aria-label={`PIN lock for ${member.displayName}`}>
-                  <p className="min-w-0 truncate text-small font-bold text-sili">Na-lock ang PIN ni {member.displayName}</p>
-                  <Button type="button" variant="link" className="-mr-1.5" disabled={pending} onClick={() => unlock(member.id)}>
+                  <p className="lst-wrap text-small font-bold text-sili">Na-lock ang PIN ni {member.displayName}</p>
+                  <Button type="button" variant="link" className="-mr-1.5 self-start" disabled={pending} onClick={() => unlock(member.id)}>
                     Unlock
                   </Button>
                 </div>
@@ -242,12 +242,12 @@ export function MemberList({
 
               {member.pinTempLocked && !isConfirming && newLink?.id !== member.id && (
                 <div className="lst-row" role="group" aria-label={`Maling PIN ni ${member.displayName}`}>
-                  {/* Under their own row, so the name isn't repeated (it would be cut on a phone). */}
-                  <p className="min-w-0 truncate text-small font-bold text-sili">Maraming maling PIN kanina</p>
+                  {/* Under their own row, so the name isn't repeated. */}
+                  <p className="lst-wrap text-small font-bold text-sili">Maraming maling PIN kanina</p>
                   <Button
                     type="button"
                     variant="link"
-                    className="-mr-1.5"
+                    className="-mr-1.5 self-start"
                     disabled={pending}
                     onClick={() => start(member.id, "link", { resetPin: true })}
                     aria-label={`Get new link for ${member.displayName} (locked)`}

@@ -19,7 +19,7 @@
  */
 export const OFFLINE_BANNER_SCRIPT = `(function(){
 var box,timer;
-function el(){if(!box){box=document.createElement("div");box.className="mm-offline";box.setAttribute("role","status");box.setAttribute("data-offline-banner","");document.body.appendChild(box)}return box}
+function el(){if(!box){box=document.createElement("div");box.className="mm-offline";box.setAttribute("role","status");box.setAttribute("data-offline-banner","");box.setAttribute("data-overlap-ok","");document.body.appendChild(box)}return box}
 function show(state){var b=el();clearTimeout(timer);b.setAttribute("data-state",state);
 b.innerHTML=state==="offline"?'<p><i class="mm-bulb"></i><span><b>Offline ka.</b> Itutuloy namin ang ginagawa mo pagbalik ng signal.</span></p>':state==="back"?'<p><i class="mm-bulb mm-lit"></i><b class="mm-back">Balik na ang signal!</b></p>':"";
 if(state==="back")timer=setTimeout(function(){show("")},3000)}

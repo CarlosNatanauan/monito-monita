@@ -35,7 +35,7 @@ export function StartDemoButton() {
 
 function DemoPreparing({ waiting }: { waiting: boolean }) {
   return (
-    <div data-demo-preparing className="fixed inset-0 z-40 flex items-center justify-center bg-takipsilim px-5 pb-10">
+    <div data-demo-preparing data-overlap-ok className="fixed inset-0 z-40 flex items-center justify-center bg-takipsilim px-5 pb-10">
       <div className="sky relative h-[400px] w-full max-w-[440px] overflow-hidden rounded-sky [--rx:82%] [--ry:14%]">
         <Art name="parol" className="pointer-events-none absolute top-0 right-2.5 h-[119px] w-[84px]" />
         <div role="status" className="absolute top-6 left-[18px] max-w-[250px]">

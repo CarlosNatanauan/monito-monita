@@ -1,5 +1,6 @@
 "use client";
 
+import { submitWithoutReset } from "@/lib/forms";
 import { usePendingLabel } from "@/lib/use-pending-label";
 import { useActionState, useEffect, useState, type ReactNode } from "react";
 import { JoinDrop, preloadDrop } from "@/components/bowl/lazy-join-drop";
@@ -20,9 +21,11 @@ const initialState: JoinState = { status: "idle" };
  * new: the taken result itself already shows that.
  *
  * Uncontrolled on purpose: `<form action>` works even before hydration
- * (slow phones opening links from Messenger), and the action returns the
- * submitted name, which becomes the default value so React's automatic
- * form reset restores it instead of clearing it. The PIN is never echoed.
+ * (slow phones opening links from Messenger). After hydration it submits
+ * without React's form reset (lib/forms.ts), so what's in the fields stays
+ * as typed after an error, and the fields are read-only while the submit
+ * is pending. The submitted name is the default value for a remount (the
+ * "Hindi ako 'yan" path). The PIN is never echoed.
  */
 export function JoinForm({
   slug,
@@ -76,7 +79,10 @@ export function JoinForm({
   return (
     <>
       <form
+        // Before hydration a plain form post; after, a transition without React's form reset,
+        // so a returned error never puts back older values over what's in the fields.
         action={formAction}
+        onSubmit={submitWithoutReset(formAction)}
         className="flex flex-col gap-[18px] lg:gap-[22px]"
         aria-label="Sumali"
         noValidate
@@ -95,6 +101,7 @@ export function JoinForm({
             <span className="hidden lg:inline">Isulat ang pangalan mo sa listahan</span>
           </p>
           <NameLine
+            readOnly={pending}
             id="displayName"
             name="displayName"
             defaultValue={submittedName}
@@ -108,6 +115,7 @@ export function JoinForm({
             required
           />
           <PinField
+            readOnly={pending}
             id="pin"
             label="4-digit PIN"
             labelClassName="lst-label block"

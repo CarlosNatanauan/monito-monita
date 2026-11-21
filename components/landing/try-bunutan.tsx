@@ -15,6 +15,9 @@ const loadDrawer = () => import("./draw-timeline").then((m) => m.createDrawer())
 type SlipArtComponent = typeof import("@/components/slip/slip-art").SlipArt;
 const loadSlipArt = () => import("@/components/slip/slip-art").then((m) => m.SlipArt);
 
+/** How long the opened slip stays before it folds back by itself. */
+const AUTO_FOLD_MS = 4000;
+
 // idle: nothing drawn yet. drawing / shown: after a tap. folding: the
 // opened slip going back into the bowl; folded: back in (the next tap draws again).
 type Phase = "idle" | "drawing" | "shown" | "folding" | "folded";
@@ -38,7 +41,9 @@ const BOWL_BOX = "absolute bottom-[13px] left-2 h-[60px] w-20";
  * on phones, on the list itself, left, over the title row's lower edge and
  * the first steps, 170px wide (the person tapped for it). The opened slip
  * is a button too ("Ibalik ang slip"): it folds back into the bowl (the
- * draw played backwards; reduced motion, a 150ms fade).
+ * draw played backwards; reduced motion, a 150ms fade), and does so by
+ * itself 4s after it opened (focus moves to the bowl only if it was on the
+ * slip).
  *
  * `children` is the listahan; the bowl and the slip are drawn over it and
  * never change its rows.
@@ -52,6 +57,8 @@ export function TryBunutan({ className, children }: { className?: string; childr
   const [previous, setPrevious] = useState<string | null>(null);
   const stageRef = useRef<HTMLDivElement>(null);
   const bowlRef = useRef<HTMLButtonElement>(null);
+  const slipButtonRef = useRef<HTMLButtonElement>(null);
+  const folding = useRef<Promise<void> | null>(null);
   const drawerRef = useRef<Drawer | null>(null);
   const loading = useRef<Promise<Drawer> | null>(null);
   const busy = useRef(false);
@@ -79,6 +86,8 @@ export function TryBunutan({ className, children }: { className?: string; childr
   const intent = () => void load()?.then((d) => d.warmSparkle());
 
   async function tap() {
+    // A tap while the slip folds back (by itself or tapped) draws once it's in.
+    if (folding.current) await folding.current;
     if (busy.current) return;
     const next = nextSample(name);
     busy.current = true;
@@ -101,22 +110,38 @@ export function TryBunutan({ className, children }: { className?: string; childr
     setPhase("drawing");
   }
 
-  // The opened slip, tapped: back into the bowl. Focus goes to the bowl (the slip's button leaves).
-  async function foldBack() {
+  // The opened slip back into the bowl: tapped, or by itself 4s after it opened.
+  // Focus moves to the bowl only if it was on the slip (whose button leaves); never otherwise.
+  function foldBack() {
     if (busy.current || phase !== "shown") return;
     busy.current = true;
     setPhase("folding");
-    bowlRef.current?.focus({ preventScroll: true });
+    if (document.activeElement === slipButtonRef.current) bowlRef.current?.focus({ preventScroll: true });
     const riser = stageRef.current?.querySelector('[data-part="riser"]');
-    if (reduced || !drawerRef.current) {
-      await riser?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: "linear", fill: "forwards" }).finished;
-    } else {
-      await drawerRef.current.fold();
-    }
-    setPrevious(null);
-    setPhase("folded");
-    busy.current = false;
+    folding.current = (async () => {
+      if (reduced || !drawerRef.current) {
+        await riser?.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 150, easing: "linear", fill: "forwards" }).finished;
+      } else {
+        await drawerRef.current.fold();
+      }
+      setPrevious(null);
+      setPhase("folded");
+      busy.current = false;
+      folding.current = null;
+    })();
   }
+  const foldBackRef = useRef(foldBack);
+  useEffect(() => {
+    foldBackRef.current = foldBack;
+  });
+
+  // The open slip covers the steps on phones: it folds back by itself after 4s.
+  // A new draw (the bowl) starts the 4s again.
+  useEffect(() => {
+    if (phase !== "shown") return;
+    const id = window.setTimeout(() => foldBackRef.current(), AUTO_FOLD_MS);
+    return () => window.clearTimeout(id);
+  }, [phase, draw]);
 
   // A new slip is on the page (folded, invisible): build its mix, rise and unfold, and play it.
   useLayoutEffect(() => {
@@ -189,6 +214,7 @@ export function TryBunutan({ className, children }: { className?: string; childr
       {/* The opened slip (300×160 drawn, scaled): phones on the list, left (170 wide); 600px+ on the list's right half (200 wide). */}
       <div
         ref={stageRef}
+        data-overlap-ok
         data-sample-slip={tapped && name ? name : undefined}
         className={cn(
           "pointer-events-none absolute z-20 h-[160px] w-[300px] origin-top-left",
@@ -210,6 +236,7 @@ export function TryBunutan({ className, children }: { className?: string; childr
           // The open slip is a button: tap it to put it back in the bowl. Scaled with the slip.
           <button
             type="button"
+            ref={slipButtonRef}
             onClick={foldBack}
             aria-label="Ibalik ang slip"
             className="pointer-events-auto absolute inset-0 cursor-pointer rounded-paper outline-offset-4 select-none focus-ring [-webkit-tap-highlight-color:transparent]"

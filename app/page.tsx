@@ -70,7 +70,7 @@ export default function Home() {
                 <Button
                   asChild
                   variant="secondary"
-                  className="w-full shrink-0 whitespace-nowrap min-[600px]:h-[58px] min-[600px]:w-fit min-[600px]:px-5 lg:h-[60px] lg:px-5"
+                  className="w-full shrink-0 whitespace-nowrap min-[600px]:min-h-[58px] min-[600px]:w-fit min-[600px]:px-5 lg:min-h-[60px] lg:px-5"
                 >
                   <Link href="/demo">Subukan ang demo</Link>
                 </Button>

@@ -68,14 +68,14 @@ export function ExclusionsSection({
           <ul aria-label="Exclusion pairs">
             {pairs.map((pair) => (
               <li key={pair.id} className="lst-row">
-                <span className="min-w-0 truncate">
+                <span className="lst-wrap">
                   <Name>{pair.memberAName}</Name> at <Name>{pair.memberBName}</Name>
                 </span>
                 {editable && (
                   <Button
                     type="button"
                     variant="link"
-                    className="-mr-1.5"
+                    className="-mr-1.5 self-start"
                     disabled={pending}
                     onClick={() => run(() => removeExclusionAction({ slug, exclusionId: pair.id }))}
                     aria-label={`Remove pair ${pair.memberAName} and ${pair.memberBName}`}
@@ -89,8 +89,9 @@ export function ExclusionsSection({
         )}
 
         {editable && members.length >= 2 && (
-          <div className="lst-row2">
-            <label className="min-w-0 flex-1">
+          // One row of two names and Add; at a very large text size they wrap onto more rows.
+          <div className="lst-row2 flex-wrap">
+            <label className="min-w-0 flex-1 basis-[5.5rem]">
               <span className="sr-only">Unang tao</span>
               <Select value={first} onChange={(e) => setFirst(e.target.value)} disabled={pending}>
                 <option value="">Pumili</option>
@@ -101,7 +102,7 @@ export function ExclusionsSection({
                 ))}
               </Select>
             </label>
-            <label className="min-w-0 flex-1">
+            <label className="min-w-0 flex-1 basis-[5.5rem]">
               <span className="sr-only">Pangalawang tao</span>
               <Select value={second} onChange={(e) => setSecond(e.target.value)} disabled={pending}>
                 <option value="">Pumili</option>

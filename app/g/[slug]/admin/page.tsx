@@ -294,10 +294,11 @@ async function OrganizerContent({ params }: Pick<PageProps<"/g/[slug]/admin">, "
               className={cn("lst-row", state === "past" && "text-ube-soft")}
               aria-current={state === "current" ? "date" : undefined}
             >
-              <span className="min-w-0 truncate">
+              {/* Wraps to two rows at most (the notebook's rule). */}
+              <span className="lst-wrap line-clamp-2">
                 <strong>Week {i + 1}</strong> · {theme.title}
               </span>
-              <span className="shrink-0 text-small">
+              <span className="lst-wrap shrink-0 self-start text-small">
                 {tag && <span className={cn("font-bold", state === "current" ? "text-dahon" : "")}>{tag} · </span>}
                 <span className="text-ube-soft">{formatShortDate(theme.startDate)}</span>
               </span>

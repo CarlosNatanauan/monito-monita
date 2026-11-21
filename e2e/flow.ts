@@ -2,8 +2,9 @@
  * Shared helpers for the main-flow specs (flow-1 … flow-4). Each person
  * gets their own browser context (own cookies), like separate phones.
  */
+import { expectNoOverlaps } from "./layout-checks";
 import { mkdirSync, rmSync } from "node:fs";
-import { expect, type Browser, type BrowserContext, type Page, type TestInfo } from "@playwright/test";
+import { expect, type Browser, type BrowserContext, type Page, type Route, type TestInfo } from "@playwright/test";
 
 export interface Person {
   label: string;
@@ -53,7 +54,9 @@ export function people(browser: Browser, testInfo: TestInfo) {
           // A request to the page's own URL cancelled by leaving it: the
           // "Your groups" Server Action (it posts to /) or Next's offline
           // connectivity check (experimental.useOffline pings the current URL).
-          error.message.includes(`${new URL(page.url()).host}/ due to access control checks`))
+          error.message.includes(`${new URL(page.url()).host}/ due to access control checks`) ||
+          // The same on the reveal screen: its Next/Previous action or refresh posts to its own URL.
+          error.message.includes(`${new URL(page.url()).host}${new URL(page.url()).pathname} due to access control checks`))
       ) {
         return;
       }
@@ -97,7 +100,8 @@ export function people(browser: Browser, testInfo: TestInfo) {
 }
 
 /** Full-page screenshots in e2e/screenshots/{project}/{spec}/, numbered in order. */
-export function screenshotter(testInfo: TestInfo, spec: string) {
+/** `overlaps`: also run the layout sweep's overlap check (e2e/layout-checks.ts) on each screenshotted state. */
+export function screenshotter(testInfo: TestInfo, spec: string, { overlaps = false }: { overlaps?: boolean } = {}) {
   const dir = `e2e/screenshots/${testInfo.project.name}/${spec}`;
   // Start fresh so old runs with different step numbers do not linger.
   rmSync(dir, { recursive: true, force: true });
@@ -105,6 +109,7 @@ export function screenshotter(testInfo: TestInfo, spec: string) {
   let n = 0;
   return async (page: Page, name: string) => {
     n += 1;
+    if (overlaps) await expectNoOverlaps(page, `${spec} ${name} (${testInfo.project.name})`);
     // caret: "initial" so a screenshot taken before hydration never edits the DOM
     // (the default hides the caret with an inline style React then flags).
     await page.screenshot({ path: `${dir}/${String(n).padStart(2, "0")}-${name}.png`, fullPage: true, caret: "initial" });
@@ -219,3 +224,24 @@ export const WISHES: Record<string, string[]> = {
   Ben: ["Socks"],
   "Tita Org": [],
 };
+
+/**
+ * Holds every server action response (POST with a next-action header) until
+ * `release()`: the page stays in its pending state meanwhile.
+ */
+export async function holdActions(page: Page) {
+  const held: Route[] = [];
+  const handler = async (route: Route) => {
+    const r = route.request();
+    if (r.method() === "POST" && r.headers()["next-action"]) held.push(route);
+    else await route.fallback();
+  };
+  await page.route("**/*", handler);
+  return {
+    held: () => held.length,
+    async release() {
+      await page.unroute("**/*", handler);
+      for (const route of held.splice(0)) await route.continue().catch(() => {});
+    },
+  };
+}

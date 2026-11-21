@@ -12,10 +12,12 @@ export interface WishItemData {
 export function WishLink({ url }: { url: string }) {
   return (
     <a
+      // A notebook text link: a 44px tap target over its 40px row (lst-row's rule for text buttons).
+      data-variant="link"
       href={url}
       target="_blank"
       rel="noopener noreferrer nofollow"
-      className="inline-flex min-h-10 shrink-0 items-center rounded-paper text-small font-bold underline decoration-[1.5px] underline-offset-[3px] focus-ring"
+      className="inline-flex min-h-11 shrink-0 items-center self-start rounded-paper text-small font-bold underline decoration-[1.5px] underline-offset-[3px] focus-ring"
     >
       {displayDomain(url)}
       <span className="sr-only"> (opens in a new tab)</span>
@@ -24,20 +26,20 @@ export function WishLink({ url }: { url: string }) {
 }
 
 /**
- * One wish on the listahan: the title on its line (up to two short lines,
- * so a long title isn't cut on a phone), then the note and the link's
- * domain on the next line if there are any.
+ * One wish on the listahan: the title, then the note and the link's
+ * domain on the next row if there are any. Nothing is cut off: long titles
+ * and notes wrap onto as many 40px rows as they need (lst-wrap).
  */
 export function WishRows({ item, actions }: { item: WishItemData; actions?: React.ReactNode }) {
   return (
     <>
       <div className="lst-row">
-        <p className="line-clamp-2 min-w-0 leading-5 break-words">{item.title}</p>
-        {actions && <span className="flex shrink-0 items-center gap-2">{actions}</span>}
+        <p className="lst-wrap">{item.title}</p>
+        {actions && <span className="flex h-10 shrink-0 items-center gap-2 self-start">{actions}</span>}
       </div>
       {(item.note || item.url) && (
         <div className={item.note ? "lst-row" : "lst-row justify-start"}>
-          {item.note && <p className="min-w-0 truncate text-small text-ube-soft">{item.note}</p>}
+          {item.note && <p className="lst-wrap text-small text-ube-soft">{item.note}</p>}
           {item.url && <WishLink url={item.url} />}
         </div>
       )}

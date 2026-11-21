@@ -307,7 +307,9 @@ function TextRow({ label, error, children }: { label: string; error?: string; ch
   return (
     <label className="block">
       <span className="lst-label block">{label}</span>
-      <span className="flex h-10 items-center">{children}</span>
+      {/* The field fills its 40px rule exactly (a 48px field spilled into the label above and
+          the Cancel row below, whose tap area then covered the Note field's bottom edge). */}
+      <span className="flex h-10 items-center [&>input]:h-10">{children}</span>
       {error && <ErrorMessage className="my-2">{error}</ErrorMessage>}
     </label>
   );

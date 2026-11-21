@@ -6,7 +6,7 @@ import { Field, ThemeWeeksEditor, useThemeDrafts } from "@/components/group-fiel
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { CheckIcon } from "@/components/ui/icons";
-import { Input } from "@/components/ui/input";
+import { DateInput, Input } from "@/components/ui/input";
 import { SectionTitle } from "@/components/ui/paper";
 import { submitWithoutReset } from "@/lib/forms";
 import { isIsoDate, themeStartDates, todayIn } from "@/lib/theme-weeks";
@@ -118,6 +118,7 @@ function DetailsForm({
           {(props) => (
             <Input
               {...props}
+              readOnly={pending}
               name="name"
               value={name}
               onChange={(e) => {
@@ -135,9 +136,9 @@ function DetailsForm({
       <div className={all ? "grid grid-cols-[1.4fr_1fr] items-start gap-3" : "flex flex-col"}>
         <Field label="Petsa ng party" error={errors.partyDate}>
           {(props) => (
-            <Input
+            <DateInput
               {...props}
-              type="date"
+              readOnly={pending}
               name="partyDate"
               value={partyDate}
               min={today}
@@ -158,6 +159,7 @@ function DetailsForm({
                 </span>
                 <Input
                   {...props}
+                  readOnly={pending}
                   name="budget"
                   value={budget}
                   onChange={(e) => {
@@ -175,6 +177,7 @@ function DetailsForm({
       </div>
 
       <ThemeWeeksEditor
+        readOnly={pending}
         themes={themeDrafts.themes}
         startDates={startDates}
         today={today}
