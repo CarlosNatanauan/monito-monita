@@ -122,7 +122,7 @@ Before the reveal, no page, JSON or network response may show who gives to whom,
 <details>
 <summary><b>Loading only what's needed</b></summary>
 
-- At most 150 KB of JavaScript (compressed) on the first load of the pages members open from the GC: join is 147.0 KB, /me is 149.9 KB.
+- At most 150 KB of JavaScript (compressed) on the first load of the pages members open from the GC: join is 147.0 KB, /me is 146.0 KB. An already-open slip is rendered on the server; only a folded one loads the slip code.
 - The landing's first load is a 16–39 KB WebP poster: no video bytes, no player and no animation code. The MP4 (H.264, 720p on phones, 1080p on laptops) starts only when the poster is pressed.
 - The small bowl on the "Paano 'to?" list is a real button from the first paint. Its GSAP code, the slip and the sparkle load only when someone touches, focuses or types on it, never on scroll or idle. A tap before the code arrives is queued and still plays.
 - Animations touch only `transform` and `opacity`, and respect `prefers-reduced-motion`.

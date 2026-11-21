@@ -1,5 +1,5 @@
 import gsap from "gsap";
-import { SLIP } from "@/components/slip/slip-art";
+import { SLIP } from "@/components/slip/slip-constants";
 
 /**
  * Signature moment #2, joining: your slip (open, your name on it) folds

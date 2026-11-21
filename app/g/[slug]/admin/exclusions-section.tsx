@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { Name } from "@/components/page";
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
-import { Select } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
 import { Listahan } from "@/components/ui/paper";
 import { addExclusionAction, removeExclusionAction } from "./actions";
 

@@ -6,7 +6,7 @@ import { DemoGuide } from "@/components/demo/demo-guide";
 import { colClass, colsClass, LightString, Name, Narrow, pageClass, stickyClass } from "@/components/page";
 import { RememberGroup } from "@/components/remember-group";
 import { RoleSwitch } from "@/components/role-switch";
-import { BunutanSlip } from "@/components/slip/bunutan-slip";
+import { FoldedSlip, OpenSlip } from "@/components/slip/static-slip";
 import { Button } from "@/components/ui/button";
 import { Capiz, Listahan, SecretCard, SectionTitle, ThemeSheet } from "@/components/ui/paper";
 import { WishlistView } from "@/components/wish-item";
@@ -206,7 +206,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
             {greeting}
             {giver ? (
               <>
-                <BunutanSlip name={giver.displayName} initiallyOpened heading="Ang nagbigay sa'yo ay…" label="Ang nagbigay sa'yo" />
+                <OpenSlip name={giver.displayName} heading="Ang nagbigay sa'yo ay…" label="Ang nagbigay sa'yo" />
                 <p>
                   Si <Name>{giver.codename}</Name> pala si <Name>{giver.displayName}</Name>!
                 </p>
@@ -253,8 +253,11 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
       {receiver?.changedAt && <MonitoUpdatedNotice slug={slug} />}
       {receiver ? (
         // Signature moment #3: the full unfold plays once; later visits
-        // show the slip already open (docs/DESIGN.md).
-        <MonitoSlip />
+        // show the slip already open, rendered here (docs/DESIGN.md).
+        <MonitoSlip
+          openSlip={receiver.slipOpenedAt !== null ? <OpenSlip name={receiver.displayName} /> : null}
+          foldedSlip={receiver.slipOpenedAt === null ? <FoldedSlip name={receiver.displayName} /> : null}
+        />
       ) : (
         <Capiz>
           <SectionTitle>Ang monito mo ay…</SectionTitle>
@@ -267,7 +270,7 @@ async function MemberHome({ params, searchParams }: PageProps<"/g/[slug]/me">) {
   ) : (
     <>
       <SectionTitle>Hintayin ang bunutan</SectionTitle>
-      <BunutanSlip name={member.codename} initiallyOpened heading="Codename mo" label="Your codename" rays={false} />
+      <OpenSlip name={member.codename} heading="Codename mo" label="Your codename" rays={false} />
       <p className="text-ube-soft">Hintayin si organizer na mag-draw ng names. Ang codename mo ang makikita sa reveal.</p>
     </>
   );

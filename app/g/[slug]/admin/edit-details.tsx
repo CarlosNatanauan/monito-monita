@@ -6,7 +6,8 @@ import { Field, ThemeWeeksEditor, useThemeDrafts } from "@/components/group-fiel
 import { Button } from "@/components/ui/button";
 import { ErrorMessage } from "@/components/ui/error-message";
 import { CheckIcon } from "@/components/ui/icons";
-import { DateInput, Input } from "@/components/ui/input";
+import { DateInput } from "@/components/ui/date-input";
+import { Input } from "@/components/ui/input";
 import { SectionTitle } from "@/components/ui/paper";
 import { submitWithoutReset } from "@/lib/forms";
 import { isIsoDate, themeStartDates, todayIn } from "@/lib/theme-weeks";

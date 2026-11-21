@@ -1,5 +1,5 @@
 import gsap from "gsap";
-import { SLIP } from "./slip-art";
+import { SLIP } from "./slip-constants";
 import type { Sparkle } from "./sparkle";
 
 /**

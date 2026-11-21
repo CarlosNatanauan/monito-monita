@@ -1,6 +1,8 @@
-"use client";
+import type { CSSProperties } from "react";
+import { HandwrittenName } from "./handwritten-name";
+import { SLIP } from "./slip-constants";
 
-import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
+export { SLIP };
 
 /**
  * The bunutan slip as pure markup: four paper panels in CSS 3D
@@ -13,24 +15,17 @@ import { useLayoutEffect, useRef, useState, type CSSProperties } from "react";
  * downward on the string. The folded state is set with inline styles so
  * the slip looks right before any JS loads. The timelines animate the
  * `data-part` elements; the folded values here must match theirs.
+ *
+ * No hooks here (the written name, which measures itself, is its own
+ * client component), so an already-open slip renders on the server
+ * (OpenSlip) and ships no slip code.
  */
-
-export const SLIP = {
-  W: 300,
-  H: 160,
-  /** The folded packet is a quarter of the paper; scaled up to ~202×108 (180×96 on a phone panel). */
-  FOLD_SCALE: 1.35,
-  FOLD_ROT: -4,
-  OPEN_ROT: -3,
-  /** Soft leading edge of the ink reveal, in px. */
-  FEATHER: 16,
-} as const;
 
 export type SlipState = "folded" | "open";
 
 type Side = "left" | "right" | "top" | "bottom";
 
-const { W, H, FEATHER } = SLIP;
+const { W, H } = SLIP;
 const INK = "63 31 99"; // ube, for shading only
 /** The one shadow: flat, offset, no blur (docs/DESIGN.md). */
 const FLAT_SHADOW = "3px 4px 0 rgb(30 18 56 / 0.45)";
@@ -220,69 +215,5 @@ export function SlipArt({ name, state }: { name: string; state: SlipState }) {
       </div>
 
     </div>
-  );
-}
-
-const MAX_FONT = 72; // 64px on a phone panel (drawn at 0.887), 86px on a laptop (1.2)
-const MIN_FONT = 20;
-
-/**
- * The name in Gochi Hand, one span per character so the controller can
- * "write" it letter by letter. The clip window and the feather are moved
- * with transforms only (see unfold-controller.tsx).
- */
-function HandwrittenName({ name, open }: { name: string; open: boolean }) {
-  const text = name.trim();
-  const innerRef = useRef<HTMLSpanElement>(null);
-  const [fontSize, setFontSize] = useState(MAX_FONT);
-
-  // Shrink long names to fit on one line.
-  useLayoutEffect(() => {
-    const inner = innerRef.current;
-    if (!inner) return;
-    const fit = () => {
-      const available = W - 16 - FEATHER * 2;
-      const current = parseFloat(getComputedStyle(inner).fontSize) || MAX_FONT;
-      const widthAtMax = (inner.scrollWidth * MAX_FONT) / current;
-      setFontSize(
-        widthAtMax > available ? Math.max(MIN_FONT, Math.floor((MAX_FONT * available) / widthAtMax)) : MAX_FONT,
-      );
-    };
-    fit();
-    // The webfont may arrive after first paint.
-    document.fonts?.ready.then(fit).catch(() => {});
-  }, [text]);
-
-  return (
-    <span
-      data-part="name-clip"
-      className="relative inline-block overflow-hidden"
-      style={{ paddingInline: FEATHER, paddingBlock: 6 }}
-    >
-      <span
-        ref={innerRef}
-        data-part="name-inner"
-        className="relative block whitespace-nowrap font-hand leading-none text-ube"
-        style={{ fontSize }}
-      >
-        {Array.from(text).map((ch, i) => (
-          <span key={i} data-char={ch}>
-            {ch === " " ? " " : ch}
-          </span>
-        ))}
-      </span>
-      <span
-        data-part="feather"
-        className="absolute inset-y-0 right-0"
-        style={{
-          width: FEATHER,
-          // Paper, faded in by a static mask: the soft edge of the wet ink.
-          background: "#fff",
-          maskImage: "linear-gradient(to right, transparent, #000)",
-          WebkitMaskImage: "linear-gradient(to right, transparent, #000)",
-          opacity: open ? 0 : 1,
-        }}
-      />
-    </span>
   );
 }
